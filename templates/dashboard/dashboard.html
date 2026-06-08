@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}{{ dashboard_title|default:"Dashboard" }} — Infomates Operations Management System{% endblock %}
+
+{% block content %}
+{% if dashboard_title %}<h2 class="ioms-section-title">{{ dashboard_title }}</h2>{% endif %}
+
+<div class="ioms-kpi-grid">
+    {% if show_nav_clients %}<div class="ioms-kpi"><div class="value">{{ total_clients }}</div><div class="label">Clients</div></div>{% endif %}
+    {% if show_operations %}
+    <div class="ioms-kpi"><div class="value">{{ total_orders }}</div><div class="label">Total Orders</div></div>
+    <div class="ioms-kpi"><div class="value">{{ scheduled_jobs }}</div><div class="label">Scheduled Jobs</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ unscheduled_jobs }}</div><div class="label">Unscheduled Jobs</div></div>
+    <div class="ioms-kpi"><div class="value">{{ jobs_in_progress }}</div><div class="label">Jobs In Progress</div></div>
+    <div class="ioms-kpi"><div class="value text-success">{{ completed_jobs }}</div><div class="label">Completed Jobs</div></div>
+    <div class="ioms-kpi"><div class="value">{{ wcr_pending }}</div><div class="label">Awaiting WCR</div></div>
+    {% endif %}
+    {% if show_financial %}
+    <div class="ioms-kpi"><div class="value">{{ total_invoices }}</div><div class="label">Invoices</div></div>
+    <div class="ioms-kpi"><div class="value">{{ payment_pending }}</div><div class="label">Payments Pending</div></div>
+    <div class="ioms-kpi"><div class="value">₹{{ total_revenue|floatformat:0 }}</div><div class="label">Total Revenue</div></div>
+    {% endif %}
+    {% if show_operations %}
+    <div class="ioms-kpi"><div class="value text-success">{{ attendance_stats.present }}</div><div class="label">Present Today</div></div>
+    <div class="ioms-kpi"><div class="value text-primary">{{ attendance_stats.attendance_percentage }}%</div><div class="label">Attendance Today</div></div>
+    {% endif %}
+</div>
+
+{% if show_quotations %}
+<h3 class="ioms-section-title" style="margin-top:8px;">Quotations</h3>
+<div class="ioms-kpi-grid">
+    <div class="ioms-kpi"><div class="value">{{ total_quotations }}</div><div class="label">Total Quotations</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ qt_pending_approval }}</div><div class="label">Pending Approval</div></div>
+    <div class="ioms-kpi"><div class="value text-success">{{ qt_accepted }}</div><div class="label">Accepted</div></div>
+    <div class="ioms-kpi"><div class="value text-danger">{{ qt_rejected }}</div><div class="label">Rejected</div></div>
+    <div class="ioms-kpi"><div class="value">₹{{ quotation_value|floatformat:0 }}</div><div class="label">Quotation Value</div></div>
+</div>
+{% endif %}
+
+<p class="ioms-action-row">
+    {% if show_nav_quotations %}<a href="{% url 'quotation_list' %}" class="btn btn-sm btn-primary">Quotations</a>{% endif %}
+    {% if show_nav_billing %}<a href="{% url 'invoice_list' %}" class="btn btn-sm btn-primary">Billing</a>{% endif %}
+    {% if is_management_attendance %}<a href="{% url 'attendance_dashboard' %}" class="btn btn-sm btn-secondary">Attendance Dashboard</a>{% endif %}
+</p>
+
+<div class="ioms-charts-row ioms-charts-row-3">
+    {% if show_quotations %}
+    <div class="ioms-chart-card">
+        <h3>Monthly Quotation Value</h3>
+        <div class="ioms-chart-wrap"><canvas id="quotationChart"></canvas></div>
+    </div>
+    {% endif %}
+    {% if show_financial %}
+    <div class="ioms-chart-card">
+        <h3>Monthly Revenue</h3>
+        <div class="ioms-chart-wrap"><canvas id="revenueChart"></canvas></div>
+    </div>
+    {% endif %}
+    {% if show_operations %}
+    <div class="ioms-chart-card">
+        <h3>Orders by Type</h3>
+        <div class="ioms-chart-wrap"><canvas id="orderTypeChart"></canvas></div>
+    </div>
+    {% endif %}
+</div>
+
+{% if show_operations %}
+<div class="card ioms-dashboard-section">
+    <h3>Engineer Productivity (Scheduled Jobs)</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Engineer</th><th>Assigned</th><th>Completed</th><th>Pending</th></tr></thead>
+            <tbody>
+                {% for e in engineer_stats %}
+                <tr><td>{{ e.name }}</td><td>{{ e.assigned }}</td><td>{{ e.completed }}</td><td>{{ e.pending }}</td></tr>
+                {% empty %}<tr><td colspan="4">No engineers found.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="card ioms-dashboard-section">
+    <h3>Overdue Scheduled Jobs</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Order</th><th>Schedule</th><th>Client</th><th>Engineer</th><th>End Date</th><th>Delay (days)</th></tr></thead>
+            <tbody>
+                {% for o in overdue_orders %}
+                <tr>
+                    <td><a href="{% url 'order_detail' o.order_id %}">#{{ o.order_id }}</a></td>
+                    <td>{{ o.schedule_number }}</td>
+                    <td>{{ o.client }}</td><td>{{ o.engineer }}</td><td>{{ o.target_date }}</td>
+                    <td><span class="badge badge-pending">{{ o.delay_days }}</span></td>
+                </tr>
+                {% empty %}<tr><td colspan="6">No overdue scheduled jobs.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { labels: { font: { family: "'Segoe UI', sans-serif", size: 12 }, boxWidth: 14, padding: 10 } } }
+};
+{% if show_quotations %}
+const qtMonths = {{ qt_months|safe }};
+const qtValues = {{ qt_values|safe }};
+if (document.getElementById('quotationChart')) {
+    new Chart(document.getElementById('quotationChart'), {
+        type: 'bar',
+        data: { labels: qtMonths.length ? qtMonths : ['No data'], datasets: [{ label: 'Quotation Value', data: qtValues.length ? qtValues : [0], backgroundColor: 'rgba(44, 82, 130, 0.75)' }] },
+        options: { ...chartDefaults, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+}
+{% endif %}
+{% if show_financial %}
+const months = {{ months|safe }};
+const revenues = {{ revenues|safe }};
+if (document.getElementById('revenueChart')) {
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'line',
+        data: { labels: months.length ? months : ['No data'], datasets: [{ label: 'Revenue', data: revenues.length ? revenues : [0], borderColor: '#2C5282', fill: true, backgroundColor: 'rgba(44, 82, 130, 0.15)' }] },
+        options: { ...chartDefaults, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+}
+{% endif %}
+{% if show_operations %}
+if (document.getElementById('orderTypeChart')) {
+    new Chart(document.getElementById('orderTypeChart'), {
+        type: 'doughnut',
+        data: { labels: ['Survey', 'Installation', 'Complaint', 'Maintenance'], datasets: [{ data: [{{ survey_count }}, {{ install_count }}, {{ complaint_count }}, {{ maintenance_count }}], backgroundColor: ['#2C5282', '#28A745', '#FFC107', '#DC3545'] }] },
+        options: { ...chartDefaults, plugins: { legend: { position: 'right' } } }
+    });
+}
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Quotations — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Quotation Management</h1>
+    {% if can_edit %}
+    <a href="{% url 'quotation_create' %}" class="btn btn-primary">+ New Quotation</a>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+    <form method="get" class="form-row" style="align-items:flex-end;">
+        <div class="form-group" style="margin:0;">
+            <label>Search</label>
+            {{ search_form.q }}
+        </div>
+        <div class="form-group" style="margin:0;">
+            <label>Client</label>
+            {{ search_form.client }}
+        </div>
+        <div class="form-group" style="margin:0;">
+            <label>Status</label>
+            {{ search_form.status }}
+        </div>
+        <div class="form-group" style="margin:0;">
+            <label>From</label>
+            {{ search_form.date_from }}
+        </div>
+        <div class="form-group" style="margin:0;">
+            <label>To</label>
+            {{ search_form.date_to }}
+        </div>
+        <div>
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            <a href="{% url 'quotation_list' %}" class="btn btn-secondary btn-sm">Reset</a>
+        </div>
+    </form>
+</div>
+
+<div class="filter-bar">
+    <a href="{% url 'proposal_template_list' %}">Proposal Templates</a>
+    <a href="{% url 'covering_letter_settings' %}">Covering Letter Settings</a>
+    <a href="{% url 'quotation_settings' %}">Quotation Settings</a>
+    {% if show_nav_company_settings %}<a href="{% url 'company_settings' %}">Company Settings</a>{% endif %}
+    <a href="{% url 'service_rate_list' %}">Service Rate Card</a>
+    <a href="{% url 'material_rate_list' %}">Material Rate Card</a>
+    <a href="{% url 'rate_audit_list' %}">Rate Audit History</a>
+</div>
+
+<div class="ioms-table-wrap">
+    <table class="ioms-table">
+        <thead>
+            <tr>
+                <th>Quotation #</th>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Grand Total</th>
+                <th>Order</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for q in quotations %}
+            <tr>
+                <td><a href="{% url 'quotation_detail' q.pk %}">{{ q.quotation_number }}</a></td>
+                <td>{{ q.quotation_date }}</td>
+                <td>{{ q.client.name }}</td>
+                <td>{{ q.site_location|truncatewords:8 }}</td>
+                <td><span class="badge badge-progress">{{ q.get_status_display }}</span></td>
+                <td><strong>₹{{ q.grand_total }}</strong></td>
+                <td>{% if q.converted_order %}<a href="{% url 'order_detail' q.converted_order_id %}">{{ q.converted_order.order_no }}</a>{% else %}—{% endif %}</td>
+                <td>
+                    <a href="{% url 'quotation_detail' q.pk %}" class="btn btn-sm btn-primary">View</a>
+                    <a href="{% url 'quotation_pdf' q.pk %}" class="btn btn-sm btn-secondary" target="_blank">PDF</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="empty-state">No quotations found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

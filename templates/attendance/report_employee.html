@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Employee Attendance Summary — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Employee Attendance Summary</h1>
+    <a href="{% url 'attendance_dashboard' %}" class="btn btn-secondary">Back</a>
+</div>
+
+<form method="get" class="card" style="margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;align-items:end;">
+        <div>
+            <label>Employee</label>
+            <select name="employee" class="form-group" style="width:100%;padding:10px;">
+                <option value="">Select employee</option>
+                {% for e in employees %}
+                <option value="{{ e.pk }}" {% if selected_employee and selected_employee.pk == e.pk %}selected{% endif %}>{{ e.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div><label>Month</label><input type="number" name="month" min="1" max="12" value="{{ month }}" style="width:100%;padding:10px;"></div>
+        <div><label>Year</label><input type="number" name="year" value="{{ year }}" style="width:100%;padding:10px;"></div>
+        <button type="submit" class="btn btn-primary">View</button>
+    </div>
+</form>
+
+{% if summary %}
+<div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px;margin-bottom:20px;">
+    <div class="card" style="text-align:center;padding:16px;"><strong style="font-size:1.4rem;color:#007bff;">{{ summary.attendance_percentage }}%</strong><br>Monthly %</div>
+    <div class="card" style="text-align:center;padding:16px;"><strong>{{ summary.present }}</strong><br>Present</div>
+    <div class="card" style="text-align:center;padding:16px;"><strong>{{ summary.half_day }}</strong><br>Half Day</div>
+    <div class="card" style="text-align:center;padding:16px;"><strong>{{ summary.absent }}</strong><br>Absent</div>
+    <div class="card" style="text-align:center;padding:16px;"><strong>{{ summary.leave }}</strong><br>Leave</div>
+</div>
+
+<h3>{{ summary.employee.username }} — {{ month }}/{{ year }}</h3>
+<table>
+    <tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Hours</th><th>Location</th></tr>
+    {% for r in summary.records %}
+    <tr>
+        <td>{{ r.attendance_date }}</td>
+        <td>{{ r.get_status_display }}</td>
+        <td>{{ r.check_in_time|default:"—" }}</td>
+        <td>{{ r.check_out_time|default:"—" }}</td>
+        <td>{{ r.working_hours|default:"—" }}</td>
+        <td>{{ r.location|truncatechars:30|default:"—" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">No records this month.</td></tr>
+    {% endfor %}
+</table>
+{% endif %}
+{% endblock %}

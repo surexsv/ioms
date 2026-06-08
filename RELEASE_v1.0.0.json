@@ -1,0 +1,26 @@
+{
+  "product": "Infomates Operations Management System",
+  "short_name": "IOMS",
+  "version": "1.0.0",
+  "release_date": "2026-06-04",
+  "status": "stable",
+  "workspace": "E:\\Infomates_Development\\infomates_oms",
+  "ui": {
+    "sidebar_label": "IOMS",
+    "center_header_title": "Infomates Operations Management System",
+    "theme_primary": "#0F2D52"
+  },
+  "modules": [
+    "accounts",
+    "clients",
+    "orders",
+    "wcr",
+    "boq",
+    "billing",
+    "attendance",
+    "quotations",
+    "dashboard"
+  ],
+  "git_tag": "v1.0.0",
+  "git_commit_message": "Release IOMS v1.0.0 — full OMS with quotations and finalized UI shell"
+}

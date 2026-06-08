@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Submit WCR — Infomates Operations Management System{% endblock %}
+{% block content %}
+{% with t='div' %}
+<{{ t }} class="page-header">
+    <h1>Submit Work Completion Report</h1>
+    <a href="{% url 'wcr_list' %}" class="btn btn-secondary">Back</a>
+</{{ t }}>
+<{{ t }} class="card" style="max-width:700px;">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for field in form %}
+        {% if field.name != 'authorized_signatory_name' and field.name != 'authorized_signatory_designation' and field.name != 'signature_image' %}
+        <{{ t }} class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<span style="color:#dc3545;">{{ field.errors.0 }}</span>{% endif %}
+        </{{ t }}>
+        {% endif %}
+        {% endfor %}
+        {% include 'company_settings/_signatory_form_fields.html' %}
+        <button type="submit" class="btn btn-primary">Submit WCR</button>
+    </form>
+</{{ t }}>
+{% endwith %}
+{% endblock %}

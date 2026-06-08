@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Create Order — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Create Order</h1>
+    <a href="{% url 'order_list' %}" class="btn btn-secondary">Back</a>
+</div>
+<p style="color:#6c757d;margin-bottom:16px;">Enter order details only. Scheduling and engineer assignment are done separately after the order is created.</p>
+<div class="card" style="max-width:760px;">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-row">
+            <div class="form-group">{{ form.client.label_tag }}{{ form.client }}</div>
+            <div class="form-group">{{ form.order_date.label_tag }}{{ form.order_date }}</div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">{{ form.order_type.label_tag }}{{ form.order_type }}</div>
+            <div class="form-group">{{ form.priority.label_tag }}{{ form.priority }}</div>
+        </div>
+        <div class="form-group">{{ form.project_site_name.label_tag }}{{ form.project_site_name }}</div>
+        <div class="form-group">{{ form.site_address.label_tag }}{{ form.site_address }}</div>
+        <div class="form-group">{{ form.description.label_tag }}{{ form.description }}</div>
+        <div class="form-group">{{ form.expected_completion_date.label_tag }}{{ form.expected_completion_date }}</div>
+        <div class="form-group">{{ form.remarks.label_tag }}{{ form.remarks }}</div>
+
+        <h4 style="margin-top:20px;">Attachments (optional)</h4>
+        {{ attachment_formset.management_form }}
+        {% for f in attachment_formset %}
+        <div class="form-row" style="margin-bottom:8px;">
+            <div class="form-group">{{ f.file.label_tag }}{{ f.file }}</div>
+            <div class="form-group">{{ f.caption.label_tag }}{{ f.caption }}</div>
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary">Save Order</button>
+    </form>
+</div>
+{% endblock %}

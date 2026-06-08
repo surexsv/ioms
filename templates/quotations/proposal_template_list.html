@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Proposal Templates — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Proposal Templates</h1>
+    {% if can_manage %}
+    <a href="{% url 'proposal_template_create' %}" class="btn btn-primary">+ Create Template</a>
+    {% endif %}
+</div>
+
+<div class="filter-bar">
+    <a href="{% url 'covering_letter_settings' %}">Covering Letter Settings</a>
+    <a href="{% url 'quotation_settings' %}">Quotation Settings</a>
+    {% if show_nav_company_settings %}<a href="{% url 'company_settings' %}">Company Settings</a>{% endif %}
+</div>
+
+<div class="ioms-table-wrap">
+    <table class="ioms-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Subject</th>
+                <th>Default</th>
+                <th>Updated</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in templates %}
+            <tr>
+                <td><strong>{{ t.name }}</strong></td>
+                <td>{{ t.subject|truncatewords:12 }}</td>
+                <td>{% if t.is_default %}<span class="badge badge-success">Default</span>{% else %}—{% endif %}</td>
+                <td>{{ t.updated_at|date:"d M Y" }}</td>
+                <td>
+                    {% if can_manage %}
+                    <a href="{% url 'proposal_template_edit' t.pk %}" class="btn btn-sm btn-warning">Edit</a>
+                    <a href="{% url 'proposal_template_duplicate' t.pk %}" class="btn btn-sm btn-secondary">Duplicate</a>
+                    {% if not t.is_default %}
+                    <a href="{% url 'proposal_template_set_default' t.pk %}" class="btn btn-sm btn-primary">Set Default</a>
+                    <a href="{% url 'proposal_template_delete' t.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                    {% endif %}
+                    {% else %}
+                    <span class="text-muted">View only</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="empty-state">No templates found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

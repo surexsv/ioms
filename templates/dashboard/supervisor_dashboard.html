@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Supervisor Dashboard — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="ioms-page-header">
+    <div>
+        <h1>Supervisor Dashboard</h1>
+        <p style="margin:6px 0 0;color:var(--ioms-text-muted);">Team overview &amp; WCR approvals</p>
+    </div>
+</div>
+
+<div class="ioms-kpi-grid">
+    <div class="ioms-kpi"><div class="value">{{ total_team_orders }}</div><div class="label">Team Orders</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ in_progress_count }}</div><div class="label">In Progress</div></div>
+    <div class="ioms-kpi"><div class="value text-primary">{{ wcr_pending_count }}</div><div class="label">WCR Pending</div></div>
+    <div class="ioms-kpi"><div class="value text-danger">{{ overdue_count }}</div><div class="label">Overdue</div></div>
+</div>
+
+{% if pending_wcrs %}
+<div class="card">
+    <h3>WCR Pending Approval</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Order</th><th>Client</th><th>Submitted By</th><th>Date</th><th></th></tr></thead>
+            <tbody>
+                {% for wcr in pending_wcrs %}
+                <tr>
+                    <td>#{{ wcr.order.order_id }}</td>
+                    <td>{{ wcr.order.client.name }}</td>
+                    <td>{{ wcr.submitted_by|default:"—" }}</td>
+                    <td>{{ wcr.submitted_date|date:"d M Y" }}</td>
+                    <td><a href="{% url 'approve_wcr' wcr.pk %}" class="btn btn-sm btn-success">Approve</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Field Team Workload</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Engineer</th><th>Assigned</th><th>In Progress</th></tr></thead>
+            <tbody>
+                {% for e in team_stats %}
+                <tr>
+                    <td>{{ e.name }}</td>
+                    <td>{{ e.assigned }}</td>
+                    <td>{{ e.in_progress }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3">No field staff registered.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Recent Team Schedules</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Schedule</th><th>Order</th><th>Client</th><th>Engineer(s)</th><th>Status</th><th>End Date</th><th></th></tr></thead>
+            <tbody>
+                {% for schedule in recent_orders %}
+                <tr>
+                    <td>{{ schedule.schedule_number }}</td>
+                    <td>{{ schedule.order.order_no|default:schedule.order.order_id }}</td>
+                    <td>{{ schedule.order.client.name }}</td>
+                    <td>{{ schedule.engineer_names }}</td>
+                    <td>{{ schedule.get_status_display }}</td>
+                    <td>{{ schedule.scheduled_end_date }}</td>
+                    <td><a href="{% url 'order_detail' schedule.order.pk %}" class="btn btn-sm btn-primary">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

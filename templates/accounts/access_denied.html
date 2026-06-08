@@ -1,0 +1,155 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <title>{{ page_title|default:"Access Restricted" }} — IOMS</title>
+    <link rel="stylesheet" href="{% static 'css/ioms.css' %}">
+    <style>
+        body.ioms-access-denied {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #F4F6F9;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .access-header {
+            background: #0F2D52;
+            color: #fff;
+            padding: 20px 24px;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(15, 45, 82, 0.2);
+        }
+        .access-header .brand-logo {
+            background: #fff;
+            border-radius: 8px;
+            padding: 10px 14px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .access-header .brand-logo img {
+            max-width: min(220px, 80vw);
+            height: auto;
+            display: block;
+        }
+        .access-header .system-name {
+            font-size: 0.95rem;
+            opacity: 0.92;
+            letter-spacing: 0.02em;
+        }
+        .access-main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 20px;
+        }
+        .access-card {
+            background: #fff;
+            border-radius: 12px;
+            max-width: 520px;
+            width: 100%;
+            padding: 40px 36px;
+            text-align: center;
+            box-shadow: 0 4px 24px rgba(15, 45, 82, 0.12);
+            border-top: 4px solid #DC3545;
+        }
+        .access-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            background: rgba(220, 53, 69, 0.1);
+            color: #DC3545;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+        .access-card h1 {
+            color: #0F2D52;
+            margin: 0 0 16px;
+            font-size: 1.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .access-card p {
+            color: #333;
+            margin: 0 0 12px;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+        .access-card .hint {
+            color: #6c757d;
+            font-size: 0.92rem;
+            margin-bottom: 28px;
+        }
+        .access-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        .btn-access-primary {
+            display: inline-block;
+            padding: 12px 28px;
+            background: #2C5282;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .btn-access-primary:hover { background: #1F4E79; color: #fff; }
+        .btn-access-secondary {
+            display: inline-block;
+            padding: 12px 28px;
+            background: #fff;
+            color: #0F2D52;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            border: 1px solid #ced4da;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .btn-access-secondary:hover { background: #f8f9fa; }
+        @media (max-width: 480px) {
+            .access-card { padding: 32px 22px; }
+            .access-actions { flex-direction: column; }
+            .btn-access-primary, .btn-access-secondary { width: 100%; }
+        }
+    </style>
+</head>
+<body class="ioms-access-denied">
+    <header class="access-header">
+        <div class="brand-logo">
+            <img src="{% static 'branding/infomates_logo.png' %}" alt="Infomates Techno Solutions">
+        </div>
+        <div class="system-name">Infomates Operations Management System</div>
+    </header>
+
+    <main class="access-main">
+        <div class="access-card">
+            <div class="access-icon" aria-hidden="true">!</div>
+            <h1>{{ page_title|default:"Access Restricted" }}</h1>
+            <p>{{ message|default:"You do not have permission to access this page or perform this action." }}</p>
+            <p class="hint">Please contact your administrator if access is required.</p>
+            <div class="access-actions">
+                <a href="{% url dashboard_url_name %}" class="btn-access-primary">Return to Dashboard</a>
+                {% if show_go_back and go_back_url %}
+                <a href="{{ go_back_url }}" class="btn-access-secondary">Go Back</a>
+                {% else %}
+                <button type="button" class="btn-access-secondary" onclick="history.back();">Go Back</button>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</body>
+</html>

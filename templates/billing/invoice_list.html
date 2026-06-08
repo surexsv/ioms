@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Billing — Infomates Operations Management System{% endblock %}
+{% block content %}
+{% with t='div' %}
+<{{ t }} class="page-header">
+    <h1>Invoices</h1>
+    <a href="{% url 'create_invoice' %}" class="btn btn-primary">+ Create Invoice</a>
+</{{ t }}>
+<{{ t }} class="filter-bar">
+    <a href="{% url 'invoice_list' %}" class="{% if not current_status %}active{% endif %}">All</a>
+    <a href="?status=PENDING" class="{% if current_status == 'PENDING' %}active{% endif %}">Pending</a>
+    <a href="?status=RECEIVED" class="{% if current_status == 'RECEIVED' %}active{% endif %}">Paid</a>
+</{{ t }}>
+{% endwith %}
+<table>
+    <tr>
+        <th>Invoice #</th>
+        <th>Order</th>
+        <th>Client</th>
+        <th>Amount</th>
+        <th>GST</th>
+        <th>Total</th>
+        <th>Due</th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+    {% for inv in invoices %}
+    <tr>
+        <td>{{ inv.invoice_number }}</td>
+        <td>#{{ inv.order.order_id }}</td>
+        <td>{{ inv.order.client.name }}</td>
+        <td>₹{{ inv.amount }}</td>
+        <td>₹{{ inv.gst }}</td>
+        <td><strong>₹{{ inv.total }}</strong></td>
+        <td>{{ inv.due_date }}</td>
+        <td>{% if inv.payment_status == 'RECEIVED' %}<span class="badge badge-approved">Paid</span>{% else %}<span class="badge badge-pending">Pending</span>{% endif %}</td>
+        <td>
+            <a href="{% url 'invoice_pdf' inv.pk %}" class="btn btn-sm btn-primary" target="_blank">PDF</a>
+            {% if inv.payment_status == 'PENDING' %}
+            <a href="{% url 'mark_paid' inv.pk %}" class="btn btn-sm btn-success">Mark Paid</a>
+            {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="9" class="empty-state">No invoices yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

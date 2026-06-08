@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block title %}{{ quotation.quotation_number }} — Quotations{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ quotation.quotation_number }}</h1>
+    <div>
+        <a href="{% url 'quotation_pdf' quotation.pk %}" class="btn btn-primary" target="_blank">Proposal PDF</a>
+        <a href="{% url 'covering_letter_preview' quotation.pk %}" class="btn btn-secondary">Covering Letter</a>
+        <a href="{% url 'quotation_print' quotation.pk %}" class="btn btn-secondary" target="_blank">Print Preview</a>
+        {% if can_edit %}<a href="{% url 'quotation_edit' quotation.pk %}" class="btn btn-warning">Edit</a>{% endif %}
+    </div>
+</div>
+
+<div class="detail-grid card">
+    <div class="detail-item"><label>Status</label><p><span class="badge badge-progress">{{ quotation.get_status_display }}</span></p></div>
+    <div class="detail-item"><label>Date</label><p>{{ quotation.quotation_date }}</p></div>
+    <div class="detail-item"><label>Valid Until</label><p>{{ quotation.valid_until }}</p></div>
+    <div class="detail-item"><label>Client</label><p>{{ quotation.client.name }}</p></div>
+    <div class="detail-item"><label>Contact</label><p>{{ quotation.contact_person }}</p></div>
+    {% if quotation.reference_number %}
+    <div class="detail-item"><label>Reference</label><p>{{ quotation.reference_number }}</p></div>
+    {% endif %}
+    {% if quotation.proposal_template %}
+    <div class="detail-item"><label>Template</label><p>{{ quotation.proposal_template.name }}</p></div>
+    {% endif %}
+    <div class="detail-item"><label>Created By</label><p>{{ quotation.created_by|default:"—" }}</p></div>
+    {% if quotation.approved_by %}
+    <div class="detail-item"><label>Approved By</label><p>{{ quotation.approved_by }}</p></div>
+    {% endif %}
+    {% if quotation.converted_order %}
+    <div class="detail-item"><label>Order</label><p><a href="{% url 'order_detail' quotation.converted_order_id %}">{{ quotation.converted_order.order_no }}</a></p></div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Subject &amp; Scope</h3>
+    <p><strong>{{ quotation.subject }}</strong></p>
+    <p>{{ quotation.site_location }}</p>
+    <p style="white-space:pre-wrap;">{{ quotation.scope_of_work }}</p>
+    {% if quotation.remarks %}<p><em>Remarks:</em> {{ quotation.remarks }}</p>{% endif %}
+</div>
+
+<div class="card">
+    <h3>Materials</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>GST%</th><th>Total</th></tr></thead>
+            <tbody>
+                {% for line in material_lines %}
+                <tr>
+                    <td>{{ line.description }}</td>
+                    <td>{{ line.quantity }}</td>
+                    <td>{{ line.unit }}</td>
+                    <td>₹{{ line.unit_rate }}</td>
+                    <td>{{ line.gst_percent }}%</td>
+                    <td>₹{{ line.line_total }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6">No material lines.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Services</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>GST%</th><th>Total</th></tr></thead>
+            <tbody>
+                {% for line in service_lines %}
+                <tr>
+                    <td>{{ line.description }}</td>
+                    <td>{{ line.quantity }}</td>
+                    <td>{{ line.unit }}</td>
+                    <td>₹{{ line.unit_rate }}</td>
+                    <td>{{ line.gst_percent }}%</td>
+                    <td>₹{{ line.line_total }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6">No service lines.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="ioms-kpi-grid" style="max-width:600px;">
+    <div class="ioms-kpi"><div class="value">₹{{ quotation.subtotal }}</div><div class="label">Subtotal</div></div>
+    <div class="ioms-kpi"><div class="value">₹{{ quotation.gst_total }}</div><div class="label">GST Total</div></div>
+    <div class="ioms-kpi"><div class="value">₹{{ quotation.grand_total }}</div><div class="label">Grand Total</div></div>
+</div>
+
+{% if quotation.include_covering_letter %}
+<div class="card">
+    <h3>Covering Letter</h3>
+    <p><strong>Subject:</strong> {{ cl.subject }}</p>
+    <div style="white-space:pre-wrap;line-height:1.5;font-size:0.95rem;">
+        {% for para in cl.body_paragraphs %}{{ para }}
+
+{% endfor %}
+    </div>
+    <p style="margin-top:12px;">
+        <a href="{% url 'covering_letter_preview' quotation.pk %}" class="btn btn-sm btn-secondary">Preview Letter</a>
+        <a href="{% url 'covering_letter_print' quotation.pk %}" class="btn btn-sm btn-secondary" target="_blank">Print Letter</a>
+    </p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Proposal PDF Options</h3>
+    <p>
+        Covering Letter: {% if quotation.include_covering_letter %}Yes{% else %}No{% endif %} |
+        Terms: {% if quotation.include_terms %}Yes{% else %}No{% endif %} |
+        Seal: {% if quotation.include_company_seal %}Yes{% else %}No{% endif %} |
+        Signature: {% if quotation.include_signature %}Yes{% else %}No{% endif %}
+    </p>
+</div>
+
+<div class="card">
+    <h3>Terms &amp; Conditions</h3>
+    <div style="white-space:pre-wrap;line-height:1.5;font-size:0.95rem;">{{ doc.terms_text }}</div>
+</div>
+
+{% if doc.bank_details %}
+<div class="card">
+    <h3>Company Bank Details</h3>
+    <div style="white-space:pre-wrap;line-height:1.5;font-size:0.95rem;">{{ doc.bank_details }}</div>
+</div>
+{% endif %}
+
+{% if doc.footer_notes %}
+<div class="card">
+    <h3>Footer Notes</h3>
+    <div style="white-space:pre-wrap;line-height:1.5;font-size:0.95rem;">{{ doc.footer_notes }}</div>
+</div>
+{% endif %}
+
+{% if can_edit or can_approve %}
+<div class="card">
+    <h3>Workflow</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        {% if quotation.status == 'DRAFT' and can_edit %}
+        <a href="{% url 'quotation_submit_review' quotation.pk %}" class="btn btn-primary btn-sm">Submit for Review</a>
+        {% endif %}
+        {% if quotation.status == 'UNDER_REVIEW' and can_approve %}
+        <a href="{% url 'quotation_approve' quotation.pk %}" class="btn btn-success btn-sm">Approve</a>
+        {% endif %}
+        {% if quotation.status == 'APPROVED' and can_approve %}
+        <a href="{% url 'quotation_mark_sent' quotation.pk %}" class="btn btn-primary btn-sm">Mark as Sent</a>
+        {% endif %}
+        {% if quotation.status == 'SENT' and can_approve %}
+        <a href="{% url 'quotation_accept' quotation.pk %}" class="btn btn-success btn-sm">Accepted</a>
+        <a href="{% url 'quotation_reject' quotation.pk %}" class="btn btn-danger btn-sm">Rejected</a>
+        {% endif %}
+        {% if quotation.status == 'REJECTED' and can_edit %}
+        <a href="{% url 'quotation_edit' quotation.pk %}" class="btn btn-warning btn-sm">Revise (Edit)</a>
+        {% endif %}
+        {% if can_edit and not quotation.converted_order %}
+        {% if quotation.status == 'ACCEPTED' or quotation.status == 'APPROVED' or quotation.status == 'SENT' %}
+        <a href="{% url 'quotation_convert_order' quotation.pk %}" class="btn btn-success">Convert To Order</a>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

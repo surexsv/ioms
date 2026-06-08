@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+    <a href="{% url 'attendance_list' %}" class="btn btn-secondary">Back</a>
+</div>
+<div class="card" style="max-width:640px;">
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<span style="color:#dc3545;font-size:0.85rem;">{{ field.errors.0 }}</span>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+</div>
+{% endblock %}

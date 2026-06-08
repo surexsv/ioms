@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Dashboard — IOMS{% endblock %}
+{% block extra_css %}
+<style>
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .kpi { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); text-align: center; }
+    .kpi .value { font-size: 1.75rem; font-weight: 700; color: #1a1a2e; }
+    .kpi .label { font-size: 0.85rem; color: #888; margin-top: 4px; }
+    .kpi.present .value { color: #28a745; }
+    .kpi.absent .value { color: #dc3545; }
+    .kpi.pct .value { color: #007bff; }
+    .report-links { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    @media (max-width: 600px) { .report-links a { flex: 1 1 100%; text-align: center; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Attendance Dashboard</h1>
+    <div>
+        <a href="{% url 'attendance_create' %}" class="btn btn-primary">+ Add Attendance</a>
+        <a href="{% url 'attendance_list' %}" class="btn btn-secondary">All Records</a>
+    </div>
+</div>
+
+<form method="get" class="filter-bar" style="margin-bottom:20px;">
+    <label style="font-weight:600;margin-right:8px;">Date:</label>
+    <input type="date" name="date" value="{{ report_date|date:'Y-m-d' }}" style="padding:8px;border-radius:6px;border:1px solid #ddd;">
+    <button type="submit" class="btn btn-sm btn-primary">View</button>
+</form>
+
+<div class="kpi-grid">
+    <div class="kpi present">
+        <div class="value">{{ stats.present }}</div>
+        <div class="label">Present Today</div>
+    </div>
+    <div class="kpi absent">
+        <div class="value">{{ stats.absent }}</div>
+        <div class="label">Absent / Unmarked</div>
+    </div>
+    <div class="kpi">
+        <div class="value">{{ stats.total_employees }}</div>
+        <div class="label">Total Employees</div>
+    </div>
+    <div class="kpi pct">
+        <div class="value">{{ stats.attendance_percentage }}%</div>
+        <div class="label">Attendance %</div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+    <p style="margin:0;color:#666;">
+        Half Day: {{ stats.half_day }} &nbsp;|&nbsp; Leave: {{ stats.leave }} &nbsp;|&nbsp;
+        Marked: {{ stats.marked }} / {{ stats.total_employees }}
+    </p>
+</div>
+
+<div class="report-links">
+    <a href="{% url 'attendance_report_daily' %}?date={{ report_date|date:'Y-m-d' }}" class="btn btn-primary">Daily Report</a>
+    <a href="{% url 'attendance_report_monthly' %}" class="btn btn-primary">Monthly Report</a>
+    <a href="{% url 'attendance_report_employee' %}" class="btn btn-primary">Employee Summary</a>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Recent Attendance</h3>
+    <div style="overflow-x:auto;">
+        <table>
+            <tr>
+                <th>Employee</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Hours</th>
+                <th>Location</th>
+                <th></th>
+            </tr>
+            {% for r in recent %}
+            <tr>
+                <td>{{ r.employee.get_full_name|default:r.employee.username }}</td>
+                <td>{{ r.attendance_date }}</td>
+                <td>
+                    {% if r.status == 'PRESENT' %}<span class="badge badge-approved">Present</span>
+                    {% elif r.status == 'ABSENT' %}<span class="badge badge-pending">Absent</span>
+                    {% elif r.status == 'HALF_DAY' %}<span class="badge badge-progress">Half Day</span>
+                    {% else %}<span class="badge">{{ r.get_status_display }}</span>{% endif %}
+                </td>
+                <td>{{ r.check_in_time|default:"—" }}</td>
+                <td>{{ r.check_out_time|default:"—" }}</td>
+                <td>{{ r.working_hours|default:"—" }}</td>
+                <td>{{ r.location|truncatechars:30|default:"—" }}</td>
+                <td><a href="{% url 'attendance_edit' r.pk %}" class="btn btn-sm btn-secondary">Edit</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="empty-state">No records yet.</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}WCR — Infomates Operations Management System{% endblock %}
+{% block content %}
+{% with t='div' %}
+<{{ t }} class="page-header">
+    <h1>Work Completion Reports</h1>
+    <a href="{% url 'create_wcr' %}" class="btn btn-primary">+ Submit WCR</a>
+</{{ t }}>
+<{{ t }} class="filter-bar">
+    <a href="{% url 'wcr_list' %}" class="{% if not pending_only %}active{% endif %}">All</a>
+    <a href="?pending=1" class="{% if pending_only %}active{% endif %}">Pending Approval</a>
+</{{ t }}>
+{% endwith %}
+<table>
+    <tr>
+        <th>WCR #</th>
+        <th>Order</th>
+        <th>Client</th>
+        <th>Submitted By</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th></th>
+    </tr>
+    {% for wcr in wcrs %}
+    <tr>
+        <td>{{ wcr.wcr_number|default:"—" }}</td>
+        <td>{{ wcr.order.order_no|default:wcr.order.order_id }}</td>
+        <td>{{ wcr.order.client.name }}</td>
+        <td>{{ wcr.submitted_by|default:"—" }}</td>
+        <td>{{ wcr.submitted_date|date:"d M Y" }}</td>
+        <td>{% if wcr.approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-pending">Pending</span>{% endif %}</td>
+        <td>
+            {% if not wcr.approved and can_approve %}
+            <a href="{% url 'approve_wcr' wcr.pk %}" class="btn btn-sm btn-success">Approve</a>
+            {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="empty-state">No WCRs yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

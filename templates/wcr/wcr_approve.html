@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Approve WCR — Infomates Operations Management System{% endblock %}
+{% block content %}
+{% with t='div' %}
+<{{ t }} class="card" style="max-width:600px;">
+    <h2>Approve WCR — Order #{{ wcr.order.order_id }}</h2>
+    <p><strong>Client:</strong> {{ wcr.order.client.name }}</p>
+    <p><strong>Work:</strong> {{ wcr.work_description }}</p>
+    {% if wcr.material_used %}<p><strong>Materials:</strong> {{ wcr.material_used }}</p>{% endif %}
+    <form method="post" style="margin-top:20px;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Confirm Approval</button>
+        <a href="{% url 'wcr_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</{{ t }}>
+{% endwith %}
+{% endblock %}

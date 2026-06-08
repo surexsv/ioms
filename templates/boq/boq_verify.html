@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Verify BOQ — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="card" style="max-width:560px;">
+    <h2>Verify BOQ {{ boq.boq_number }}</h2>
+    <p>Once verified, this BOQ can be attached to invoices. Quantities and descriptions will flow to billing; rates are entered on the invoice.</p>
+    <p><strong>{{ boq.lines.count }}</strong> line item(s) for order {{ boq.order.order_no|default:boq.order.order_id }} — {{ boq.order.client.name }}</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Confirm Verification</button>
+        <a href="{% url 'boq_detail' boq.pk %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

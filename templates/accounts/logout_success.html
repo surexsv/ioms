@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <title>Logged Out — Infomates Operations Management System</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/ioms.css' %}">
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #F4F6F9;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .logout-card {
+            background: #fff;
+            padding: 48px 40px;
+            border-radius: 12px;
+            max-width: 440px;
+            text-align: center;
+            box-shadow: 0 4px 24px rgba(15, 45, 82, 0.12);
+        }
+        .logout-card h1 { color: #0F2D52; margin: 0 0 12px; font-size: 1.5rem; }
+        .logout-card p { color: #6c757d; margin: 0 0 8px; line-height: 1.5; }
+        .logout-card .brand { color: #0F2D52; font-weight: 700; margin: 16px 0 28px; }
+        .btn-login {
+            display: inline-block;
+            padding: 12px 32px;
+            background: #2C5282;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .btn-login:hover { background: #1F4E79; }
+        .check-icon { font-size: 3rem; color: #28A745; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <div class="logout-card">
+        <div class="check-icon">&#10003;</div>
+        <h1>You have been successfully logged out.</h1>
+        <p>Thank you for using</p>
+        <p class="brand">Infomates Operations Management System</p>
+        <a href="{% url 'login' %}" class="btn-login">Login Again</a>
+    </div>
+</body>
+</html>

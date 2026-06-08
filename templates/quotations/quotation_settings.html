@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Quotation Master Settings — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Quotation Master Settings</h1>
+    <a href="{% url 'quotation_list' %}" class="btn btn-secondary">Back to Quotations</a>
+</div>
+
+{% if not can_edit %}
+<div class="card" style="margin-bottom:16px;background:#fff8e6;border-left:4px solid #f0ad4e;">
+    <p style="margin:0;">You have <strong>view-only</strong> access. Only Directors and Superusers can edit these settings.</p>
+</div>
+{% endif %}
+
+<div class="card">
+    {% if settings_obj.updated_by %}
+    <p style="color:#6c757d;font-size:0.9rem;margin-top:0;">
+        Last updated {{ settings_obj.updated_at|date:"d M Y, H:i" }} by {{ settings_obj.updated_by }}
+    </p>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Terms &amp; Conditions</label>
+            {{ form.terms_and_conditions }}
+            {% if form.terms_and_conditions.errors %}<div style="color:#dc3545;">{{ form.terms_and_conditions.errors }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+            <label>Payment Terms</label>
+            {{ form.payment_terms }}
+            {% if form.payment_terms.errors %}<div style="color:#dc3545;">{{ form.payment_terms.errors }}</div>{% endif %}
+        </div>
+        <div class="form-row">
+            <div class="form-group" style="flex:2;">
+                <label>Validity Period (wording)</label>
+                {{ form.validity_period }}
+                {% if form.validity_period.errors %}<div style="color:#dc3545;">{{ form.validity_period.errors }}</div>{% endif %}
+            </div>
+            <div class="form-group" style="flex:1;max-width:180px;">
+                <label>Default validity (days)</label>
+                {{ form.validity_days }}
+                {% if form.validity_days.errors %}<div style="color:#dc3545;">{{ form.validity_days.errors }}</div>{% endif %}
+                <small style="color:#6c757d;">Used for Valid Until on new quotations.</small>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Company Bank Details</label>
+            {{ form.bank_details }}
+            {% if form.bank_details.errors %}<div style="color:#dc3545;">{{ form.bank_details.errors }}</div>{% endif %}
+        </div>
+        <div class="form-group">
+            <label>Footer Notes</label>
+            {{ form.footer_notes }}
+            {% if form.footer_notes.errors %}<div style="color:#dc3545;">{{ form.footer_notes.errors }}</div>{% endif %}
+        </div>
+
+        {% if can_edit %}
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+        {% endif %}
+        <a href="{% url 'quotation_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

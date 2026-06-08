@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Delete {{ rate_type }} Rate{% endblock %}
+{% block content %}
+<div class="card" style="max-width:400px;">
+    <h3>Delete {{ rate_type }} Rate?</h3>
+    <p>{{ item }}</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="javascript:history.back()" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

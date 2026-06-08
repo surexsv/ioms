@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Orders — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Orders</h1>
+    {% if can_create %}<a href="{% url 'create_order' %}" class="btn btn-primary">+ Create Order</a>{% endif %}
+</div>
+<div class="filter-bar">
+    <a href="{% url 'order_list' %}" class="{% if not current_status %}active{% endif %}">All</a>
+    {% for code, label in status_choices %}
+    <a href="?status={{ code }}" class="{% if current_status == code %}active{% endif %}">{{ label }}</a>
+    {% endfor %}
+</div>
+<table>
+    <tr>
+        <th>Order #</th>
+        <th>Client</th>
+        <th>Site</th>
+        <th>Type</th>
+        <th>Schedule</th>
+        <th>Status</th>
+        <th>Expected</th>
+        <th></th>
+    </tr>
+    {% for order in orders %}
+    <tr>
+        <td>{{ order.order_no|default:order.order_id }}</td>
+        <td>{{ order.client.name }}</td>
+        <td>{{ order.display_site_name }}</td>
+        <td>{{ order.get_order_type_display }}</td>
+        <td>{% if order.has_schedule %}Yes{% else %}—{% endif %}</td>
+        <td>
+            {% if order.status == 'NEW' %}<span class="badge badge-new">New</span>
+            {% elif order.status == 'IN_PROGRESS' %}<span class="badge badge-progress">In Progress</span>
+            {% elif order.status == 'COMPLETED' %}<span class="badge badge-completed">Completed</span>
+            {% elif order.status == 'CLOSED' %}<span class="badge badge-closed">Closed</span>
+            {% else %}<span class="badge">{{ order.get_status_display }}</span>{% endif %}
+        </td>
+        <td>{{ order.expected_completion_date|date:"d M Y"|default:"—" }}</td>
+        <td><a href="{% url 'order_detail' order.pk %}" class="btn btn-sm btn-primary">View</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="8" class="empty-state">No orders found.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

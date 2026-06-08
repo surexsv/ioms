@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Check Out — IOMS{% endblock %}
+{% block content %}
+<div class="card" style="max-width:480px;margin:0 auto;">
+    <h2>Check Out</h2>
+    <p>Checked in at: <strong>{{ record.check_in_time }}</strong></p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning" style="width:100%;">Confirm Check Out</button>
+        <a href="{% url 'my_attendance' %}" class="btn btn-secondary" style="width:100%;margin-top:10px;text-align:center;">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,470 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} — Quotations{% endblock %}
+
+{% block extra_css %}
+
+<style>
+
+    .line-formset table { width:100%; margin-bottom:12px; }
+
+    .line-formset th { background:#0F2D52; color:#fff; padding:8px; font-size:0.8rem; }
+
+    .line-formset td { padding:6px; vertical-align:top; border-bottom:1px solid #eee; }
+
+    .line-formset input, .line-formset select, .line-formset textarea { width:100%; font-size:0.85rem; }
+
+    .cl-paragraph-row { display:flex; gap:8px; margin-bottom:10px; align-items:flex-start; }
+
+    .cl-paragraph-row textarea { flex:1; min-height:72px; resize:vertical; }
+
+    .cl-toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+
+    .pdf-options { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; margin-top:8px; }
+
+    .pdf-options label { display:flex; align-items:center; gap:8px; font-weight:500; }
+
+    .cl-meta-hint { font-size:0.85rem; color:#6c757d; margin-bottom:12px; }
+
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <h1>{{ title }}</h1>
+
+    {% if quotation %}<a href="{% url 'quotation_detail' quotation.pk %}" class="btn btn-secondary">Cancel</a>{% endif %}
+
+</div>
+
+
+
+<form method="post" id="quotationForm" enctype="multipart/form-data">
+
+    {% csrf_token %}
+
+    {{ form.covering_letter_body }}
+
+
+
+    <div class="card">
+
+        <h3>Quotation Details</h3>
+
+        <div class="form-row">
+
+            <div class="form-group">{{ form.quotation_date.label_tag }}{{ form.quotation_date }}</div>
+
+            <div class="form-group">{{ form.valid_until.label_tag }}{{ form.valid_until }}</div>
+
+        </div>
+
+        <div class="form-group">{{ form.client.label_tag }}{{ form.client }}</div>
+
+        <div class="form-row">
+
+            <div class="form-group">{{ form.contact_person.label_tag }}{{ form.contact_person }}</div>
+
+            <div class="form-group">{{ form.reference_number.label_tag }}{{ form.reference_number }}</div>
+
+        </div>
+
+        <div class="form-group">{{ form.site_location.label_tag }}{{ form.site_location }}</div>
+
+        <div class="form-group">{{ form.subject.label_tag }}{{ form.subject }}</div>
+
+        <div class="form-group">{{ form.scope_of_work.label_tag }}{{ form.scope_of_work }}</div>
+
+        <div class="form-group">{{ form.remarks.label_tag }}{{ form.remarks }}</div>
+
+    </div>
+
+
+
+    <div class="card">
+
+        <h3>Covering Letter</h3>
+
+        <p class="cl-meta-hint">
+
+            Client name, address, contact, project, quotation number, and date are auto-filled in preview and PDF.
+
+        </p>
+
+        <div class="form-row">
+
+            <div class="form-group">{{ form.proposal_template.label_tag }}{{ form.proposal_template }}</div>
+
+            <div class="form-group">{{ form.covering_letter_subject.label_tag }}{{ form.covering_letter_subject }}</div>
+
+        </div>
+
+
+
+        <div class="cl-toolbar">
+
+            <button type="button" class="btn btn-secondary btn-sm" id="addParagraphBtn">+ Add Paragraph</button>
+
+            {% if quotation %}
+
+            <a href="{% url 'covering_letter_preview' quotation.pk %}" class="btn btn-secondary btn-sm" target="_blank">Preview Letter</a>
+
+            {% endif %}
+
+            {% if can_manage_templates %}
+
+            <a href="{% url 'proposal_template_list' %}" class="btn btn-secondary btn-sm">Manage Templates</a>
+
+            {% endif %}
+
+        </div>
+
+
+
+        <div id="paragraphEditor">
+
+            {% for para in covering_letter_paragraphs %}
+
+            <div class="cl-paragraph-row">
+
+                <textarea name="covering_letter_paragraphs" class="cl-paragraph-input" rows="3">{{ para }}</textarea>
+
+                <button type="button" class="btn btn-danger btn-sm remove-paragraph" title="Remove paragraph">&times;</button>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+
+
+        <h4 style="margin-top:20px;">Proposal PDF Options</h4>
+
+        <div class="pdf-options">
+
+            <label>{{ form.include_covering_letter }} Include Covering Letter</label>
+
+            <label>{{ form.include_terms }} Include Terms &amp; Conditions</label>
+
+            <label>{{ form.include_company_seal }} Include Company Seal</label>
+
+            <label>{{ form.include_signature }} Include Signature</label>
+
+        </div>
+
+    </div>
+
+    {% include 'company_settings/_signatory_form_fields.html' %}
+
+    <div class="card">
+
+        <h3>Terms &amp; Conditions</h3>
+
+        <div class="form-group">{{ form.terms_and_conditions.label_tag }}{{ form.terms_and_conditions }}</div>
+
+    </div>
+
+
+
+    <div class="card line-formset">
+
+        <h3>Material Lines</h3>
+
+        {{ mat_formset.management_form }}
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Material</th><th>Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>GST%</th><th>Del</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for f in mat_formset %}
+
+                <tr class="mat-row">
+
+                    {{ f.id }}
+
+                    <td>{{ f.material_item }}</td>
+
+                    <td>{{ f.description }}</td>
+
+                    <td>{{ f.quantity }}</td>
+
+                    <td>{{ f.unit }}</td>
+
+                    <td>{{ f.unit_rate }}</td>
+
+                    <td>{{ f.gst_percent }}</td>
+
+                    <td>{% if mat_formset.can_delete %}{{ f.DELETE }}{% endif %}</td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+
+    <div class="card line-formset">
+
+        <h3>Service Lines</h3>
+
+        {{ svc_formset.management_form }}
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Service</th><th>Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>GST%</th><th>Del</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for f in svc_formset %}
+
+                <tr class="svc-row">
+
+                    {{ f.id }}
+
+                    <td>{{ f.service_item }}</td>
+
+                    <td>{{ f.description }}</td>
+
+                    <td>{{ f.quantity }}</td>
+
+                    <td>{{ f.unit }}</td>
+
+                    <td>{{ f.unit_rate }}</td>
+
+                    <td>{{ f.gst_percent }}</td>
+
+                    <td>{% if svc_formset.can_delete %}{{ f.DELETE }}{% endif %}</td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+
+    <button type="submit" class="btn btn-primary">Save Quotation</button>
+
+</form>
+
+{% endblock %}
+
+
+
+{% block extra_js %}
+
+<script>
+
+(function () {
+
+    function syncBodyField() {
+
+        var parts = [];
+
+        document.querySelectorAll('.cl-paragraph-input').forEach(function (ta) {
+
+            if (ta.value.trim()) parts.push(ta.value.trim());
+
+        });
+
+        var hidden = document.querySelector('[name="covering_letter_body"]');
+
+        if (hidden) hidden.value = parts.join('\n\n');
+
+    }
+
+
+
+    function bindRemove(btn) {
+
+        btn.addEventListener('click', function () {
+
+            var rows = document.querySelectorAll('.cl-paragraph-row');
+
+            if (rows.length <= 1) {
+
+                rows[0].querySelector('textarea').value = '';
+
+            } else {
+
+                btn.closest('.cl-paragraph-row').remove();
+
+            }
+
+            syncBodyField();
+
+        });
+
+    }
+
+
+
+    function addParagraph(value) {
+
+        var editor = document.getElementById('paragraphEditor');
+
+        var row = document.createElement('div');
+
+        row.className = 'cl-paragraph-row';
+
+        row.innerHTML = '<textarea name="covering_letter_paragraphs" class="cl-paragraph-input" rows="3"></textarea>'
+
+            + '<button type="button" class="btn btn-danger btn-sm remove-paragraph" title="Remove paragraph">&times;</button>';
+
+        row.querySelector('textarea').value = value || '';
+
+        editor.appendChild(row);
+
+        row.querySelector('textarea').addEventListener('input', syncBodyField);
+
+        bindRemove(row.querySelector('.remove-paragraph'));
+
+        syncBodyField();
+
+    }
+
+
+
+    document.querySelectorAll('.remove-paragraph').forEach(bindRemove);
+
+    document.querySelectorAll('.cl-paragraph-input').forEach(function (ta) {
+
+        ta.addEventListener('input', syncBodyField);
+
+    });
+
+    document.getElementById('addParagraphBtn').addEventListener('click', function () {
+
+        addParagraph('');
+
+    });
+
+
+
+    var templateSelect = document.querySelector('[name="proposal_template"]');
+
+    if (templateSelect) {
+
+        templateSelect.addEventListener('change', function () {
+
+            var id = this.value;
+
+            if (!id) return;
+
+            fetch('{% url "proposal_template_api" %}?id=' + id)
+
+                .then(function (r) { return r.json(); })
+
+                .then(function (data) {
+
+                    if (data.subject) {
+
+                        var subj = document.querySelector('[name="covering_letter_subject"]');
+
+                        if (subj) subj.value = data.subject;
+
+                    }
+
+                    var editor = document.getElementById('paragraphEditor');
+
+                    editor.innerHTML = '';
+
+                    (data.paragraphs || ['']).forEach(function (p) { addParagraph(p); });
+
+                    if (!data.paragraphs || !data.paragraphs.length) addParagraph('');
+
+                });
+
+        });
+
+    }
+
+
+
+    document.getElementById('quotationForm').addEventListener('submit', syncBodyField);
+
+
+
+    function bindRateSelect(select, kind) {
+
+        if (!select) return;
+
+        select.addEventListener('change', function () {
+
+            var id = this.value;
+
+            if (!id) return;
+
+            var row = this.closest('tr');
+
+            fetch('{% url "rate_card_api" %}?kind=' + kind + '&id=' + id)
+
+                .then(function (r) { return r.json(); })
+
+                .then(function (data) {
+
+                    if (data.description) row.querySelector('[name$="-description"]').value = data.description;
+
+                    if (data.unit) row.querySelector('[name$="-unit"]').value = data.unit;
+
+                    if (data.unit_rate) row.querySelector('[name$="-unit_rate"]').value = data.unit_rate;
+
+                    if (data.gst_percent) row.querySelector('[name$="-gst_percent"]').value = data.gst_percent;
+
+                });
+
+        });
+
+    }
+
+    document.querySelectorAll('.mat-row select[name$="-material_item"]').forEach(function (s) {
+
+        bindRateSelect(s, 'material');
+
+    });
+
+    document.querySelectorAll('.svc-row select[name$="-service_item"]').forEach(function (s) {
+
+        bindRateSelect(s, 'service');
+
+    });
+
+    syncBodyField();
+
+})();
+
+</script>
+
+{% endblock %}
+

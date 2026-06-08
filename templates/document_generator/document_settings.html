@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Document Number Settings — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Document Number Settings</h1>
+    <a href="{% url 'document_control_panel' %}" class="btn btn-secondary">Control Panel</a>
+</div>
+
+{% if not can_manage %}
+<div class="card" style="margin-bottom:16px;background:#fff8e6;border-left:4px solid #f0ad4e;">
+    <p style="margin:0;">View-only access. Only Directors and Superusers can edit document number settings.</p>
+</div>
+{% endif %}
+
+<div class="card" style="max-width:720px;">
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            {{ field.label_tag }}{{ field }}
+            {% if field.errors %}<div style="color:#dc3545;">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        {% if can_manage and settings_obj.allow_editing %}
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

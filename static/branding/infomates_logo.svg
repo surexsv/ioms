@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 72" role="img" aria-label="Infomates">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2C5282"/>
+      <stop offset="100%" style="stop-color:#0F2D52"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="8" width="56" height="56" rx="10" fill="url(#g)"/>
+  <text x="36" y="46" text-anchor="middle" fill="#fff" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">I</text>
+  <text x="78" y="46" fill="#0F2D52" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="700">Infomates</text>
+</svg>

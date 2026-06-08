@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Daily Attendance Report — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Daily Attendance — {{ date|date:"d M Y" }}</h1>
+    <a href="{% url 'attendance_dashboard' %}" class="btn btn-secondary">Back</a>
+</div>
+
+<form method="get" class="filter-bar" style="margin-bottom:16px;">
+    <input type="date" name="date" value="{{ date|date:'Y-m-d' }}" style="padding:8px;border-radius:6px;border:1px solid #ddd;">
+    <button type="submit" class="btn btn-sm btn-primary">Go</button>
+</form>
+
+<div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px;">
+    <div class="card" style="text-align:center;padding:16px;"><strong>{{ stats.present }}</strong><br><small>Present</small></div>
+    <div class="card" style="text-align:center;padding:16px;"><strong>{{ stats.absent }}</strong><br><small>Absent/Unmarked</small></div>
+    <div class="card" style="text-align:center;padding:16px;"><strong>{{ stats.attendance_percentage }}%</strong><br><small>Attendance %</small></div>
+</div>
+
+<div style="overflow-x:auto;">
+<table>
+    <tr>
+        <th>Employee</th><th>Role</th><th>Status</th>
+        <th>Check In</th><th>Check Out</th><th>Hours</th><th>Location</th>
+    </tr>
+    {% for row in rows %}
+    <tr>
+        <td>{{ row.employee.get_full_name|default:row.employee.username }}</td>
+        <td>{{ row.employee.get_role_display }}</td>
+        {% if row.record %}
+        <td>{{ row.record.get_status_display }}</td>
+        <td>{{ row.record.check_in_time|default:"—" }}</td>
+        <td>{{ row.record.check_out_time|default:"—" }}</td>
+        <td>{{ row.record.working_hours|default:"—" }}</td>
+        <td>{{ row.record.location|truncatechars:35|default:"—" }}</td>
+        {% else %}
+        <td colspan="5"><span class="badge badge-pending">Not Marked</span></td>
+        {% endif %}
+    </tr>
+    {% endfor %}
+</table>
+</div>
+{% endblock %}

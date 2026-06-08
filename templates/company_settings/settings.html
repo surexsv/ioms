@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Company Settings — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Company Settings</h1>
+    <a href="{% url 'quotation_list' %}" class="btn btn-secondary">Back</a>
+</div>
+
+<p style="color:#6c757d;margin-bottom:16px;">
+    Company-wide assets (e.g. seal). Authorized signatory name and designation are set per document when creating or editing quotations, invoices, WCR, BOQ, and other records.
+</p>
+
+{% if not can_edit %}
+<div class="card" style="margin-bottom:16px;background:#fff8e6;border-left:4px solid #f0ad4e;">
+    <p style="margin:0;">View-only access. Only Directors and Superusers can edit company settings.</p>
+</div>
+{% endif %}
+
+<div class="card" style="max-width:720px;">
+    {% if settings_obj.updated_by %}
+    <p style="color:#6c757d;font-size:0.9rem;margin-top:0;">
+        Last updated {{ settings_obj.updated_at|date:"d M Y, H:i" }} by {{ settings_obj.updated_by }}
+    </p>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Company Seal Image (optional)</label>
+            {{ form.company_seal }}
+            {% if settings_obj.company_seal %}
+            <p><img src="{{ settings_obj.company_seal.url }}" alt="Seal" style="max-height:80px;margin-top:8px;"></p>
+            {% endif %}
+        </div>
+        {% if can_edit %}
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

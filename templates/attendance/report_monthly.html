@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Monthly Attendance Report — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Monthly Attendance Report</h1>
+    <a href="{% url 'attendance_dashboard' %}" class="btn btn-secondary">Back</a>
+</div>
+
+<form method="get" class="card" style="margin-bottom:20px;display:flex;flex-wrap:wrap;gap:12px;align-items:end;">
+    <div><label>Month</label>{{ form.month }}</div>
+    <div><label>Year</label>{{ form.year }}</div>
+    <button type="submit" class="btn btn-primary">Generate</button>
+</form>
+
+<div style="overflow-x:auto;">
+<table>
+    <tr>
+        <th>Employee</th><th>Present</th><th>Half Day</th><th>Absent</th><th>Leave</th><th>Attendance %</th><th></th>
+    </tr>
+    {% for row in rows %}
+    <tr>
+        <td>{{ row.employee.username }}</td>
+        <td>{{ row.present }}</td>
+        <td>{{ row.half_day }}</td>
+        <td>{{ row.absent }}</td>
+        <td>{{ row.leave }}</td>
+        <td><strong>{{ row.attendance_percentage }}%</strong></td>
+        <td>
+            <a href="{% url 'attendance_report_employee' %}?employee={{ row.employee.pk }}&year={{ year }}&month={{ month }}" class="btn btn-sm btn-primary">Detail</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+</div>
+{% endblock %}

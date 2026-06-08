@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Infomates Operations Management System</title>
+    <link rel="stylesheet" href="{% static 'css/ioms.css' %}">
+    <style>
+        body.ioms-login {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0F2D52;
+            padding: 24px;
+        }
+        .login-card {
+            background: #fff;
+            padding: 40px 36px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            text-align: center;
+        }
+        .login-card .login-logo {
+            background: #fff;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 0 auto 20px;
+            display: inline-block;
+        }
+        .login-card .login-logo img {
+            max-width: min(280px, 100%);
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+        .login-card h1 {
+            margin: 0 0 8px;
+            color: #0F2D52;
+            font-size: 1.1rem;
+            line-height: 1.35;
+            font-weight: 700;
+        }
+        .login-card .subtitle {
+            color: #6c757d;
+            margin-bottom: 28px;
+            font-size: 0.9rem;
+        }
+        .login-card label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+        .login-card input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 18px;
+            font-size: 1rem;
+            font-family: var(--ioms-font);
+        }
+        .login-card button {
+            width: 100%;
+            padding: 12px;
+            background: #2C5282;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--ioms-font);
+        }
+        .login-card button:hover { background: #1F4E79; }
+        .login-card .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+    </style>
+</head>
+<body class="ioms-login">
+    <div class="login-card">
+        <div class="login-logo">
+            <img src="{% static 'branding/infomates_logo.png' %}" alt="Infomates Techno Solutions">
+        </div>
+        <h1>Infomates Operations Management System</h1>
+        <p class="subtitle">Sign in to continue</p>
+        {% if form.non_field_errors %}
+        <div class="error">
+            {% for error in form.non_field_errors %}
+            {{ error|linebreaksbr }}
+            {% endfor %}
+        </div>
+        {% elif form.errors %}
+        <div class="error">Invalid username or password.</div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            <label for="id_username">Username</label>
+            <input type="text" name="username" id="id_username" value="{{ form.username.value|default:'' }}" required autofocus>
+            <label for="id_password">Password</label>
+            <input type="password" name="password" id="id_password" required>
+            <button type="submit">Sign In</button>
+        </form>
+        <p style="margin-top: 20px; font-size: 0.88rem; color: #6c757d;">
+            New user? <a href="{% url 'register' %}" style="color: #2C5282; font-weight: 600;">Register</a><br>
+            Registration rejected? <a href="{% url 'profile_resubmit' %}" style="color: #2C5282; font-weight: 600;">Resubmit profile</a>
+        </p>
+    </div>
+</body>
+</html>

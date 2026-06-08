@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}{{ boq.boq_number }} — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ boq.boq_number }}</h1>
+    <div>
+        {% if boq.is_editable %}
+        <a href="{% url 'edit_boq' boq.pk %}" class="btn btn-primary">Edit</a>
+        <a href="{% url 'verify_boq' boq.pk %}" class="btn btn-success">Verify BOQ</a>
+        {% elif boq.status == 'VERIFIED' %}
+        <a href="{% url 'create_invoice' %}?boq={{ boq.pk }}" class="btn btn-success">Create Invoice from BOQ</a>
+        {% endif %}
+        <a href="{% url 'boq_list' %}" class="btn btn-secondary">Back</a>
+    </div>
+</div>
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>Order</label><p>{{ boq.order.order_no|default:boq.order.order_id }}</p></div>
+        <div class="detail-item"><label>Client</label><p>{{ boq.order.client.name }}</p></div>
+        <div class="detail-item"><label>Status</label><p>{% if boq.status == 'VERIFIED' %}<span class="badge badge-approved">Verified</span>{% else %}<span class="badge badge-pending">Draft</span>{% endif %}</p></div>
+        <div class="detail-item"><label>Verified</label><p>{% if boq.verified_at %}{{ boq.verified_at|date:"d M Y H:i" }} by {{ boq.verified_by }}{% else %}—{% endif %}</p></div>
+    </div>
+</div>
+<table>
+    <tr>
+        <th>Sl No</th>
+        <th>Item / Service Description</th>
+        <th>HSN/SAC</th>
+        <th>Unit</th>
+        <th>Qty</th>
+    </tr>
+    {% for line in boq.lines.all %}
+    <tr>
+        <td>{{ line.sl_no }}</td>
+        <td>{{ line.description }}</td>
+        <td>{{ line.hsn_sac }}</td>
+        <td>{{ line.unit }}</td>
+        <td>{{ line.qty }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">No line items.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

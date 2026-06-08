@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}{{ action_label }} — {{ quotation.quotation_number }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width:480px;">
+    <h3>{{ action_label }}</h3>
+    <p>Quotation <strong>{{ quotation.quotation_number }}</strong> ({{ quotation.get_status_display }})</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Confirm — {{ action_label }}</button>
+        <a href="{% url 'quotation_detail' quotation.pk %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

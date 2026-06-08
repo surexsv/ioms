@@ -1,0 +1,9 @@
+{
+  "version": "2.0.0",
+  "release_date": "2026-06-06",
+  "title": "Document Number Generator (DNG)",
+  "baseline": "1.0.0",
+  "backup_v1": "releases/IOMS-v1.0.0.zip",
+  "backup_v2": "releases/IOMS-v2.0.0.zip",
+  "docs": "docs/VERSION_2_DNG.md"
+}

@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}Create Invoice — Infomates Operations Management System{% endblock %}
+{% block extra_css %}
+<style>
+    .line-table { width:100%; margin-top:16px; font-size:0.85rem; }
+    .line-table th { background:#1a1a2e; color:#fff; padding:10px 6px; }
+    .line-table td { padding:6px; border-bottom:1px solid #eee; vertical-align:top; }
+    .line-table input { width:100%; padding:5px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; }
+    .totals-box { margin-top:16px; padding:16px; background:#f8f9fa; border-radius:8px; max-width:400px; margin-left:auto; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width:768px) { .form-grid { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Create Invoice</h1>
+    <a href="{% url 'invoice_list' %}" class="btn btn-secondary">Back</a>
+</div>
+<p style="color:#666;margin-bottom:20px;">Select a <strong>verified BOQ</strong> to load Item, HSN/SAC, Unit &amp; Qty. Enter <strong>Rate</strong> and <strong>Remarks</strong> manually for each line.</p>
+<div class="card">
+    <form method="post" id="invoiceForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group" style="margin-bottom:20px;padding:14px;background:#f8f9fa;border-radius:8px;">
+            <label style="font-weight:600;display:block;margin-bottom:8px;">{{ form.invoice_number_mode.label }}</label>
+            {{ form.invoice_number_mode }}
+        </div>
+        <div class="form-grid">
+            {% for field in form %}
+            {% if field.name != 'invoice_number_mode' and field.name != 'authorized_signatory_name' and field.name != 'authorized_signatory_designation' and field.name != 'signature_image' %}
+            <div class="form-group {% if field.name == 'invoice_number' %}invoice-number-group{% endif %}">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.name == 'invoice_number' and preview_invoice_number %}
+                <small id="autoPreviewHint" style="color:#0F2D52;display:block;margin-top:4px;">
+                    Next auto number: <strong>{{ preview_invoice_number }}</strong>
+                </small>
+                {% endif %}
+                {% if field.help_text %}<small style="color:#888;">{{ field.help_text }}</small>{% endif %}
+                {% if field.errors %}<div style="color:#dc3545;">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% include 'company_settings/_signatory_form_fields.html' %}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:24px 0 8px;">
+            <h3 style="margin:0;">Invoice Line Items</h3>
+            <button type="button" class="btn btn-secondary btn-sm" id="loadBoqBtn">Load from BOQ</button>
+        </div>
+        {{ formset.management_form }}
+        <table class="line-table">
+            <thead>
+                <tr>
+                    <th>Sl</th>
+                    <th>Item / Service Description</th>
+                    <th>HSN/SAC</th>
+                    <th>Unit</th>
+                    <th>Qty</th>
+                    <th>Rate</th>
+                    <th>Remarks</th>
+                    <th>Del</th>
+                </tr>
+            </thead>
+            <tbody id="invoice-lines">
+                {% for f in formset %}
+                <tr class="formset-row">
+                    <td>{{ f.sl_no }}</td>
+                    <td>{{ f.description }}</td>
+                    <td>{{ f.hsn_sac }}</td>
+                    <td>{{ f.unit }}</td>
+                    <td>{{ f.qty }}</td>
+                    <td>{{ f.rate }}</td>
+                    <td>{{ f.remarks }}</td>
+                    <td>{% if f.DELETE %}{{ f.DELETE }}{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p style="margin-top:10px;"><button type="button" class="btn btn-secondary btn-sm" id="addInvoiceRow">+ Add Row</button></p>
+        <div class="totals-box" id="totalsPreview">
+            <p style="margin:4px 0;">Subtotal (before tax): <strong id="previewSubtotal">0.00</strong></p>
+            <p style="margin:4px 0;">GST 18%: <strong id="previewGst">0.00</strong></p>
+            <p style="margin:4px 0;">Grand Total: <strong id="previewTotal">0.00</strong></p>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:20px;">Create Invoice</button>
+    </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function() {
+    function syncInvoiceMode() {
+        var manual = document.querySelector('input[name="invoice_number_mode"]:checked');
+        var group = document.querySelector('.invoice-number-group');
+        var input = document.getElementById('id_invoice_number');
+        var hint = document.getElementById('autoPreviewHint');
+        if (!group || !input) return;
+        var isManual = manual && manual.value === 'MANUAL';
+        group.style.display = isManual ? '' : 'none';
+        input.required = isManual;
+        if (hint) hint.style.display = isManual ? 'none' : '';
+    }
+    document.querySelectorAll('input[name="invoice_number_mode"]').forEach(function (r) {
+        r.addEventListener('change', syncInvoiceMode);
+    });
+    syncInvoiceMode();
+
+    const tbody = document.getElementById('invoice-lines');
+    const total = document.querySelector('#invoiceForm [name$="-TOTAL_FORMS"]');
+    const boqSelect = document.getElementById('id_boq');
+    const orderSelect = document.getElementById('id_order');
+
+    function recalc() {
+        let sub = 0;
+        tbody.querySelectorAll('.formset-row').forEach(function(row) {
+            const del = row.querySelector('input[name$="-DELETE"]');
+            if (del && del.checked) return;
+            const q = parseFloat(row.querySelector('input[name$="-qty"]')?.value) || 0;
+            const r = parseFloat(row.querySelector('input[name$="-rate"]')?.value) || 0;
+            sub += q * r;
+        });
+        const gst = Math.round(sub * 0.18 * 100) / 100;
+        document.getElementById('previewSubtotal').textContent = sub.toFixed(2);
+        document.getElementById('previewGst').textContent = gst.toFixed(2);
+        document.getElementById('previewTotal').textContent = (sub + gst).toFixed(2);
+    }
+
+    tbody.addEventListener('input', recalc);
+    recalc();
+
+    document.getElementById('addInvoiceRow')?.addEventListener('click', function() {
+        const n = parseInt(total.value, 10);
+        const last = tbody.querySelector('.formset-row:last-child');
+        if (!last) return;
+        const row = last.cloneNode(true);
+        row.querySelectorAll('input').forEach(function(inp) {
+            if (inp.name) inp.name = inp.name.replace(/items-\d+-/, 'items-' + n + '-');
+            if (inp.id) inp.id = inp.id.replace(/items-\d+-/, 'items-' + n + '-');
+            if (inp.type === 'checkbox') inp.checked = false;
+            else if (inp.name && inp.name.includes('sl_no')) inp.value = n + 1;
+            else inp.value = '';
+        });
+        tbody.appendChild(row);
+        total.value = n + 1;
+        recalc();
+    });
+
+    document.getElementById('loadBoqBtn')?.addEventListener('click', function() {
+        const boqId = boqSelect?.value;
+        if (!boqId) { alert('Select a verified BOQ first.'); return; }
+        fetch('/billing/boq-lines/' + boqId + '/')
+            .then(r => r.json())
+            .then(data => {
+                if (orderSelect) orderSelect.value = data.order_id;
+                tbody.innerHTML = '';
+                data.lines.forEach(function(line, i) {
+                    addLineFromData(line, i);
+                });
+                total.value = data.lines.length;
+                recalc();
+            });
+    });
+
+    function addLineFromData(line, i) {
+        const tr = document.createElement('tr');
+        tr.className = 'formset-row';
+        tr.innerHTML = `
+            <td><input type="number" name="items-${i}-sl_no" value="${line.sl_no}" min="1" style="width:50px"></td>
+            <td><input type="text" name="items-${i}-description" value="${escapeAttr(line.description)}"></td>
+            <td><input type="text" name="items-${i}-hsn_sac" value="${escapeAttr(line.hsn_sac)}"></td>
+            <td><input type="text" name="items-${i}-unit" value="${escapeAttr(line.unit)}"></td>
+            <td><input type="number" name="items-${i}-qty" value="${line.qty}" step="0.01"></td>
+            <td><input type="number" name="items-${i}-rate" value="${line.rate}" step="0.01"></td>
+            <td><input type="text" name="items-${i}-remarks" value="${escapeAttr(line.remarks)}"></td>
+            <td></td>`;
+        tbody.appendChild(tr);
+    }
+    function escapeAttr(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    }
+
+    {% if auto_load_boq %}
+    if (boqSelect) {
+        boqSelect.value = '{{ auto_load_boq }}';
+        document.getElementById('loadBoqBtn').click();
+    }
+    {% endif %}
+})();
+</script>
+{% endblock %}

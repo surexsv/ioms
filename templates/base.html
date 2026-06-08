@@ -1,0 +1,156 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Infomates Operations Management System{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'css/ioms.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="ioms-app{% if not user.is_authenticated %} ioms-guest{% endif %}">
+    {% if user.is_authenticated %}
+    <div class="ioms-layout">
+        <aside class="ioms-sidebar" id="iomsSidebar" aria-label="Main navigation">
+            <div class="ioms-sidebar-brand">
+                <a href="{% url dashboard_url %}">
+                    <img src="{% static 'branding/infomates_logo.png' %}" alt="Infomates Techno Solutions" width="160" height="auto">
+                </a>
+                <span class="ioms-sidebar-tag">IOMS</span>
+            </div>
+            <nav class="ioms-sidebar-nav">
+                {% if show_nav_dashboard %}
+                <a href="{% url dashboard_url %}" class="{% if nav_active == 'dashboard' %}active{% endif %}">
+                    <i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard
+                </a>
+                {% endif %}
+                {% if show_nav_orders %}
+                <a href="{% url 'order_list' %}" class="{% if nav_active == 'orders' %}active{% endif %}">
+                    <i class="bi bi-clipboard-check" aria-hidden="true"></i>
+                    {% if is_field_staff %}My Orders{% else %}Orders{% endif %}
+                </a>
+                {% endif %}
+                {% if show_nav_clients %}
+                <a href="{% url 'client_list' %}" class="{% if nav_active == 'clients' %}active{% endif %}">
+                    <i class="bi bi-people" aria-hidden="true"></i> Clients
+                </a>
+                {% endif %}
+                {% if show_nav_quotations %}
+                <a href="{% url 'quotation_list' %}" class="{% if nav_active == 'quotations' %}active{% endif %}">
+                    <i class="bi bi-file-earmark-ruled" aria-hidden="true"></i> Quotations
+                </a>
+                {% endif %}
+                {% if show_nav_wcr %}
+                <a href="{% url 'wcr_list' %}" class="{% if nav_active == 'wcr' %}active{% endif %}">
+                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i> WCR
+                </a>
+                {% endif %}
+                {% if show_nav_boq %}
+                <a href="{% url 'boq_list' %}" class="{% if nav_active == 'boq' %}active{% endif %}">
+                    <i class="bi bi-list-check" aria-hidden="true"></i> BOQ
+                </a>
+                {% endif %}
+                {% if show_nav_billing %}
+                <a href="{% url 'invoice_list' %}" class="{% if nav_active == 'billing' %}active{% endif %}">
+                    <i class="bi bi-receipt" aria-hidden="true"></i> Billing
+                </a>
+                {% endif %}
+                {% if show_nav_attendance %}
+                <a href="{% url attendance_nav_url %}" class="{% if nav_active == 'attendance' %}active{% endif %}">
+                    <i class="bi bi-calendar-check" aria-hidden="true"></i> Attendance
+                </a>
+                {% endif %}
+                {% if show_nav_document_numbers %}
+                <a href="{% url 'document_control_panel' %}" class="{% if nav_active == 'document_numbers' %}active{% endif %}">
+                    <i class="bi bi-hash" aria-hidden="true"></i> Doc Numbers
+                </a>
+                {% endif %}
+                {% if show_nav_company_settings %}
+                <a href="{% url 'company_settings' %}" class="{% if nav_active == 'company_settings' %}active{% endif %}">
+                    <i class="bi bi-building-gear" aria-hidden="true"></i> Company Settings
+                </a>
+                {% endif %}
+                {% if show_nav_user_approvals %}
+                <a href="{% url 'user_approval_list' %}" class="{% if nav_active == 'user_approvals' %}active{% endif %}">
+                    <i class="bi bi-person-check" aria-hidden="true"></i> User Approvals
+                    {% if pending_approval_count %}<span class="badge">{{ pending_approval_count }}</span>{% endif %}
+                </a>
+                {% endif %}
+            </nav>
+            <div class="ioms-sidebar-footer">
+                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                <div class="role">{{ user_role_display|default:user.role }}{% if is_superuser %} (Superuser){% endif %}</div>
+                <form method="post" action="{% url 'logout' %}" style="margin:0;">
+                    {% csrf_token %}
+                    <button type="submit" class="ioms-logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</button>
+                </form>
+            </div>
+        </aside>
+
+        <div class="ioms-sidebar-backdrop" id="iomsSidebarBackdrop" aria-hidden="true"></div>
+
+        <div class="ioms-main">
+            <header class="ioms-app-header">
+                <button type="button" class="ioms-menu-toggle" id="iomsMenuToggle" aria-label="Open menu" aria-expanded="false">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h1 class="ioms-app-title">Infomates Operations Management System</h1>
+            </header>
+
+            <main class="ioms-content">
+    {% else %}
+            <main class="ioms-content ioms-guest-main">
+    {% endif %}
+
+                {% block page_hero %}{% endblock %}
+                {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                    <li class="{{ message.tags }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% block content %}{% endblock %}
+
+    {% if user.is_authenticated %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+            </main>
+    {% endif %}
+    {% if user.is_authenticated %}
+    <script>
+    (function () {
+        var sidebar = document.getElementById('iomsSidebar');
+        var backdrop = document.getElementById('iomsSidebarBackdrop');
+        var toggle = document.getElementById('iomsMenuToggle');
+        if (!sidebar || !toggle) return;
+        function openSidebar() {
+            sidebar.classList.add('open');
+            backdrop.classList.add('visible');
+            toggle.setAttribute('aria-expanded', 'true');
+        }
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('visible');
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+        toggle.addEventListener('click', function () {
+            if (sidebar.classList.contains('open')) closeSidebar();
+            else openSidebar();
+        });
+        backdrop.addEventListener('click', closeSidebar);
+        sidebar.querySelectorAll('a').forEach(function (link) {
+            link.addEventListener('click', function () {
+                if (window.innerWidth <= 768) closeSidebar();
+            });
+        });
+    })();
+    </script>
+    {% endif %}
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

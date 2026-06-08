@@ -1,0 +1,26 @@
+<div class="card" style="max-width:720px;">
+    <h3>Authorized Signatory</h3>
+    {% if not can_edit_signatory %}
+    <p style="color:#6c757d;font-size:0.9rem;margin-top:0;">
+        View-only. Only Directors, Superusers, and Accounts users can edit signatory details.
+    </p>
+    {% endif %}
+    <div class="form-group">
+        <label for="{{ form.authorized_signatory_name.id_for_label }}">Authorized Signatory Name</label>
+        {{ form.authorized_signatory_name }}
+        {% if form.authorized_signatory_name.errors %}<div style="color:#dc3545;">{{ form.authorized_signatory_name.errors }}</div>{% endif %}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.authorized_signatory_designation.id_for_label }}">Designation</label>
+        {{ form.authorized_signatory_designation }}
+        {% if form.authorized_signatory_designation.errors %}<div style="color:#dc3545;">{{ form.authorized_signatory_designation.errors }}</div>{% endif %}
+    </div>
+    <div class="form-group">
+        <label for="{{ form.signature_image.id_for_label }}">Signature Image (optional)</label>
+        {{ form.signature_image }}
+        {% if signatory_instance.signature_image %}
+        <p><img src="{{ signatory_instance.signature_image.url }}" alt="Signature" style="max-height:60px;margin-top:8px;"></p>
+        {% endif %}
+        {% if form.signature_image.errors %}<div style="color:#dc3545;">{{ form.signature_image.errors }}</div>{% endif %}
+    </div>
+</div>

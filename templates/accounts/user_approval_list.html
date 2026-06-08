@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}User Approval Management — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>User Approval Management</h1>
+</div>
+
+<div class="filter-bar" style="margin-bottom: 16px;">
+    <strong>Filter:</strong>
+    <a href="?status=PENDING" class="btn btn-sm {% if status_filter == 'PENDING' %}btn-primary{% else %}btn-secondary{% endif %}">Pending</a>
+    <a href="?status=APPROVED" class="btn btn-sm {% if status_filter == 'APPROVED' %}btn-primary{% else %}btn-secondary{% endif %}">Approved</a>
+    <a href="?status=REJECTED" class="btn btn-sm {% if status_filter == 'REJECTED' %}btn-primary{% else %}btn-secondary{% endif %}">Rejected</a>
+    <a href="?status=" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-secondary{% endif %}">All</a>
+</div>
+
+<table>
+    <tr>
+        <th>Full Name</th>
+        <th>Username</th>
+        <th>Mobile</th>
+        <th>Email</th>
+        <th>Requested Role</th>
+        <th>Registered</th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+    {% for u in users %}
+    <tr>
+        <td><strong>{{ u.full_name_display }}</strong></td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.phone|default:"—" }}</td>
+        <td>{{ u.email|default:"—" }}</td>
+        <td>{{ u.get_role_requested_display|default:"—" }}</td>
+        <td>{{ u.date_joined|date:"d M Y" }}</td>
+        <td>{{ u.get_approval_status_display }}</td>
+        <td>
+            <a href="{% url 'user_approval_detail' u.pk %}" class="btn btn-sm btn-secondary">View Profile</a>
+            {% if u.approval_status == 'PENDING' %}
+            <form method="post" action="{% url 'user_approve' u.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-primary">Approve</button>
+            </form>
+            <a href="{% url 'user_reject' u.pk %}" class="btn btn-sm btn-danger">Reject</a>
+            {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="8" class="empty-state">No registrations found for this filter.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

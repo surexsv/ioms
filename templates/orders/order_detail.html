@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}Order #{{ order.order_id }} — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Order {{ order.order_no|default:order.order_id }}</h1>
+    <a href="{% url 'order_list' %}" class="btn btn-secondary">Back to Orders</a>
+</div>
+
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>Order Number</label><p>{{ order.order_no|default:"—" }}</p></div>
+        <div class="detail-item"><label>Client</label><p>{{ order.client.name }}</p></div>
+        <div class="detail-item"><label>Order Date</label><p>{{ order.order_date|date:"d M Y" }}</p></div>
+        <div class="detail-item"><label>Type</label><p>{{ order.get_order_type_display }}</p></div>
+        <div class="detail-item"><label>Status</label><p><strong>{{ order.get_status_display }}</strong></p></div>
+        <div class="detail-item"><label>Priority</label><p>{{ order.priority }}</p></div>
+        <div class="detail-item"><label>Project / Site</label><p>{{ order.display_site_name }}</p></div>
+        <div class="detail-item"><label>Expected Completion</label><p>{{ order.expected_completion_date|date:"d M Y"|default:"—" }}</p></div>
+        <div class="detail-item"><label>Created</label><p>{{ order.created_date|date:"d M Y H:i" }}</p></div>
+        {% if order.quotation_source %}
+        <div class="detail-item"><label>Quotation</label><p><a href="{% url 'quotation_detail' order.quotation_source.pk %}">{{ order.quotation_source.quotation_number }}</a></p></div>
+        {% endif %}
+    </div>
+    <div class="detail-item" style="margin-top:16px;"><label>Location</label><p>{{ order.site_address }}</p></div>
+    <div class="detail-item"><label>Description</label><p>{{ order.description }}</p></div>
+    {% if order.remarks %}<div class="detail-item"><label>Remarks</label><p>{{ order.remarks }}</p></div>{% endif %}
+    {% if order.attachments.exists %}
+    <div class="detail-item"><label>Attachments</label>
+        <ul style="margin:0;padding-left:18px;">
+            {% for att in order.attachments.all %}
+            <li><a href="{{ att.file.url }}" target="_blank">{{ att.caption|default:att.file.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Schedule Information</h3>
+    {% if schedule %}
+    <div class="detail-grid">
+        <div class="detail-item"><label>Schedule Number</label><p>{{ schedule.schedule_number }}</p></div>
+        <div class="detail-item"><label>Schedule Status</label><p>{{ schedule.get_status_display }}</p></div>
+        <div class="detail-item"><label>Start Date</label><p>{{ schedule.scheduled_start_date|date:"d M Y" }}</p></div>
+        <div class="detail-item"><label>End Date</label><p>{{ schedule.scheduled_end_date|date:"d M Y" }}</p></div>
+        <div class="detail-item"><label>Assigned Engineer(s)</label><p>{{ schedule.engineer_names }}</p></div>
+        {% if schedule.team_leader %}<div class="detail-item"><label>Team Leader</label><p>{{ schedule.team_leader }}</p></div>{% endif %}
+        {% if schedule.vehicle_assigned %}<div class="detail-item"><label>Vehicle</label><p>{{ schedule.vehicle_assigned }}</p></div>{% endif %}
+    </div>
+    {% if schedule.work_instructions %}<p><strong>Work Instructions:</strong> {{ schedule.work_instructions }}</p>{% endif %}
+    {% if can_manage_schedule %}
+    <a href="{% url 'schedule_edit' schedule.pk %}" class="btn btn-secondary btn-sm" style="margin-top:12px;">Edit Schedule</a>
+    {% endif %}
+    {% else %}
+    <p style="color:#6c757d;">No Schedule Created</p>
+    {% if can_manage_schedule %}
+    <a href="{% url 'schedule_create' order.pk %}" class="btn btn-primary btn-sm">Create Schedule</a>
+    {% endif %}
+    {% endif %}
+</div>
+
+{% if transitions %}
+<div class="card">
+    <h3 style="margin-top:0;">Update Status</h3>
+    {% for code, label in transitions %}
+    <form method="post" style="display:inline;margin-right:8px;">
+        {% csrf_token %}
+        <input type="hidden" name="new_status" value="{{ code }}">
+        <button type="submit" class="btn btn-primary btn-sm">{{ label }}</button>
+    </form>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if order.status == 'COMPLETED' and not wcr %}
+<div class="card">
+    <p>No WCR submitted yet.</p>
+    <a href="{% url 'create_wcr' %}" class="btn btn-success">Submit WCR</a>
+</div>
+{% endif %}
+
+{% if wcr %}
+<div class="card">
+    <h3 style="margin-top:0;">Work Completion Report</h3>
+    <p>{{ wcr.work_description }}</p>
+    {% if wcr.material_used %}<p><strong>Materials:</strong> {{ wcr.material_used }}</p>{% endif %}
+    <p><strong>Approved:</strong> {% if wcr.approved %}Yes{% else %}Pending{% endif %}</p>
+    {% if not wcr.approved %}
+    <a href="{% url 'approve_wcr' wcr.pk %}" class="btn btn-success btn-sm">Approve WCR</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if invoice %}
+<div class="card">
+    <h3 style="margin-top:0;">Invoice</h3>
+    <p>{{ invoice.invoice_number }} — ₹{{ invoice.total }} ({{ invoice.get_payment_status_display }})</p>
+    {% if not is_engineer %}
+    <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-primary btn-sm" target="_blank">Download PDF</a>
+    {% endif %}
+</div>
+{% elif order.status == 'APPROVED' %}
+<div class="card">
+    <h3 style="margin-top:0;">Billing</h3>
+    {% for boq in boqs %}
+    {% if boq.status == 'VERIFIED' %}
+    <p>Verified BOQ: <strong>{{ boq.boq_number }}</strong>
+        <a href="{% url 'create_invoice' %}?boq={{ boq.pk }}" class="btn btn-sm btn-success">Create Invoice</a>
+    </p>
+    {% endif %}
+    {% empty %}
+    <p>Create and verify a BOQ before invoicing.</p>
+    <a href="{% url 'create_boq' %}?order={{ order.pk }}" class="btn btn-primary">Create BOQ</a>
+    {% endfor %}
+    {% if boqs and not invoice %}
+    <a href="{% url 'create_boq' %}?order={{ order.pk }}" class="btn btn-secondary btn-sm" style="margin-top:8px;">Add BOQ</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

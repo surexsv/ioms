@@ -1,0 +1,140 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — Infomates Operations Management System</title>
+    <link rel="stylesheet" href="{% static 'css/ioms.css' %}">
+    <style>
+        body.ioms-register { margin: 0; min-height: 100vh; background: #0F2D52; padding: 24px; }
+        .register-wrap { max-width: 720px; margin: 0 auto; }
+        .register-card {
+            background: #fff; border-radius: 12px; padding: 32px 28px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+        }
+        .register-card h1 { color: #0F2D52; margin: 0 0 8px; font-size: 1.25rem; }
+        .register-card .subtitle { color: #6c757d; margin-bottom: 24px; font-size: 0.9rem; }
+        .form-section { margin-bottom: 24px; }
+        .form-section h2 { font-size: 1rem; color: #2C5282; margin: 0 0 12px; border-bottom: 1px solid #e9ecef; padding-bottom: 6px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+        .form-grid .full { grid-column: 1 / -1; }
+        label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 4px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; }
+        .field-error { color: #721c24; font-size: 0.8rem; margin-top: 4px; }
+        .form-error { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+        .btn-primary { width: 100%; padding: 12px; background: #2C5282; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn-primary:hover { background: #1F4E79; }
+        .login-link { text-align: center; margin-top: 16px; font-size: 0.9rem; }
+        .login-link a { color: #2C5282; font-weight: 600; }
+        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body class="ioms-register">
+<div class="register-wrap">
+    <div class="register-card">
+        <h1>User Registration</h1>
+        <p class="subtitle">Submit your profile for administrator approval before accessing IOMS.</p>
+
+        {% if form.non_field_errors %}
+        <div class="form-error">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="form-section">
+                <h2>Basic Information</h2>
+                <div class="form-grid">
+                    <div class="full">
+                        <label for="id_full_name">Full Name *</label>
+                        {{ form.full_name }}
+                        {% if form.full_name.errors %}<div class="field-error">{{ form.full_name.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="id_employee_id">Employee ID</label>
+                        {{ form.employee_id }}
+                    </div>
+                    <div>
+                        <label for="id_mobile">Mobile Number *</label>
+                        {{ form.mobile }}
+                        {% if form.mobile.errors %}<div class="field-error">{{ form.mobile.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="id_email">Email Address *</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<div class="field-error">{{ form.email.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="id_username">Username *</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}<div class="field-error">{{ form.username.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="id_password1">Password *</label>
+                        {{ form.password1 }}
+                        {% if form.password1.errors %}<div class="field-error">{{ form.password1.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="id_password2">Confirm Password *</label>
+                        {{ form.password2 }}
+                        {% if form.password2.errors %}<div class="field-error">{{ form.password2.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Employment Details</h2>
+                <div class="form-grid">
+                    <div>
+                        <label for="id_department">Department *</label>
+                        {{ form.department }}
+                        {% if form.department.errors %}<div class="field-error">{{ form.department.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="id_designation">Designation *</label>
+                        {{ form.designation }}
+                        {% if form.designation.errors %}<div class="field-error">{{ form.designation.errors }}</div>{% endif %}
+                    </div>
+                    <div class="full">
+                        <label for="id_role_requested">Role Requested *</label>
+                        {{ form.role_requested }}
+                        {% if form.role_requested.errors %}<div class="field-error">{{ form.role_requested.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Personal Information</h2>
+                <div class="form-grid">
+                    <div class="full">
+                        <label for="id_address">Address *</label>
+                        {{ form.address }}
+                        {% if form.address.errors %}<div class="field-error">{{ form.address.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="id_city">City *</label>
+                        {{ form.city }}
+                    </div>
+                    <div>
+                        <label for="id_state">State *</label>
+                        {{ form.state }}
+                    </div>
+                    <div>
+                        <label for="id_pin_code">PIN Code *</label>
+                        {{ form.pin_code }}
+                    </div>
+                    <div>
+                        <label for="id_profile_photo">Profile Photo</label>
+                        {{ form.profile_photo }}
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary">Submit Registration</button>
+        </form>
+        <p class="login-link">Already registered? <a href="{% url 'login' %}">Sign in</a></p>
+    </div>
+</div>
+</body>
+</html>

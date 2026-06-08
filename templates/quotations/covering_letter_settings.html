@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Covering Letter Settings — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Covering Letter Settings</h1>
+    <a href="{% url 'quotation_list' %}" class="btn btn-secondary">Back to Quotations</a>
+</div>
+
+{% if not can_edit %}
+<div class="card" style="margin-bottom:16px;background:#fff8e6;border-left:4px solid #f0ad4e;">
+    <p style="margin:0;">View-only access. Only Directors and Superusers can edit these settings.</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            {{ field.label_tag }}{{ field }}
+            {% if field.errors %}<div style="color:#dc3545;">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        {% if can_edit %}
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+        {% endif %}
+        <a href="{% url 'proposal_template_list' %}" class="btn btn-secondary">Proposal Templates</a>
+        <a href="{% url 'company_settings' %}" class="btn btn-secondary">Company Settings</a>
+    </form>
+</div>
+{% endblock %}

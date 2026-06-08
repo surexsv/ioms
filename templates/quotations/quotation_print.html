@@ -1,0 +1,242 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ quotation.quotation_number }} — Print</title>
+    <link rel="stylesheet" href="{% static 'css/ioms.css' %}">
+    <style>
+        body { margin: 0; background: #e9ecef; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .print-toolbar {
+            background: #0F2D52;
+            color: #fff;
+            padding: 12px 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .print-toolbar button, .print-toolbar a {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .print-toolbar .btn-print { background: #2C5282; color: #fff; }
+        .print-toolbar .btn-back { background: #fff; color: #0F2D52; }
+        .print-page {
+            max-width: 210mm;
+            margin: 24px auto;
+            background: #fff;
+            padding: 14mm;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+        }
+        .print-header { text-align: center; margin-bottom: 16px; }
+        .print-header img { max-width: 260px; height: auto; }
+        .print-header .company-meta { font-size: 0.8rem; line-height: 1.5; color: #333; }
+        .print-title {
+            border: 1px solid #000;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            padding: 10px;
+            margin: 12px 0;
+        }
+        .print-box { border: 1px solid #000; padding: 8px 10px; margin-bottom: 10px; font-size: 0.85rem; }
+        .print-box h4 { margin: 0 0 6px; font-size: 0.9rem; }
+        .print-meta { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 10px; }
+        .print-meta td, .print-meta th { border: 1px solid #000; padding: 6px 8px; vertical-align: top; }
+        .print-meta th { width: 120px; background: #f5f5f5; text-align: left; }
+        .print-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 12px; }
+        .print-table th, .print-table td { border: 1px solid #000; padding: 5px 6px; }
+        .print-table th { background: #e8e8e8; }
+        .print-table .num { text-align: right; }
+        .print-totals { width: 280px; margin-left: auto; border-collapse: collapse; font-size: 0.85rem; }
+        .print-totals td { border: 1px solid #000; padding: 6px 8px; }
+        .print-totals .num { text-align: right; }
+        .print-totals tr:last-child { font-weight: 700; background: #e8e8e8; }
+        .print-terms { white-space: pre-wrap; line-height: 1.45; }
+        .print-sign { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #000; margin-top: 16px; }
+        .print-sign > div { padding: 16px 12px; min-height: 90px; font-size: 0.85rem; }
+        .print-sign > div:first-child { border-right: 1px solid #000; }
+        .print-footer { text-align: center; font-size: 0.75rem; color: #555; margin-top: 12px; }
+        .page-break { page-break-before: always; margin-top: 24px; padding-top: 24px; border-top: 2px dashed #ccc; }
+        @media print {
+            .page-break { page-break-before: always; border: none; margin-top: 0; padding-top: 0; }
+            body { background: #fff; }
+            .print-toolbar { display: none !important; }
+            .print-page { margin: 0; box-shadow: none; max-width: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-toolbar">
+        <button type="button" class="btn-print" onclick="window.print()">Print</button>
+        <a href="{% url 'quotation_detail' quotation.pk %}" class="btn-back">Back to Quotation</a>
+        <a href="{% url 'quotation_pdf' quotation.pk %}" class="btn-back" target="_blank">Open PDF</a>
+    </div>
+
+    <div class="print-page">
+        {% if quotation.include_covering_letter %}
+        <div class="print-header">
+            <img src="{% static 'branding/infomates_logo.png' %}" alt="Infomates Techno Solutions">
+            <div class="company-meta">
+                Door No: 32/260A-3, 1st Floor, Bava Complex, Thammanam Jn., Kochi-682 032<br>
+                Tel: 8129400206 | E-mail: infomates.manoj@gmail.com | www.infomatestechnosolutions.com<br>
+                GSTIN: 32AACCI5396N1Z5
+            </div>
+        </div>
+        <div class="print-title">COVERING LETTER</div>
+        <p><strong>Date:</strong> {{ cl.quotation_date|date:"d.m.Y" }} &nbsp; <strong>Quotation No.:</strong> {{ cl.quotation_number }}
+        {% if cl.reference_number %} &nbsp; <strong>Reference:</strong> {{ cl.reference_number }}{% endif %}</p>
+        <div class="print-box">
+            <strong>To,</strong><br>M/S {{ cl.client_name }}<br>{{ cl.client_address|linebreaksbr }}<br>
+            <strong>Kind Attn:</strong> {{ cl.contact_person }}<br>
+            <strong>Project:</strong> {{ cl.project_name }}
+        </div>
+        <p><strong>Subject: {{ cl.subject }}</strong></p>
+        {% if cl.company_introduction %}<p>{{ cl.company_introduction }}</p>{% endif %}
+        {% for para in cl.body_paragraphs %}<p style="line-height:1.55;">{{ para|linebreaksbr }}</p>{% endfor %}
+        {% if cl.closing_paragraph %}<p>{{ cl.closing_paragraph }}</p>{% endif %}
+        <div style="margin-top:36px;">
+            <strong>For Infomates Techno Solutions (P) Ltd</strong><br><br>
+            {% if cl.include_signature and cl.signature_image %}<img src="{{ cl.signature_image.url }}" style="max-height:50px;"><br>{% endif %}
+            {% with signatory=cl.signatory %}{% include 'company_settings/_signatory_block.html' %}{% endwith %}
+            {% if cl.include_company_seal and cl.company_seal %}<br><img src="{{ cl.company_seal.url }}" style="max-height:70px;">{% endif %}
+        </div>
+        <div class="page-break"></div>
+        {% endif %}
+
+        <div class="print-header">
+            <img src="{% static 'branding/infomates_logo.png' %}" alt="Infomates Techno Solutions">
+            <div class="company-meta">
+                Door No: 32/260A-3, 1st Floor, Bava Complex, Thammanam Jn., Kochi-682 032<br>
+                GSTIN: 32AACCI5396N1Z5 &nbsp;|&nbsp; www.infomatestechnosolutions.com
+            </div>
+        </div>
+
+        <div class="print-title">COMMERCIAL QUOTATION</div>
+
+        <table class="print-meta">
+            <tr>
+                <th>Quotation No.</th>
+                <td>{{ quotation.quotation_number }}</td>
+                <th>Date</th>
+                <td>{{ quotation.quotation_date|date:"d.m.Y" }}</td>
+            </tr>
+            <tr>
+                <th>Valid Until</th>
+                <td>{{ quotation.valid_until|date:"d.m.Y" }}</td>
+                <th>Status</th>
+                <td>{{ quotation.get_status_display }}</td>
+            </tr>
+            <tr>
+                <th>Subject</th>
+                <td colspan="3">{{ quotation.subject }}</td>
+            </tr>
+        </table>
+
+        <div class="print-box">
+            <strong>Client:</strong> M/S {{ quotation.client.name }}<br>
+            {{ quotation.client.address|linebreaksbr }}<br>
+            Contact: {{ quotation.contact_person }} | {{ quotation.client.phone }}<br>
+            <strong>Site:</strong> {{ quotation.site_location|linebreaksbr }}
+        </div>
+
+        <div class="print-box">
+            <h4>Scope of Work</h4>
+            <div class="print-terms">{{ quotation.scope_of_work }}</div>
+        </div>
+
+        <h4 style="margin:12px 0 6px;font-size:0.9rem;">Materials</h4>
+        <table class="print-table">
+            <thead>
+                <tr><th>#</th><th>Description</th><th>Unit</th><th>Qty</th><th>Rate</th><th>GST%</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+                {% for line in material_lines %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ line.description }}</td>
+                    <td>{{ line.unit }}</td>
+                    <td class="num">{{ line.quantity }}</td>
+                    <td class="num">{{ line.unit_rate }}</td>
+                    <td class="num">{{ line.gst_percent }}%</td>
+                    <td class="num">{{ line.line_total }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">No material lines.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h4 style="margin:12px 0 6px;font-size:0.9rem;">Services</h4>
+        <table class="print-table">
+            <thead>
+                <tr><th>#</th><th>Description</th><th>Unit</th><th>Qty</th><th>Rate</th><th>GST%</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+                {% for line in service_lines %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ line.description }}</td>
+                    <td>{{ line.unit }}</td>
+                    <td class="num">{{ line.quantity }}</td>
+                    <td class="num">{{ line.unit_rate }}</td>
+                    <td class="num">{{ line.gst_percent }}%</td>
+                    <td class="num">{{ line.line_total }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">No service lines.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <table class="print-totals">
+            <tr><td>Subtotal:</td><td class="num">₹{{ quotation.subtotal }}</td></tr>
+            <tr><td>GST Total:</td><td class="num">₹{{ quotation.gst_total }}</td></tr>
+            <tr><td>Grand Total:</td><td class="num">₹{{ quotation.grand_total }}</td></tr>
+        </table>
+
+        {% if quotation.include_terms %}
+        <div class="page-break"></div>
+        <div class="print-box" style="margin-top:16px;">
+            <h4>Terms &amp; Conditions</h4>
+            <div class="print-terms">{{ doc.terms_text }}</div>
+        </div>
+        {% endif %}
+
+        {% if doc.bank_details %}
+        <div class="print-box">
+            <h4>Company Bank Details</h4>
+            <div class="print-terms">{{ doc.bank_details }}</div>
+        </div>
+        {% endif %}
+
+        {% if doc.footer_notes %}
+        <div class="print-footer">{{ doc.footer_notes|linebreaksbr }}</div>
+        {% endif %}
+
+        <div class="print-sign">
+            <div>
+                <strong>For Infomates Techno Solutions Pvt Ltd</strong><br><br><br>
+                {% if quotation.include_signature and cl.signature_image %}
+                <img src="{{ cl.signature_image.url }}" alt="Signature" style="max-height:50px;"><br><br>
+                {% endif %}
+                {% with signatory=cl.signatory %}{% include 'company_settings/_signatory_block.html' %}{% endwith %}
+                {% if quotation.include_company_seal and cl.company_seal %}
+                <br><img src="{{ cl.company_seal.url }}" alt="Company Seal" style="max-height:70px;margin-top:8px;">
+                {% endif %}
+            </div>
+            <div>
+                <strong>Customer Acceptance</strong><br><br><br>
+                Name &amp; Signature: _________________________<br>
+                Date: _________________________
+            </div>
+        </div>
+    </div>
+</body>
+</html>

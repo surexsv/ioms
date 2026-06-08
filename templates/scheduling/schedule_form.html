@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+    <a href="{% url 'order_detail' order.pk %}" class="btn btn-secondary">Back to Order</a>
+</div>
+
+<div class="card" style="max-width:760px;">
+    <p style="color:#6c757d;margin-top:0;">
+        Order: <strong>{{ order.order_no|default:order.order_id }}</strong> — {{ order.client.name }} — {{ order.display_site_name }}
+    </p>
+    {% if schedule %}<p><strong>Schedule #:</strong> {{ schedule.schedule_number }}</p>{% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-row">
+            <div class="form-group">{{ form.scheduled_start_date.label_tag }}{{ form.scheduled_start_date }}</div>
+            <div class="form-group">{{ form.scheduled_end_date.label_tag }}{{ form.scheduled_end_date }}</div>
+        </div>
+        <div class="form-group">{{ form.assigned_engineers.label_tag }}{{ form.assigned_engineers }}</div>
+        <div class="form-group">{{ form.team_leader.label_tag }}{{ form.team_leader }}</div>
+        <div class="form-group">{{ form.vehicle_assigned.label_tag }}{{ form.vehicle_assigned }}</div>
+        <div class="form-group">{{ form.resource_requirements.label_tag }}{{ form.resource_requirements }}</div>
+        <div class="form-group">{{ form.work_instructions.label_tag }}{{ form.work_instructions }}</div>
+        <div class="form-group">{{ form.status.label_tag }}{{ form.status }}</div>
+        {% if can_edit != False %}
+        <button type="submit" class="btn btn-primary">Save Schedule</button>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

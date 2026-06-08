@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Document Number Control Panel — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Document Number Control Panel</h1>
+    <a href="{% url 'document_settings' %}" class="btn btn-secondary">Document Settings</a>
+</div>
+
+<p style="color:#6c757d;margin-bottom:16px;">
+    Current year series: <strong>{{ year_series }}</strong>
+    (e.g. calendar year {{ year_series|slice:":2" }}20{{ year_series|slice:"2:" }} → {{ year_series }})
+</p>
+
+{% if can_manage %}
+<form method="post" style="margin-bottom:16px;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="seed">
+    <button type="submit" class="btn btn-secondary btn-sm">Sync Counters from Existing Numbers</button>
+</form>
+{% endif %}
+
+<div class="ioms-table-wrap">
+    <table class="ioms-table">
+        <thead>
+            <tr>
+                <th>Document Type</th>
+                <th>Year Series</th>
+                <th>Last Generated Number</th>
+                <th>Next Number Preview</th>
+                {% if can_manage %}<th>Actions</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td><strong>{{ row.label }}</strong></td>
+                <td>{{ row.year_series }}</td>
+                <td>{{ row.last_number }}</td>
+                <td><code>{{ row.next_number }}</code></td>
+                {% if can_manage %}
+                <td>
+                    <form method="post" style="display:inline;" onsubmit="return confirm('Reset counter for {{ row.label }}?');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reset">
+                        <input type="hidden" name="document_type" value="{{ row.document_type }}">
+                        <input type="hidden" name="confirm" value="on">
+                        <button type="submit" class="btn btn-sm btn-danger">Reset Counter</button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}BOQ — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Bill of Quantities (BOQ)</h1>
+    <a href="{% url 'create_boq' %}" class="btn btn-primary">+ Create BOQ</a>
+</div>
+<div class="filter-bar">
+    <a href="{% url 'boq_list' %}" class="{% if not current_status %}active{% endif %}">All</a>
+    <a href="?status=DRAFT" class="{% if current_status == 'DRAFT' %}active{% endif %}">Draft</a>
+    <a href="?status=VERIFIED" class="{% if current_status == 'VERIFIED' %}active{% endif %}">Verified</a>
+</div>
+<table>
+    <tr>
+        <th>BOQ No</th>
+        <th>Order</th>
+        <th>Client</th>
+        <th>Lines</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th></th>
+    </tr>
+    {% for boq in boqs %}
+    <tr>
+        <td><strong>{{ boq.boq_number }}</strong></td>
+        <td>{{ boq.order.order_no|default:boq.order.order_id }}</td>
+        <td>{{ boq.order.client.name }}</td>
+        <td>{{ boq.lines.count }}</td>
+        <td>
+            {% if boq.status == 'VERIFIED' %}
+            <span class="badge badge-approved">Verified</span>
+            {% else %}
+            <span class="badge badge-pending">Draft</span>
+            {% endif %}
+        </td>
+        <td>{{ boq.created_at|date:"d M Y" }}</td>
+        <td>
+            <a href="{% url 'boq_detail' boq.pk %}" class="btn btn-sm btn-primary">View</a>
+            {% if boq.status == 'VERIFIED' %}
+            <a href="{% url 'create_invoice' %}?boq={{ boq.pk }}" class="btn btn-sm btn-success">Create Invoice</a>
+            {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7" class="empty-state">No BOQs yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,87 @@
+from .utils import dashboard_url_name_for_user
+from .models import User
+from .permissions import (
+    can_view_clients,
+    can_view_orders,
+    can_view_wcr,
+    can_view_boq,
+    can_view_billing,
+    can_manage_attendance,
+    can_view_own_attendance,
+    can_view_quotations,
+    can_view_financial,
+    can_view_company_settings,
+    can_manage_user_approvals,
+    has_full_access,
+    attendance_nav_url,
+)
+
+
+def _active_nav(request):
+    path = request.path
+    if path.startswith('/dashboard'):
+        return 'dashboard'
+    if path.startswith('/orders'):
+        return 'orders'
+    if path.startswith('/clients'):
+        return 'clients'
+    if path.startswith('/quotations'):
+        return 'quotations'
+    if path.startswith('/wcr'):
+        return 'wcr'
+    if path.startswith('/boq'):
+        return 'boq'
+    if path.startswith('/billing'):
+        return 'billing'
+    if path.startswith('/attendance'):
+        return 'attendance'
+    if path.startswith('/document-generator'):
+        return 'document_numbers'
+    if path.startswith('/company-settings'):
+        return 'company_settings'
+    if path.startswith('/user-approvals'):
+        return 'user_approvals'
+    return ''
+
+
+def oms_navigation(request):
+    user = request.user
+    if not user.is_authenticated:
+        return {}
+    if not getattr(user, 'is_profile_approved', True):
+        return {}
+    role = user.role
+    pending_approval_count = 0
+    if can_manage_user_approvals(user):
+        pending_approval_count = User.objects.filter(
+            approval_status=User.APPROVAL_PENDING,
+        ).exclude(is_superuser=True).count()
+    return {
+        'dashboard_url': dashboard_url_name_for_user(user),
+        'nav_active': _active_nav(request),
+        'is_superuser': has_full_access(user),
+        'user_role': role,
+        'user_role_display': user.get_role_display() if hasattr(user, 'get_role_display') else role,
+        # Sidebar visibility (RBAC)
+        'show_nav_dashboard': True,
+        'show_nav_orders': can_view_orders(user),
+        'show_nav_clients': can_view_clients(user),
+        'show_nav_quotations': can_view_quotations(user),
+        'show_nav_wcr': can_view_wcr(user),
+        'show_nav_boq': can_view_boq(user),
+        'show_nav_billing': can_view_billing(user),
+        'show_nav_attendance': can_manage_attendance(user) or can_view_own_attendance(user),
+        'attendance_nav_url': attendance_nav_url(user),
+        'is_field_staff': role in ('ENGINEER', 'Technician'),
+        'can_view_financial': can_view_financial(user),
+        # Legacy flags (minimize template breakage)
+        'is_management': can_view_clients(user) and role in ('DIRECTOR', 'OPERATIONS'),
+        'is_supervisor': role == 'Supervisor',
+        'is_management_attendance': can_manage_attendance(user),
+        'can_check_in': can_view_own_attendance(user) and role in ('ENGINEER', 'Technician', 'Supervisor'),
+        'can_view_quotations': can_view_quotations(user),
+        'show_nav_document_numbers': user.is_superuser or role == 'DIRECTOR',
+        'show_nav_company_settings': can_view_company_settings(user),
+        'show_nav_user_approvals': can_manage_user_approvals(user),
+        'pending_approval_count': pending_approval_count,
+    }

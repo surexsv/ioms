@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}User Profile — {{ profile_user.username }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ profile_user.full_name_display }}</h1>
+    <div>
+        <a href="{% url 'user_approval_list' %}" class="btn btn-secondary">Back to List</a>
+        {% if profile_user.approval_status == 'PENDING' %}
+        <form method="post" action="{% url 'user_approve' profile_user.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Approve</button>
+        </form>
+        <a href="{% url 'user_reject' profile_user.pk %}" class="btn btn-danger">Reject</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="detail-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="card-panel" style="background:#fff; padding:20px; border-radius:8px;">
+        <h2>Basic Information</h2>
+        <p><strong>Username:</strong> {{ profile_user.username }}</p>
+        <p><strong>Email:</strong> {{ profile_user.email|default:"—" }}</p>
+        <p><strong>Mobile:</strong> {{ profile_user.phone|default:"—" }}</p>
+        <p><strong>Employee ID:</strong> {{ profile_user.employee_id|default:"—" }}</p>
+        <p><strong>Status:</strong> {{ profile_user.get_approval_status_display }}</p>
+        <p><strong>Registered:</strong> {{ profile_user.date_joined|date:"d M Y, H:i" }}</p>
+        {% if profile_user.approved_by %}
+        <p><strong>Approved By:</strong> {{ profile_user.approved_by.username }} on {{ profile_user.approved_date|date:"d M Y, H:i" }}</p>
+        {% endif %}
+        {% if profile_user.rejection_reason %}
+        <p><strong>Rejection Reason:</strong><br>{{ profile_user.rejection_reason|linebreaksbr }}</p>
+        {% endif %}
+    </div>
+    <div class="card-panel" style="background:#fff; padding:20px; border-radius:8px;">
+        <h2>Employment &amp; Address</h2>
+        <p><strong>Department:</strong> {{ profile_user.department|default:"—" }}</p>
+        <p><strong>Designation:</strong> {{ profile_user.designation|default:"—" }}</p>
+        <p><strong>Role Requested:</strong> {{ profile_user.get_role_requested_display|default:"—" }}</p>
+        <p><strong>Address:</strong> {{ profile_user.address|default:"—" }}</p>
+        <p><strong>City / State / PIN:</strong> {{ profile_user.city|default:"—" }}, {{ profile_user.state|default:"—" }} — {{ profile_user.pin_code|default:"—" }}</p>
+        {% if profile_user.profile_photo %}
+        <p><strong>Photo:</strong><br><img src="{{ profile_user.profile_photo.url }}" alt="Profile" style="max-width:160px; border-radius:8px;"></p>
+        {% endif %}
+    </div>
+</div>
+
+{% if audit_history %}
+<div style="margin-top: 24px; background:#fff; padding:20px; border-radius:8px;">
+    <h2>Audit Log</h2>
+    <table>
+        <tr><th>Action</th><th>By</th><th>Date</th><th>Notes</th></tr>
+        {% for entry in audit_history %}
+        <tr>
+            <td>{{ entry.get_action_display }}</td>
+            <td>{{ entry.performed_by.username|default:"System" }}</td>
+            <td>{{ entry.created_at|date:"d M Y, H:i" }}</td>
+            <td>{{ entry.notes|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+{% endblock %}

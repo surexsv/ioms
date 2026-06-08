@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Check In — IOMS{% endblock %}
+{% block content %}
+<div class="card" style="max-width:480px;margin:0 auto;">
+    <h2>Check In</h2>
+    <p style="color:#666;">Your location will be captured when available.</p>
+    <form method="post" id="checkInForm">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Location / Site</label>
+            {{ form.location }}
+        </div>
+        {{ form.latitude }}
+        {{ form.longitude }}
+        <button type="submit" class="btn btn-success" style="width:100%;">Confirm Check In</button>
+        <a href="{% url 'my_attendance' %}" class="btn btn-secondary" style="width:100%;margin-top:10px;text-align:center;">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+        var lat = document.getElementById('id_latitude');
+        var lng = document.getElementById('id_longitude');
+        if (lat) lat.value = pos.coords.latitude.toFixed(7);
+        if (lng) lng.value = pos.coords.longitude.toFixed(7);
+        var loc = document.getElementById('id_location');
+        if (loc && !loc.value) {
+            loc.value = pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5);
+        }
+    });
+}
+</script>
+{% endblock %}

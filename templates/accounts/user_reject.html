@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Reject Registration — {{ profile_user.username }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Reject Registration</h1>
+    <a href="{% url 'user_approval_detail' profile_user.pk %}" class="btn btn-secondary">Cancel</a>
+</div>
+
+<p>Rejecting registration for <strong>{{ profile_user.full_name_display }}</strong> ({{ profile_user.username }}).</p>
+
+<form method="post" style="max-width: 520px; margin-top: 20px;">
+    {% csrf_token %}
+    <label for="id_rejection_reason">Rejection Reason *</label>
+    {{ form.rejection_reason }}
+    {% if form.rejection_reason.errors %}
+    <div class="error">{{ form.rejection_reason.errors }}</div>
+    {% endif %}
+    <p style="margin-top: 8px; color: #6c757d; font-size: 0.9rem;">
+        Examples: Incomplete profile, Incorrect mobile number, Unauthorized registration, Missing employee details
+    </p>
+    <button type="submit" class="btn btn-danger" style="margin-top: 16px;">Confirm Rejection</button>
+</form>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Rate Card Audit History{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Rate Card Audit History</h1></div>
+<div class="filter-bar">
+    <a href="?type=SERVICE" class="{% if request.GET.type == 'SERVICE' %}active{% endif %}">Service</a>
+    <a href="?type=MATERIAL" class="{% if request.GET.type == 'MATERIAL' %}active{% endif %}">Material</a>
+    <a href="{% url 'rate_audit_list' %}">All</a>
+</div>
+<div class="ioms-table-wrap">
+    <table class="ioms-table">
+        <thead>
+            <tr><th>When</th><th>Type</th><th>Code</th><th>Action</th><th>Field</th><th>Old</th><th>New</th><th>By</th></tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.revised_at|date:"d M Y H:i" }}</td>
+                <td>{{ log.get_rate_type_display }}</td>
+                <td>{{ log.record_code }}</td>
+                <td>{{ log.get_action_display }}</td>
+                <td>{{ log.field_name|default:"—" }}</td>
+                <td>{{ log.old_value|truncatechars:30 }}</td>
+                <td>{{ log.new_value|truncatechars:30 }}</td>
+                <td>{{ log.revised_by|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8">No audit entries yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

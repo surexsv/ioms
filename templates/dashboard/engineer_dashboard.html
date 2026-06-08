@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}My Dashboard — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="ioms-page-header">
+    <div>
+        <h1>My Work Dashboard</h1>
+        <p style="margin:6px 0 0;color:var(--ioms-text-muted);">Welcome, {{ user.get_full_name|default:user.username }}</p>
+    </div>
+</div>
+
+<div class="ioms-kpi-grid">
+    <div class="ioms-kpi"><div class="value">{{ total_assigned }}</div><div class="label">Total Assigned</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ active_count }}</div><div class="label">Active Jobs</div></div>
+    <div class="ioms-kpi"><div class="value text-success">{{ completed_count }}</div><div class="label">Completed</div></div>
+    <div class="ioms-kpi"><div class="value text-danger">{{ overdue_count }}</div><div class="label">Overdue</div></div>
+</div>
+
+<div class="card">
+    <h3>My Attendance</h3>
+    <div class="ioms-kpi-grid" style="margin-bottom:16px;">
+        <div class="ioms-kpi"><div class="value text-primary">{{ attendance_month.attendance_percentage }}%</div><div class="label">Monthly %</div></div>
+        <div class="ioms-kpi"><div class="value">{{ attendance_month.present }}</div><div class="label">Present</div></div>
+        <div class="ioms-kpi"><div class="value">{{ attendance_month.absent }}</div><div class="label">Absent</div></div>
+        <div class="ioms-kpi">
+            {% if today_attendance %}<span class="badge badge-approved">Marked Today</span>{% else %}<span class="badge badge-pending">Not Marked</span>{% endif %}
+            <div class="label" style="margin-top:8px;">Today</div>
+        </div>
+    </div>
+    <a href="{% url 'my_attendance' %}" class="btn btn-primary btn-sm">View Attendance</a>
+    {% if not today_attendance or not today_attendance.check_in_time %}
+    <a href="{% url 'attendance_check_in' %}" class="btn btn-success btn-sm">Check In</a>
+    {% endif %}
+</div>
+
+{% if needs_wcr %}
+<div class="card">
+    <h3>Submit WCR Required</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Order</th><th>Client</th><th>Target</th><th></th></tr></thead>
+            <tbody>
+                {% for order in needs_wcr %}
+                <tr>
+                    <td>{{ order.order_no|default:order.order_id }}</td>
+                    <td>{{ order.client.name }}</td>
+                    <td>{{ order.expected_completion_date|default:"—" }}</td>
+                    <td>
+                        <a href="{% url 'create_wcr' %}" class="btn btn-sm btn-success">Submit WCR</a>
+                        <a href="{% url 'order_detail' order.pk %}" class="btn btn-sm btn-primary">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>Active Jobs</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Schedule</th><th>Order</th><th>Client</th><th>Status</th><th>End Date</th><th></th></tr></thead>
+            <tbody>
+                {% for schedule in active_orders %}
+                <tr>
+                    <td>{{ schedule.schedule_number }}</td>
+                    <td>{{ schedule.order.order_no|default:schedule.order.order_id }}</td>
+                    <td>{{ schedule.order.client.name }}</td>
+                    <td><span class="badge badge-progress">{{ schedule.get_status_display }}</span></td>
+                    <td>{{ schedule.scheduled_end_date }}</td>
+                    <td><a href="{% url 'order_detail' schedule.order.pk %}" class="btn btn-sm btn-primary">Open</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="empty-state">No active jobs.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if overdue_orders %}
+<div class="card">
+    <h3 style="color:var(--ioms-danger);">Overdue Jobs</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Schedule</th><th>Order</th><th>Client</th><th>End Date</th><th></th></tr></thead>
+            <tbody>
+                {% for schedule in overdue_orders %}
+                <tr>
+                    <td>{{ schedule.schedule_number }}</td>
+                    <td>{{ schedule.order.order_no|default:schedule.order.order_id }}</td>
+                    <td>{{ schedule.order.client.name }}</td>
+                    <td>{{ schedule.scheduled_end_date }}</td>
+                    <td><a href="{% url 'order_detail' schedule.order.pk %}" class="btn btn-sm btn-warning">Update</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

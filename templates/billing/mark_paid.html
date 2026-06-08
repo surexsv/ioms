@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Mark Paid — Infomates Operations Management System{% endblock %}
+{% block content %}
+{% with t='div' %}
+<{{ t }} class="card" style="max-width:500px;">
+    <h2>Record Payment</h2>
+    <p>Invoice <strong>{{ invoice.invoice_number }}</strong> for Order #{{ invoice.order.order_id }}</p>
+    <p>Total: <strong>₹{{ invoice.total }}</strong></p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Confirm Payment Received</button>
+        <a href="{% url 'invoice_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</{{ t }}>
+{% endwith %}
+{% endblock %}

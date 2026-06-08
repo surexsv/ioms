@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Covering Letter — {{ quotation.quotation_number }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Covering Letter Preview</h1>
+    <div>
+        <a href="{% url 'covering_letter_print' quotation.pk %}" class="btn btn-secondary" target="_blank">Print</a>
+        <a href="{% url 'quotation_pdf' quotation.pk %}" class="btn btn-primary" target="_blank">Full Proposal PDF</a>
+        <a href="{% url 'quotation_detail' quotation.pk %}" class="btn btn-secondary">Back</a>
+    </div>
+</div>
+
+<div class="card" style="max-width:800px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:20px;">
+        <img src="{% static 'branding/infomates_logo.png' %}" alt="Infomates" style="max-width:240px;">
+    </div>
+    <p><strong>Date:</strong> {{ cl.quotation_date|date:"d M Y" }} &nbsp;|&nbsp;
+       <strong>Quotation No.:</strong> {{ cl.quotation_number }}
+       {% if cl.reference_number %} &nbsp;|&nbsp; <strong>Ref:</strong> {{ cl.reference_number }}{% endif %}
+    </p>
+    <div style="border:1px solid #ddd;padding:14px;margin:16px 0;background:#fafbfc;">
+        <p><strong>To,</strong><br>
+        M/S {{ cl.client_name }}<br>
+        {{ cl.client_address|linebreaksbr }}<br>
+        <strong>Kind Attn:</strong> {{ cl.contact_person }}<br>
+        <strong>Project:</strong> {{ cl.project_name }}</p>
+    </div>
+    <p><strong>Subject: {{ cl.subject }}</strong></p>
+    {% if cl.company_introduction %}<p>{{ cl.company_introduction }}</p>{% endif %}
+    {% for para in cl.body_paragraphs %}
+    <p style="line-height:1.6;">{{ para|linebreaksbr }}</p>
+    {% endfor %}
+    {% if cl.closing_paragraph %}<p>{{ cl.closing_paragraph }}</p>{% endif %}
+    <div style="margin-top:32px;">
+        <p><strong>For Infomates Techno Solutions (P) Ltd</strong></p>
+        {% if cl.include_signature and cl.signature_image %}
+        <p><img src="{{ cl.signature_image.url }}" alt="Signature" style="max-height:50px;"></p>
+        {% endif %}
+        <p>{% with signatory=cl.signatory %}{% include 'company_settings/_signatory_block.html' %}{% endwith %}</p>
+        {% if cl.include_company_seal and cl.company_seal %}
+        <p><img src="{{ cl.company_seal.url }}" alt="Seal" style="max-height:70px;"></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

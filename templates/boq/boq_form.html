@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Infomates Operations Management System{% endblock %}
+{% block extra_css %}
+<style>
+    .line-table { width:100%; margin-top:16px; }
+    .line-table th { background:#1a1a2e; color:#fff; font-size:0.8rem; padding:10px 8px; }
+    .line-table td { padding:8px; border-bottom:1px solid #eee; vertical-align:top; }
+    .line-table input, .line-table textarea { width:100%; padding:6px; border:1px solid #ddd; border-radius:4px; font-size:0.9rem; }
+    .line-table .delete-row { width:auto; }
+    .formset-header { display:flex; justify-content:space-between; align-items:center; margin:20px 0 8px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+    {% if boq %}<a href="{% url 'boq_detail' boq.pk %}" class="btn btn-secondary">Back</a>{% else %}<a href="{% url 'boq_list' %}" class="btn btn-secondary">Back</a>{% endif %}
+</div>
+<div class="card">
+    <form method="post" id="boqForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:700px;">
+            <div class="form-group">{{ form.order.label_tag }}{{ form.order }}</div>
+            <div class="form-group">{{ form.notes.label_tag }}{{ form.notes }}</div>
+        </div>
+        {% include 'company_settings/_signatory_form_fields.html' %}
+        <div class="formset-header">
+            <h3 style="margin:0;">BOQ Line Items</h3>
+            <small style="color:#666;">Sl No · Item/Service Description · HSN/SAC · Unit · Qty</small>
+        </div>
+        {{ formset.management_form }}
+        <table class="line-table">
+            <thead>
+                <tr>
+                    <th style="width:50px;">Sl No</th>
+                    <th>Item / Service Description</th>
+                    <th style="width:100px;">HSN/SAC</th>
+                    <th style="width:80px;">Unit</th>
+                    <th style="width:80px;">Qty</th>
+                    <th style="width:50px;">Del</th>
+                </tr>
+            </thead>
+            <tbody id="boq-lines">
+                {% for f in formset %}
+                <tr class="formset-row">
+                    <td>{{ f.sl_no }}{% for e in f.sl_no.errors %}<br><span style="color:red">{{ e }}</span>{% endfor %}</td>
+                    <td>{{ f.description }}</td>
+                    <td>{{ f.hsn_sac }}</td>
+                    <td>{{ f.unit }}</td>
+                    <td>{{ f.qty }}</td>
+                    <td>{% if f.DELETE %}{{ f.DELETE }}{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p style="margin-top:12px;">
+            <button type="button" class="btn btn-secondary btn-sm" id="addBoqRow">+ Add Row</button>
+        </p>
+        <button type="submit" class="btn btn-primary" style="margin-top:16px;">Save BOQ</button>
+    </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function() {
+    const tbody = document.getElementById('boq-lines');
+    const total = document.querySelector('#boqForm [name$="-TOTAL_FORMS"]');
+    const addBtn = document.getElementById('addBoqRow');
+    if (!tbody || !total) return;
+    addBtn.addEventListener('click', function() {
+        const n = parseInt(total.value, 10);
+        const last = tbody.querySelector('.formset-row:last-child');
+        if (!last) return;
+        const row = last.cloneNode(true);
+        row.querySelectorAll('input, textarea').forEach(function(inp) {
+            if (inp.name) inp.name = inp.name.replace(/lines-\d+-/, 'lines-' + n + '-');
+            if (inp.id) inp.id = inp.id.replace(/lines-\d+-/, 'lines-' + n + '-');
+            if (inp.type === 'checkbox') inp.checked = false;
+            else if (inp.name && inp.name.includes('sl_no')) inp.value = n + 1;
+            else if (inp.type !== 'hidden') inp.value = '';
+        });
+        tbody.appendChild(row);
+        total.value = n + 1;
+    });
+})();
+</script>
+{% endblock %}

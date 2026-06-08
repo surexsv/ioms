@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resubmit Profile — IOMS</title>
+    <link rel="stylesheet" href="{% static 'css/ioms.css' %}">
+    <style>
+        body { margin: 0; min-height: 100vh; background: #0F2D52; padding: 24px; }
+        .card { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
+        h1 { color: #0F2D52; margin: 0 0 8px; font-size: 1.2rem; }
+        .subtitle { color: #6c757d; margin-bottom: 20px; }
+        label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 4px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 12px; }
+        .btn { padding: 10px 20px; background: #2C5282; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .alert { padding: 12px; border-radius: 6px; margin-bottom: 16px; }
+        .alert-warning { background: #fff3cd; color: #856404; }
+        .alert-info { background: #d1ecf1; color: #0c5460; }
+        .history { margin-top: 24px; font-size: 0.9rem; }
+        .history li { margin-bottom: 8px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .full { grid-column: 1 / -1; }
+        .links { text-align: center; margin-top: 16px; }
+        .links a { color: #2C5282; font-weight: 600; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>Profile Resubmission</h1>
+    <p class="subtitle">Update your registration and submit for re-approval.</p>
+
+    {% if not profile_form %}
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="verify" value="1">
+        <label for="id_username">Username</label>
+        {{ verify_form.username }}
+        {% if verify_form.username.errors %}<div class="alert alert-warning">{{ verify_form.username.errors }}</div>{% endif %}
+        <label for="id_email">Email Address</label>
+        {{ verify_form.email }}
+        {% if verify_form.non_field_errors %}<div class="alert alert-warning">{{ verify_form.non_field_errors }}</div>{% endif %}
+        <button type="submit" class="btn">Verify &amp; Continue</button>
+    </form>
+    {% else %}
+    {% if user.rejection_reason %}
+    <div class="alert alert-warning">
+        <strong>Previous rejection reason:</strong><br>{{ user.rejection_reason|linebreaksbr }}
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="resubmit" value="1">
+        <input type="hidden" name="user_id" value="{{ user.pk }}">
+        <div class="grid">
+            <div class="full">
+                <label for="id_full_name">Full Name</label>
+                {{ profile_form.full_name }}
+            </div>
+            <div>
+                <label for="id_mobile">Mobile Number</label>
+                {{ profile_form.mobile }}
+            </div>
+            <div>
+                <label for="id_email">Email</label>
+                {{ profile_form.email }}
+            </div>
+            <div>
+                <label for="id_employee_id">Employee ID</label>
+                {{ profile_form.employee_id }}
+            </div>
+            <div>
+                <label for="id_department">Department</label>
+                {{ profile_form.department }}
+            </div>
+            <div>
+                <label for="id_designation">Designation</label>
+                {{ profile_form.designation }}
+            </div>
+            <div class="full">
+                <label for="id_role_requested">Role Requested</label>
+                {{ profile_form.role_requested }}
+            </div>
+            <div class="full">
+                <label for="id_address">Address</label>
+                {{ profile_form.address }}
+            </div>
+            <div>
+                <label for="id_city">City</label>
+                {{ profile_form.city }}
+            </div>
+            <div>
+                <label for="id_state">State</label>
+                {{ profile_form.state }}
+            </div>
+            <div>
+                <label for="id_pin_code">PIN Code</label>
+                {{ profile_form.pin_code }}
+            </div>
+            <div>
+                <label for="id_profile_photo">Profile Photo</label>
+                {{ profile_form.profile_photo }}
+            </div>
+        </div>
+        <button type="submit" class="btn">Resubmit for Approval</button>
+    </form>
+    {% endif %}
+
+    {% if audit_history %}
+    <div class="history">
+        <h2>Activity History</h2>
+        <ul>
+            {% for entry in audit_history %}
+            <li>
+                <strong>{{ entry.get_action_display }}</strong>
+                — {{ entry.created_at|date:"d M Y, H:i" }}
+                {% if entry.notes %}<br><span>{{ entry.notes }}</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <p class="links"><a href="{% url 'login' %}">Back to Sign In</a></p>
+</div>
+</body>
+</html>

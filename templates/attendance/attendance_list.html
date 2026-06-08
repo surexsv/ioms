@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Records — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Attendance Records</h1>
+    <a href="{% url 'attendance_create' %}" class="btn btn-primary">+ Add</a>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+    <form method="get" class="form-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end;">
+        {{ filter_form.employee.label_tag }}{{ filter_form.employee }}
+        <div><label>From</label>{{ filter_form.date_from }}</div>
+        <div><label>To</label>{{ filter_form.date_to }}</div>
+        <div>{{ filter_form.status.label_tag }}{{ filter_form.status }}</div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="{% url 'attendance_list' %}" class="btn btn-secondary">Clear</a>
+    </form>
+</div>
+
+<div style="overflow-x:auto;">
+<table>
+    <tr>
+        <th>Employee</th><th>Date</th><th>Status</th>
+        <th>Check In</th><th>Check Out</th><th>Hours</th><th>Location</th><th></th>
+    </tr>
+    {% for r in records %}
+    <tr>
+        <td>{{ r.employee.username }}</td>
+        <td>{{ r.attendance_date }}</td>
+        <td>{{ r.get_status_display }}</td>
+        <td>{{ r.check_in_time|default:"—" }}</td>
+        <td>{{ r.check_out_time|default:"—" }}</td>
+        <td>{{ r.working_hours|default:"—" }}</td>
+        <td>{{ r.location|truncatechars:40|default:"—" }}</td>
+        <td><a href="{% url 'attendance_edit' r.pk %}" class="btn btn-sm btn-primary">Edit</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="8" class="empty-state">No records match your filters.</td></tr>
+    {% endfor %}
+</table>
+</div>
+{% endblock %}

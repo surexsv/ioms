@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} — IOMS</title>
+    <link rel="stylesheet" href="{% static 'css/ioms.css' %}">
+    <style>
+        body { margin:0; min-height:100vh; display:flex; flex-direction:column; background:#F4F6F9; font-family:'Segoe UI',system-ui,sans-serif; }
+        .err-header { background:#0F2D52; color:#fff; padding:20px; text-align:center; }
+        .err-main { flex:1; display:flex; align-items:center; justify-content:center; padding:32px 20px; }
+        .err-card { background:#fff; border-radius:12px; max-width:520px; width:100%; padding:40px 36px; text-align:center; box-shadow:0 4px 24px rgba(15,45,82,.12); border-top:4px solid #FFC107; }
+        .err-card h1 { color:#0F2D52; margin:0 0 16px; }
+        .err-card p { color:#333; line-height:1.6; margin:0 0 24px; }
+        .btn { display:inline-block; padding:12px 28px; background:#2C5282; color:#fff; text-decoration:none; border-radius:6px; font-weight:600; margin:4px; }
+        .btn-outline { background:#fff; color:#0F2D52; border:1px solid #ced4da; }
+    </style>
+</head>
+<body>
+    <header class="err-header">
+        <strong>Infomates Operations Management System</strong>
+    </header>
+    <main class="err-main">
+        <div class="err-card">
+            <h1>{{ page_title }}</h1>
+            <p>{{ message }}</p>
+            <a href="{% url dashboard_url_name %}" class="btn">Return to Dashboard</a>
+            <button type="button" class="btn btn-outline" onclick="history.back();">Go Back</button>
+        </div>
+    </main>
+</body>
+</html>
