@@ -323,6 +323,20 @@ class Quotation(AuthorizedSignatoryMixin, models.Model):
     subtotal = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     gst_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     grand_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    enquiry = models.ForeignKey(
+        'enquiries.Enquiry',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quotations',
+    )
+    estimate_boq = models.ForeignKey(
+        'estimate_boq.EstimateBOQ',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quotations',
+    )
     converted_order = models.OneToOneField(
         'orders.Order',
         on_delete=models.SET_NULL,

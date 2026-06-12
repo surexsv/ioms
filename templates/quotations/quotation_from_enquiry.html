@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Create Quotation from Enquiry{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Create Quotation from {{ enquiry.enquiry_number }}</h1></div>
+<div class="card" style="max-width:560px;">
+    <p>Client: <strong>{{ enquiry.client.name }}</strong></p>
+    <p>Location: {{ enquiry.location }}</p>
+    <form method="post">
+        {% csrf_token %}
+        {% if estimate_boqs %}
+        <label>Estimate BOQ to import</label>
+        <select name="estimate_boq" class="form-control">
+            <option value="">— Latest / none —</option>
+            {% for eb in estimate_boqs %}
+            <option value="{{ eb.pk }}">{{ eb.estimate_boq_number }} (₹{{ eb.total_amount }})</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+        <button type="submit" class="btn btn-primary" style="margin-top:16px;">Create Quotation Draft</button>
+    </form>
+</div>
+{% endblock %}

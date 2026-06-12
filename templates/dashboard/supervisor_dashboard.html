@@ -8,12 +8,25 @@
     </div>
 </div>
 
+<p class="ioms-action-row">
+    <a href="{% url 'site_progress_create' %}" class="btn btn-sm btn-primary">+ Daily Site Update</a>
+</p>
 <div class="ioms-kpi-grid">
-    <div class="ioms-kpi"><div class="value">{{ total_team_orders }}</div><div class="label">Team Orders</div></div>
+    <div class="ioms-kpi"><div class="value">{{ total_team_orders }}</div><div class="label">Assigned Sites</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ pending_work_count }}</div><div class="label">Pending Work</div></div>
+    <div class="ioms-kpi"><div class="value">{{ attendance_today_count }}</div><div class="label">Attendance Today</div></div>
     <div class="ioms-kpi"><div class="value text-warning">{{ in_progress_count }}</div><div class="label">In Progress</div></div>
     <div class="ioms-kpi"><div class="value text-primary">{{ wcr_pending_count }}</div><div class="label">WCR Pending</div></div>
     <div class="ioms-kpi"><div class="value text-danger">{{ overdue_count }}</div><div class="label">Overdue</div></div>
 </div>
+{% if recent_site_updates %}
+<div class="card">
+    <h3>Recent Site Updates</h3>
+    <ul>{% for u in recent_site_updates %}
+    <li>{{ u.update_date }} — {{ u.work_description|truncatewords:12 }} ({{ u.progress_percent }}%)</li>
+    {% endfor %}</ul>
+</div>
+{% endif %}
 
 {% if pending_wcrs %}
 <div class="card">

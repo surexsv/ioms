@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ estimate_boq.estimate_boq_number }} — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ estimate_boq.estimate_boq_number }}</h1>
+    {% if can_edit %}<a href="{% url 'edit_estimate_boq' estimate_boq.pk %}" class="btn btn-primary">Edit</a>{% endif %}
+    <a href="{% url 'enquiry_detail' estimate_boq.enquiry_id %}" class="btn btn-secondary">Enquiry</a>
+</div>
+<div class="card">
+    <p><strong>Enquiry:</strong> {{ estimate_boq.enquiry.enquiry_number }} — {{ estimate_boq.enquiry.client.name }}</p>
+    <p><strong>Status:</strong> {{ estimate_boq.get_status_display }}</p>
+    <p><strong>Total:</strong> ₹{{ estimate_boq.total_amount }}</p>
+</div>
+<table>
+    <tr><th>#</th><th>Item</th><th>Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Amount</th></tr>
+    {% for line in estimate_boq.lines.all %}
+    <tr>
+        <td>{{ line.sl_no }}</td><td>{{ line.item }}</td><td>{{ line.description }}</td>
+        <td>{{ line.quantity }}</td><td>{{ line.unit }}</td><td>{{ line.rate }}</td><td>{{ line.amount }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

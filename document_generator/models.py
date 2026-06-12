@@ -15,6 +15,8 @@ class DocumentNumberSettings(models.Model):
     invoice_prefix = models.CharField(max_length=10, default='INV')
     purchase_order_prefix = models.CharField(max_length=10, default='PO')
     schedule_prefix = models.CharField(max_length=10, default='SCH')
+    enquiry_prefix = models.CharField(max_length=10, default='ENQ')
+    estimate_boq_prefix = models.CharField(max_length=10, default='EBOQ')
     serial_length = models.PositiveSmallIntegerField(default=4)
     year_format = models.CharField(max_length=10, default='YYYY')
     allow_editing = models.BooleanField(default=True)

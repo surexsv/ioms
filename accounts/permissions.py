@@ -3,19 +3,36 @@ Central role-based access control for IOMS.
 Superusers always have full access (except explicit admin-only paths).
 """
 
+from .roles import (
+    ROLE_ACCOUNTS,
+    ROLE_DIRECTOR,
+    ROLE_ENGINEER,
+    ROLE_OPERATIONS,
+    ROLE_PROJECT_MANAGER,
+    ROLE_SUPERVISOR,
+    ROLE_TECHNICIAN,
+    user_role,
+)
+
 # Module keys used by decorators and middleware
 MODULE_DASHBOARD_DIRECTOR = 'dashboard_director'
 MODULE_DASHBOARD_OPERATIONS = 'dashboard_operations'
 MODULE_DASHBOARD_ACCOUNTS = 'dashboard_accounts'
 MODULE_DASHBOARD_ENGINEER = 'dashboard_engineer'
 MODULE_DASHBOARD_SUPERVISOR = 'dashboard_supervisor'
+MODULE_DASHBOARD_PROJECT_MANAGER = 'dashboard_project_manager'
 MODULE_CLIENTS = 'clients'
+MODULE_ENQUIRIES = 'enquiries'
+MODULE_ENQUIRIES_MANAGE = 'enquiries_manage'
+MODULE_ESTIMATE_BOQ = 'estimate_boq'
 MODULE_ORDERS = 'orders'
 MODULE_ORDERS_CREATE = 'orders_create'
 MODULE_WCR = 'wcr'
 MODULE_WCR_APPROVE = 'wcr_approve'
 MODULE_BOQ = 'boq'
 MODULE_BILLING = 'billing'
+MODULE_BILLING_VIEW = 'billing_view'
+MODULE_BILLING_CREATE = 'billing_create'
 MODULE_ATTENDANCE_MANAGE = 'attendance_manage'
 MODULE_ATTENDANCE_SELF = 'attendance_self'
 MODULE_QUOTATIONS = 'quotations'
@@ -26,57 +43,73 @@ MODULE_COMPANY_SETTINGS = 'company_settings'
 MODULE_SCHEDULING = 'scheduling'
 MODULE_SCHEDULING_MANAGE = 'scheduling_manage'
 MODULE_USER_APPROVAL = 'user_approval'
-
-_ROLE = lambda user: getattr(user, 'role', None)
+MODULE_SITE_PROGRESS = 'site_progress'
 
 # Role → allowed modules
 _ACCESS = {
-    'DIRECTOR': {
+    ROLE_DIRECTOR: {
         MODULE_DASHBOARD_DIRECTOR,
-        MODULE_CLIENTS, MODULE_ORDERS, MODULE_ORDERS_CREATE,
+        MODULE_CLIENTS, MODULE_ENQUIRIES, MODULE_ENQUIRIES_MANAGE, MODULE_ESTIMATE_BOQ,
+        MODULE_ORDERS, MODULE_ORDERS_CREATE,
         MODULE_WCR, MODULE_WCR_APPROVE, MODULE_BOQ, MODULE_BILLING,
         MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
         MODULE_QUOTATIONS, MODULE_QUOTATION_RATES, MODULE_FINANCIAL,
         MODULE_DOCUMENT_GENERATOR, MODULE_COMPANY_SETTINGS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
-        MODULE_USER_APPROVAL,
+        MODULE_USER_APPROVAL, MODULE_SITE_PROGRESS,
     },
-    'OPERATIONS': {
+    ROLE_OPERATIONS: {
         MODULE_DASHBOARD_OPERATIONS,
-        MODULE_CLIENTS, MODULE_ORDERS, MODULE_ORDERS_CREATE,
+        MODULE_CLIENTS, MODULE_ENQUIRIES, MODULE_ENQUIRIES_MANAGE, MODULE_ESTIMATE_BOQ,
+        MODULE_ORDERS, MODULE_ORDERS_CREATE,
         MODULE_WCR, MODULE_WCR_APPROVE, MODULE_BOQ,
+        MODULE_BILLING_CREATE,
         MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
         MODULE_QUOTATIONS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
+        MODULE_SITE_PROGRESS,
     },
-    'ACCOUNTS': {
+    ROLE_PROJECT_MANAGER: {
+        MODULE_DASHBOARD_PROJECT_MANAGER,
+        MODULE_CLIENTS, MODULE_ENQUIRIES, MODULE_ESTIMATE_BOQ,
+        MODULE_ORDERS, MODULE_ORDERS_CREATE,
+        MODULE_WCR, MODULE_WCR_APPROVE,
+        MODULE_QUOTATIONS,
+        MODULE_BILLING_VIEW,
+        MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
+        MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
+        MODULE_SITE_PROGRESS,
+    },
+    ROLE_SUPERVISOR: {
+        MODULE_DASHBOARD_SUPERVISOR,
+        MODULE_CLIENTS, MODULE_ENQUIRIES,
+        MODULE_ORDERS, MODULE_ORDERS_CREATE,
+        MODULE_WCR, MODULE_WCR_APPROVE, MODULE_BOQ,
+        MODULE_BILLING_VIEW,
+        MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
+        MODULE_QUOTATIONS,
+        MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
+        MODULE_SITE_PROGRESS,
+    },
+    ROLE_ACCOUNTS: {
         MODULE_DASHBOARD_ACCOUNTS,
         MODULE_CLIENTS, MODULE_BOQ, MODULE_BILLING,
         MODULE_ATTENDANCE_SELF,
         MODULE_QUOTATION_RATES, MODULE_FINANCIAL,
         MODULE_SCHEDULING,
     },
-    'ENGINEER': {
+    ROLE_ENGINEER: {
         MODULE_DASHBOARD_ENGINEER,
         MODULE_ORDERS, MODULE_WCR, MODULE_ATTENDANCE_SELF,
         MODULE_SCHEDULING,
     },
-    'Technician': {
+    ROLE_TECHNICIAN: {
         MODULE_DASHBOARD_ENGINEER,
         MODULE_ORDERS, MODULE_WCR, MODULE_ATTENDANCE_SELF,
         MODULE_SCHEDULING,
-    },
-    'Supervisor': {
-        MODULE_DASHBOARD_SUPERVISOR,
-        MODULE_CLIENTS, MODULE_ORDERS, MODULE_ORDERS_CREATE,
-        MODULE_WCR, MODULE_WCR_APPROVE, MODULE_BOQ,
-        MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
-        MODULE_QUOTATIONS,
-        MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
     },
 }
 
-# Superuser gets all modules
 _ALL_MODULES = set().union(*_ACCESS.values())
 
 
@@ -85,13 +118,13 @@ def has_full_access(user):
 
 
 def can_access(user, module_key):
-    if not user.is_authenticated:
+    if user is None or not user.is_authenticated:
         return False
     if user.is_superuser:
         return True
     if not getattr(user, 'is_profile_approved', True):
         return False
-    role = _ROLE(user)
+    role = user_role(user)
     return module_key in _ACCESS.get(role, set())
 
 
@@ -100,10 +133,8 @@ def user_modules(user):
         return set()
     if user.is_superuser:
         return _ALL_MODULES
-    return _ACCESS.get(_ROLE(user), set())
+    return _ACCESS.get(user_role(user), set())
 
-
-# —— Navigation & UI flags ——
 
 def can_view_dashboard(user):
     return has_full_access(user) or bool(
@@ -114,12 +145,25 @@ def can_view_dashboard(user):
             MODULE_DASHBOARD_ACCOUNTS,
             MODULE_DASHBOARD_ENGINEER,
             MODULE_DASHBOARD_SUPERVISOR,
+            MODULE_DASHBOARD_PROJECT_MANAGER,
         }
     )
 
 
 def can_view_clients(user):
     return can_access(user, MODULE_CLIENTS)
+
+
+def can_view_enquiries(user):
+    return can_access(user, MODULE_ENQUIRIES)
+
+
+def can_manage_enquiries(user):
+    return can_access(user, MODULE_ENQUIRIES_MANAGE)
+
+
+def can_view_estimate_boq(user):
+    return can_access(user, MODULE_ESTIMATE_BOQ)
 
 
 def can_view_orders(user):
@@ -139,7 +183,11 @@ def can_view_boq(user):
 
 
 def can_view_billing(user):
-    return can_access(user, MODULE_BILLING)
+    return (
+        can_access(user, MODULE_BILLING)
+        or can_access(user, MODULE_BILLING_VIEW)
+        or can_access(user, MODULE_BILLING_CREATE)
+    )
 
 
 def can_manage_attendance(user):
@@ -168,21 +216,27 @@ def can_view_company_settings(user):
 
 def can_manage_user_approvals(user):
     return user.is_authenticated and (
-        user.is_superuser or getattr(user, 'role', None) == 'DIRECTOR'
+        user.is_superuser or user_role(user) == ROLE_DIRECTOR
     )
 
 
+def can_manage_site_progress(user):
+    return can_access(user, MODULE_SITE_PROGRESS)
+
+
 def attendance_nav_url(user):
-    """Sidebar attendance link target."""
     if can_manage_attendance(user):
         return 'attendance_dashboard'
     return 'my_attendance'
 
 
 def resolve_path_module(path):
-    """Map request path to module key for middleware checks."""
     if path.startswith('/billing/'):
         return MODULE_BILLING
+    if path.startswith('/enquiries/'):
+        return MODULE_ENQUIRIES
+    if path.startswith('/estimate-boq/'):
+        return MODULE_ESTIMATE_BOQ
     if path.startswith('/clients/'):
         return MODULE_CLIENTS
     if path.startswith('/orders/'):
@@ -209,6 +263,8 @@ def resolve_path_module(path):
     if path.startswith('/user-approvals/'):
         return MODULE_USER_APPROVAL
     if path.startswith('/dashboard/'):
+        if path.startswith('/dashboard/project-manager'):
+            return MODULE_DASHBOARD_PROJECT_MANAGER
         if path.startswith('/dashboard/engineer'):
             return MODULE_DASHBOARD_ENGINEER
         if path.startswith('/dashboard/supervisor'):
@@ -222,14 +278,16 @@ def resolve_path_module(path):
 
 
 def allowed_dashboard_url_name(user):
-    if has_full_access(user) or _ROLE(user) == 'DIRECTOR':
+    if has_full_access(user) or user_role(user) == ROLE_DIRECTOR:
         return 'director_dashboard'
-    if _ROLE(user) == 'OPERATIONS':
+    if user_role(user) == ROLE_OPERATIONS:
         return 'operations_dashboard'
-    if _ROLE(user) == 'ACCOUNTS':
+    if user_role(user) == ROLE_ACCOUNTS:
         return 'accounts_dashboard'
-    if _ROLE(user) in ('ENGINEER', 'Technician'):
+    if user_role(user) == ROLE_PROJECT_MANAGER:
+        return 'project_manager_dashboard'
+    if user_role(user) in (ROLE_ENGINEER, ROLE_TECHNICIAN):
         return 'engineer_dashboard'
-    if _ROLE(user) == 'Supervisor':
+    if user_role(user) == ROLE_SUPERVISOR:
         return 'supervisor_dashboard'
     return 'login'

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}{{ enquiry.enquiry_number }} — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ enquiry.enquiry_number }}</h1>
+    <div>
+        {% if can_manage %}<a href="{% url 'edit_enquiry' enquiry.pk %}" class="btn btn-secondary">Edit</a>{% endif %}
+        {% if can_create_estimate %}<a href="{% url 'create_estimate_boq' %}?enquiry={{ enquiry.pk }}" class="btn btn-secondary">Estimate BOQ</a>{% endif %}
+        {% if can_create_quotation %}<a href="{% url 'quotation_create_from_enquiry' enquiry.pk %}" class="btn btn-primary">Create Quotation</a>{% endif %}
+        {% if can_convert %}
+        <form method="post" action="{% url 'convert_enquiry_order' enquiry.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Convert To Order</button>
+        </form>
+        {% endif %}
+        <a href="{% url 'enquiry_list' %}" class="btn btn-secondary">Back</a>
+    </div>
+</div>
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>Client</label><p>{{ enquiry.client.name }}</p></div>
+        <div class="detail-item"><label>Status</label><p><strong>{{ enquiry.get_status_display }}</strong></p></div>
+        <div class="detail-item"><label>Contact</label><p>{{ enquiry.contact_person }} — {{ enquiry.mobile }}</p></div>
+        <div class="detail-item"><label>Email</label><p>{{ enquiry.email|default:"—" }}</p></div>
+        <div class="detail-item"><label>Type</label><p>{{ enquiry.get_enquiry_type_display }}</p></div>
+        <div class="detail-item"><label>Source</label><p>{{ enquiry.get_source_display }}</p></div>
+        <div class="detail-item"><label>Project Manager</label><p>{{ enquiry.assigned_project_manager|default:"—" }}</p></div>
+        <div class="detail-item"><label>Supervisor</label><p>{{ enquiry.assigned_supervisor|default:"—" }}</p></div>
+    </div>
+    <div class="detail-item"><label>Location</label><p>{{ enquiry.location }}</p></div>
+    <div class="detail-item"><label>Description</label><p>{{ enquiry.description }}</p></div>
+    {% if enquiry.survey_required %}
+    <div class="detail-item"><label>Survey</label><p>{{ enquiry.survey_date|date:"d M Y"|default:"Not scheduled" }} — {{ enquiry.survey_engineer|default:"Unassigned" }}</p>
+    {% if enquiry.survey_remarks %}<p>{{ enquiry.survey_remarks }}</p>{% endif %}</div>
+    {% endif %}
+    {% if enquiry.feasibility_required %}
+    <div class="detail-item"><label>Feasibility</label><p>{{ enquiry.get_feasibility_status_display }}{% if enquiry.feasibility_remarks %} — {{ enquiry.feasibility_remarks }}{% endif %}</p></div>
+    {% endif %}
+    {% if enquiry.converted_order %}
+    <div class="detail-item"><label>Order</label><p><a href="{% url 'order_detail' enquiry.converted_order.pk %}">{{ enquiry.converted_order.order_no }}</a></p></div>
+    {% endif %}
+</div>
+{% if estimate_boqs %}
+<div class="card"><h3>Estimate BOQs</h3>
+<ul>{% for eb in estimate_boqs %}<li><a href="{% url 'estimate_boq_detail' eb.pk %}">{{ eb.estimate_boq_number }}</a> — {{ eb.get_status_display }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+{% if quotations %}
+<div class="card"><h3>Quotations</h3>
+<ul>{% for q in quotations %}<li><a href="{% url 'quotation_detail' q.pk %}">{{ q.quotation_number }}</a> — {{ q.get_status_display }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+{% endblock %}

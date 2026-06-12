@@ -1,0 +1,7 @@
+{% if status == 'DRAFT' %}<span class="badge badge-invoice-draft">Draft</span>
+{% elif status == 'SUBMITTED' %}<span class="badge badge-invoice-submitted">Submitted</span>
+{% elif status == 'UNDER_REVIEW' %}<span class="badge badge-invoice-review">Under Review</span>
+{% elif status == 'APPROVED' %}<span class="badge badge-invoice-approved">Approved</span>
+{% elif status == 'REJECTED' %}<span class="badge badge-invoice-rejected">Rejected</span>
+{% elif status == 'CANCELLED' %}<span class="badge badge-invoice-cancelled">Cancelled</span>
+{% else %}<span class="badge">{{ status }}</span>{% endif %}

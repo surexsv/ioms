@@ -13,6 +13,17 @@ from accounts.permissions import (
     can_access,
 )
 from scheduling.permissions import can_manage_scheduling
+from accounts.roles import (
+    user_role,
+    ROLE_DIRECTOR,
+    ROLE_OPERATIONS,
+    ROLE_PROJECT_MANAGER,
+    ROLE_SUPERVISOR,
+    ROLE_ENGINEER,
+    ROLE_TECHNICIAN,
+    LEGACY_SUPERVISOR,
+    FIELD_ROLES,
+)
 
 
 STATUS_LABELS = {
@@ -35,14 +46,21 @@ ENGINEER_TRANSITIONS = {
 
 def _orders_for_user(user):
     qs = Order.objects.select_related('client', 'assigned_to').order_by('-order_id')
-    if user.role in ('ENGINEER', 'Technician'):
+    role = user_role(user)
+    if role in FIELD_ROLES:
         return qs.filter(
             Q(work_schedule__assigned_engineers=user) | Q(assigned_to=user),
         ).distinct()
-    if user.role == 'Supervisor':
+    if role == ROLE_PROJECT_MANAGER:
         return qs.filter(
-            Q(work_schedule__assigned_engineers__role__in=['ENGINEER', 'Technician'])
-            | Q(assigned_to__role__in=['ENGINEER', 'Technician'])
+            Q(source_enquiry__assigned_project_manager=user)
+            | Q(work_schedule__team_leader=user),
+        ).distinct()
+    if role == ROLE_SUPERVISOR:
+        return qs.filter(
+            Q(source_enquiry__assigned_supervisor=user)
+            | Q(work_schedule__assigned_engineers__role__in=list(FIELD_ROLES))
+            | Q(assigned_to__role__in=list(FIELD_ROLES))
             | Q(work_schedule__isnull=True, assigned_to__isnull=True),
         ).distinct()
     return qs
@@ -53,17 +71,25 @@ def _can_access_order(user, order):
         return True
     if not can_access(user, MODULE_ORDERS):
         return False
-    if user.role in ('DIRECTOR', 'OPERATIONS', 'Supervisor'):
-        if user.role == 'Supervisor':
-            if hasattr(order, 'work_schedule'):
-                engineers = order.work_schedule.assigned_engineers.all()
-                if engineers.exists():
-                    return all(e.role in ('ENGINEER', 'Technician') for e in engineers)
-            if order.assigned_to is None:
-                return True
-            return order.assigned_to.role in ('ENGINEER', 'Technician')
+    role = user_role(user)
+    if role in (ROLE_DIRECTOR, ROLE_OPERATIONS):
         return True
-    if user.role in ('ENGINEER', 'Technician'):
+    if role == ROLE_PROJECT_MANAGER:
+        if hasattr(order, 'source_enquiry') and order.source_enquiry:
+            return order.source_enquiry.assigned_project_manager_id == user.id
+        return True
+    if role == ROLE_SUPERVISOR:
+        if hasattr(order, 'source_enquiry') and order.source_enquiry:
+            if order.source_enquiry.assigned_supervisor_id == user.id:
+                return True
+        if hasattr(order, 'work_schedule'):
+            engineers = order.work_schedule.assigned_engineers.all()
+            if engineers.exists():
+                return all(user_role(e) in FIELD_ROLES for e in engineers)
+        if order.assigned_to is None:
+            return True
+        return user_role(order.assigned_to) in FIELD_ROLES
+    if role in FIELD_ROLES:
         if hasattr(order, 'work_schedule'):
             return order.work_schedule.assigned_engineers.filter(pk=user.pk).exists()
         return order.assigned_to_id == user.id
@@ -121,7 +147,7 @@ def order_detail(request, pk):
 
     schedule = getattr(order, 'work_schedule', None)
 
-    is_engineer = request.user.role in ('ENGINEER', 'Technician')
+    is_engineer = user_role(request.user) in FIELD_ROLES
     next_statuses = {
         'NEW': [],
         'SCHEDULED': [('IN_PROGRESS', 'Start Work')],

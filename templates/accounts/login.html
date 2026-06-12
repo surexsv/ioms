@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login — Infomates Operations Management System</title>
+    <title>Login — {{ ioms_product_name }}</title>
     <link rel="stylesheet" href="{% static 'css/ioms.css' %}">
     <style>
         body.ioms-login {
@@ -96,7 +96,7 @@
         <div class="login-logo">
             <img src="{% static 'branding/infomates_logo.png' %}" alt="Infomates Techno Solutions">
         </div>
-        <h1>Infomates Operations Management System</h1>
+        <h1>{{ ioms_product_name }}</h1>
         <p class="subtitle">Sign in to continue</p>
         {% if form.non_field_errors %}
         <div class="error">

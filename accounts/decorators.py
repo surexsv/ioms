@@ -5,6 +5,7 @@ from django.shortcuts import redirect
 
 from .access_control import REASON_MODULE, REASON_ROLE, store_denial_context
 from .permissions import can_access
+from .roles import user_role
 from .security_log import log_access_denied
 
 
@@ -44,7 +45,11 @@ def role_required(*roles):
         @login_required(login_url='login')
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            if request.user.is_superuser or request.user.role in roles:
+            if (
+                request.user.is_superuser
+                or user_role(request.user) in roles
+                or getattr(request.user, 'role', None) in roles
+            ):
                 return view_func(request, *args, **kwargs)
             return access_denied_response(request, reason=REASON_ROLE)
         return wrapper

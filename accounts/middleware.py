@@ -7,6 +7,7 @@ from .access_control import REASON_MODULE, store_denial_context
 from .error_handlers import user_friendly_error_view
 from .permissions import (
     can_access,
+    can_view_billing,
     resolve_path_module,
     allowed_dashboard_url_name,
     MODULE_DASHBOARD_DIRECTOR,
@@ -60,21 +61,37 @@ class OMSAccessMiddleware:
             if normalized not in self.APPROVAL_EXEMPT_PATHS and not path.startswith('/profile-resubmit'):
                 return redirect('account_status')
 
-        module_key = resolve_path_module(path)
-        if module_key and not can_access(request.user, module_key):
-            log_access_denied(
-                request,
-                reason=REASON_MODULE,
-                module_key=module_key,
-                attempted_url=request.get_full_path(),
-            )
-            store_denial_context(
-                request,
-                reason=REASON_MODULE,
-                module_key=module_key,
-                attempted_url=request.get_full_path(),
-            )
-            return redirect('access_denied')
+        if path.startswith('/billing/'):
+            if not can_view_billing(request.user):
+                log_access_denied(
+                    request,
+                    reason=REASON_MODULE,
+                    module_key='billing',
+                    attempted_url=request.get_full_path(),
+                )
+                store_denial_context(
+                    request,
+                    reason=REASON_MODULE,
+                    module_key='billing',
+                    attempted_url=request.get_full_path(),
+                )
+                return redirect('access_denied')
+        else:
+            module_key = resolve_path_module(path)
+            if module_key and not can_access(request.user, module_key):
+                log_access_denied(
+                    request,
+                    reason=REASON_MODULE,
+                    module_key=module_key,
+                    attempted_url=request.get_full_path(),
+                )
+                store_denial_context(
+                    request,
+                    reason=REASON_MODULE,
+                    module_key=module_key,
+                    attempted_url=request.get_full_path(),
+                )
+                return redirect('access_denied')
 
         if path in ('/dashboard/', '/dashboard'):
             if not can_access(request.user, MODULE_DASHBOARD_DIRECTOR):

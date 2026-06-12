@@ -1,48 +1,61 @@
 {% extends 'base.html' %}
 {% block title %}Billing — Infomates Operations Management System{% endblock %}
 {% block content %}
-{% with t='div' %}
-<{{ t }} class="page-header">
+<div class="page-header">
     <h1>Invoices</h1>
+    {% if can_create_invoice %}
     <a href="{% url 'create_invoice' %}" class="btn btn-primary">+ Create Invoice</a>
-</{{ t }}>
-<{{ t }} class="filter-bar">
-    <a href="{% url 'invoice_list' %}" class="{% if not current_status %}active{% endif %}">All</a>
-    <a href="?status=PENDING" class="{% if current_status == 'PENDING' %}active{% endif %}">Pending</a>
+    {% endif %}
+</div>
+<div class="filter-bar">
+    <a href="{% url 'invoice_list' %}" class="{% if not current_status and not current_approval %}active{% endif %}">All</a>
+    <a href="?approval=DRAFT" class="{% if current_approval == 'DRAFT' %}active{% endif %}">Draft</a>
+    <a href="?approval=SUBMITTED" class="{% if current_approval == 'SUBMITTED' %}active{% endif %}">Submitted</a>
+    <a href="?approval=UNDER_REVIEW" class="{% if current_approval == 'UNDER_REVIEW' %}active{% endif %}">Under Review</a>
+    <a href="?approval=APPROVED" class="{% if current_approval == 'APPROVED' %}active{% endif %}">Approved</a>
+    <a href="?approval=REJECTED" class="{% if current_approval == 'REJECTED' %}active{% endif %}">Rejected</a>
+    <span style="margin:0 8px;color:#ccc;">|</span>
+    <a href="?status=PENDING" class="{% if current_status == 'PENDING' %}active{% endif %}">Payment Pending</a>
     <a href="?status=RECEIVED" class="{% if current_status == 'RECEIVED' %}active{% endif %}">Paid</a>
-</{{ t }}>
-{% endwith %}
-<table>
+</div>
+<div class="ioms-table-wrap">
+<table class="ioms-table">
+    <thead>
     <tr>
         <th>Invoice #</th>
         <th>Order</th>
         <th>Client</th>
-        <th>Amount</th>
-        <th>GST</th>
         <th>Total</th>
+        <th>Approval</th>
+        <th>Payment</th>
         <th>Due</th>
-        <th>Status</th>
         <th>Actions</th>
     </tr>
+    </thead>
+    <tbody>
     {% for inv in invoices %}
     <tr>
-        <td>{{ inv.invoice_number }}</td>
+        <td><a href="{% url 'invoice_detail' inv.pk %}">{{ inv.invoice_number }}</a></td>
         <td>#{{ inv.order.order_id }}</td>
         <td>{{ inv.order.client.name }}</td>
-        <td>₹{{ inv.amount }}</td>
-        <td>₹{{ inv.gst }}</td>
         <td><strong>₹{{ inv.total }}</strong></td>
-        <td>{{ inv.due_date }}</td>
+        <td>{% include 'billing/_approval_badge.html' with status=inv.approval_status %}</td>
         <td>{% if inv.payment_status == 'RECEIVED' %}<span class="badge badge-approved">Paid</span>{% else %}<span class="badge badge-pending">Pending</span>{% endif %}</td>
+        <td>{{ inv.due_date }}</td>
         <td>
+            <a href="{% url 'invoice_detail' inv.pk %}" class="btn btn-sm btn-secondary">View</a>
+            {% if inv.is_pdf_available %}
             <a href="{% url 'invoice_pdf' inv.pk %}" class="btn btn-sm btn-primary" target="_blank">PDF</a>
-            {% if inv.payment_status == 'PENDING' %}
+            {% endif %}
+            {% if inv.payment_status == 'PENDING' and inv.is_pdf_available %}
             <a href="{% url 'mark_paid' inv.pk %}" class="btn btn-sm btn-success">Mark Paid</a>
             {% endif %}
         </td>
     </tr>
     {% empty %}
-    <tr><td colspan="9" class="empty-state">No invoices yet.</td></tr>
+    <tr><td colspan="8" class="empty-state">No invoices yet.</td></tr>
     {% endfor %}
+    </tbody>
 </table>
+</div>
 {% endblock %}

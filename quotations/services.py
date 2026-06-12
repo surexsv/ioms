@@ -4,7 +4,13 @@ from django.db import transaction
 from django.utils import timezone
 
 from orders.models import Order
-from .models import RateCardAuditLog, Quotation
+from .models import (
+    Quotation,
+    QuotationMaterialLine,
+    QuotationServiceLine,
+    QuotationSettings,
+    RateCardAuditLog,
+)
 
 
 def log_rate_card_change(rate_type, instance, action, user, field_name='', old_value='', new_value=''):
@@ -57,6 +63,48 @@ def delete_rate_card_with_audit(rate_type, instance, user):
 
 
 @transaction.atomic
+def create_quotation_from_enquiry(enquiry, user, estimate_boq=None):
+    """Build quotation draft from enquiry and optional estimate BOQ lines."""
+    if estimate_boq is None:
+        estimate_boq = enquiry.estimate_boqs.order_by('-created_at').first()
+
+    validity_days = QuotationSettings.get_solo().validity_days
+    valid_until = timezone.now().date() + timedelta(days=validity_days)
+
+    quotation = Quotation.objects.create(
+        client=enquiry.client,
+        contact_person=enquiry.contact_person,
+        site_location=enquiry.location,
+        subject=f'Quotation for {enquiry.enquiry_type} — {enquiry.client.name}',
+        scope_of_work=enquiry.description,
+        reference_number=enquiry.enquiry_number,
+        valid_until=valid_until,
+        enquiry=enquiry,
+        estimate_boq=estimate_boq,
+        created_by=user,
+        status='DRAFT',
+    )
+
+    if estimate_boq:
+        for idx, line in enumerate(estimate_boq.lines.all()):
+            QuotationServiceLine.objects.create(
+                quotation=quotation,
+                description=f'{line.item} — {line.description}'.strip(' —'),
+                quantity=line.quantity,
+                unit=line.unit,
+                unit_rate=line.rate,
+                sort_order=idx + 1,
+            )
+
+    quotation.recalculate_totals()
+    quotation.save(update_fields=['subtotal', 'gst_total', 'grand_total', 'updated_at'])
+
+    enquiry.status = 'QUOTATION_PREPARATION'
+    enquiry.save(update_fields=['status', 'updated_at'])
+    return quotation
+
+
+@transaction.atomic
 def convert_quotation_to_order(quotation, user):
     if quotation.converted_order_id:
         return quotation.converted_order
@@ -98,4 +146,11 @@ def convert_quotation_to_order(quotation, user):
     quotation.converted_order = order
     quotation.status = 'CONVERTED'
     quotation.save(update_fields=['converted_order', 'status', 'updated_at'])
+
+    if quotation.enquiry_id:
+        enquiry = quotation.enquiry
+        enquiry.converted_order = order
+        enquiry.status = 'CONVERTED_TO_ORDER'
+        enquiry.save(update_fields=['converted_order', 'status', 'updated_at'])
+
     return order

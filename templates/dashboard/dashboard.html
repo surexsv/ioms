@@ -16,13 +16,25 @@
     {% endif %}
     {% if show_financial %}
     <div class="ioms-kpi"><div class="value">{{ total_invoices }}</div><div class="label">Invoices</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ invoice_pending_approval }}</div><div class="label">{% if dashboard_title == 'Accounts Dashboard' %}Invoices Awaiting Approval{% else %}Invoices Pending Approval{% endif %}</div></div>
+    <div class="ioms-kpi"><div class="value text-success">{{ invoice_approved_count }}</div><div class="label">Approved Invoices</div></div>
+    <div class="ioms-kpi"><div class="value text-danger">{{ invoice_rejected_count }}</div><div class="label">Rejected Invoices</div></div>
     <div class="ioms-kpi"><div class="value">{{ payment_pending }}</div><div class="label">Payments Pending</div></div>
-    <div class="ioms-kpi"><div class="value">₹{{ total_revenue|floatformat:0 }}</div><div class="label">Total Revenue</div></div>
+    <div class="ioms-kpi"><div class="value">₹{{ total_revenue|floatformat:0 }}</div><div class="label">Approved Revenue</div></div>
     {% endif %}
     {% if show_operations %}
     <div class="ioms-kpi"><div class="value text-success">{{ attendance_stats.present }}</div><div class="label">Present Today</div></div>
     <div class="ioms-kpi"><div class="value text-primary">{{ attendance_stats.attendance_percentage }}%</div><div class="label">Attendance Today</div></div>
     {% endif %}
+</div>
+
+<h3 class="ioms-section-title" style="margin-top:8px;">Enquiry Pipeline</h3>
+<div class="ioms-kpi-grid">
+    <div class="ioms-kpi"><div class="value">{{ total_enquiries }}</div><div class="label">Total Enquiries</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ open_enquiries }}</div><div class="label">Open Enquiries</div></div>
+    <div class="ioms-kpi"><div class="value">{{ quotations_submitted }}</div><div class="label">Quotations Submitted</div></div>
+    <div class="ioms-kpi"><div class="value text-success">{{ won_opportunities }}</div><div class="label">Won</div></div>
+    <div class="ioms-kpi"><div class="value text-danger">{{ lost_opportunities }}</div><div class="label">Lost</div></div>
 </div>
 
 {% if show_quotations %}
@@ -43,6 +55,10 @@
 </p>
 
 <div class="ioms-charts-row ioms-charts-row-3">
+    <div class="ioms-chart-card">
+        <h3>Enquiry Pipeline</h3>
+        <div class="ioms-chart-wrap"><canvas id="enquiryPipelineChart"></canvas></div>
+    </div>
     {% if show_quotations %}
     <div class="ioms-chart-card">
         <h3>Monthly Quotation Value</h3>
@@ -101,6 +117,15 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
+const enquiryLabels = {{ enquiry_pipeline_labels|safe }};
+const enquiryValues = {{ enquiry_pipeline_values|safe }};
+if (document.getElementById('enquiryPipelineChart')) {
+    new Chart(document.getElementById('enquiryPipelineChart'), {
+        type: 'bar',
+        data: { labels: enquiryLabels.length ? enquiryLabels : ['No data'], datasets: [{ label: 'Enquiries', data: enquiryValues.length ? enquiryValues : [0], backgroundColor: 'rgba(15, 45, 82, 0.8)' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+}
 const chartDefaults = {
     responsive: true,
     maintainAspectRatio: false,

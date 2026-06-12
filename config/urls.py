@@ -3,10 +3,18 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from config.version import PRODUCT_NAME, SHORT_NAME
+
+admin.site.site_header = PRODUCT_NAME
+admin.site.site_title = f'{SHORT_NAME} Admin'
+admin.site.index_title = 'Administration'
+
 urlpatterns = [
     path('', include('accounts.urls')),
     path('admin/', admin.site.urls),
     path('dashboard/', include('dashboard.urls')),
+    path('enquiries/', include('enquiries.urls')),
+    path('estimate-boq/', include('estimate_boq.urls')),
     path('orders/', include('orders.urls')),
     path('clients/', include('clients.urls')),
     path('wcr/', include('wcr.urls')),

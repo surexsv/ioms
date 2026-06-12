@@ -1,0 +1,10 @@
+{% if show_thanks_closing %}
+<p>Thanking you and assuring you of our best attention at all times.</p>
+{% endif %}
+<div style="margin-top:28px;">
+    <p><strong>For {{ company_name }}</strong></p>
+    <p style="margin-top:16px;"><strong>Authorized Signatory:</strong></p>
+    <p>_____________________________</p>
+    <p>Name:{% if signatory.name %} {{ signatory.name }}{% elif signatory.signatory_name %} {{ signatory.signatory_name }}{% endif %}</p>
+    <p>Designation:{% if signatory.designation %} {{ signatory.designation }}{% endif %}</p>
+</div>

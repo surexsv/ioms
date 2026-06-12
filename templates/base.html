@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Infomates Operations Management System{% endblock %}</title>
+    <title>{% block title %}{{ ioms_product_name }}{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{% static 'css/ioms.css' %}">
     {% block extra_css %}{% endblock %}
@@ -17,12 +17,18 @@
                 <a href="{% url dashboard_url %}">
                     <img src="{% static 'branding/infomates_logo.png' %}" alt="Infomates Techno Solutions" width="160" height="auto">
                 </a>
-                <span class="ioms-sidebar-tag">IOMS</span>
+                <span class="ioms-sidebar-tag">{{ ioms_short_name }}</span>
+                <span class="ioms-sidebar-version">v{{ ioms_version_label }}</span>
             </div>
             <nav class="ioms-sidebar-nav">
                 {% if show_nav_dashboard %}
                 <a href="{% url dashboard_url %}" class="{% if nav_active == 'dashboard' %}active{% endif %}">
                     <i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard
+                </a>
+                {% endif %}
+                {% if show_nav_enquiries %}
+                <a href="{% url 'enquiry_list' %}" class="{% if nav_active == 'enquiries' %}active{% endif %}">
+                    <i class="bi bi-chat-left-text" aria-hidden="true"></i> Enquiries
                 </a>
                 {% endif %}
                 {% if show_nav_orders %}
@@ -95,7 +101,7 @@
                 <button type="button" class="ioms-menu-toggle" id="iomsMenuToggle" aria-label="Open menu" aria-expanded="false">
                     <i class="bi bi-list"></i>
                 </button>
-                <h1 class="ioms-app-title">Infomates Operations Management System</h1>
+                <h1 class="ioms-app-title">{{ ioms_product_name }}</h1>
             </header>
 
             <main class="ioms-content">

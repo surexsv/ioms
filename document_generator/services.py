@@ -3,6 +3,8 @@ from django.utils import timezone
 
 from .constants import (
     DOC_BOQ,
+    DOC_ENQUIRY,
+    DOC_ESTIMATE_BOQ,
     DOC_INVOICE,
     DOC_ORDER,
     DOC_PURCHASE_ORDER,
@@ -68,6 +70,18 @@ def _number_exists(document_number):
     try:
         from scheduling.models import WorkSchedule
         if WorkSchedule.objects.filter(schedule_number=document_number).exists():
+            return True
+    except Exception:
+        pass
+    try:
+        from enquiries.models import Enquiry
+        if Enquiry.objects.filter(enquiry_number=document_number).exists():
+            return True
+    except Exception:
+        pass
+    try:
+        from estimate_boq.models import EstimateBOQ
+        if EstimateBOQ.objects.filter(estimate_boq_number=document_number).exists():
             return True
     except Exception:
         pass
@@ -153,6 +167,20 @@ def _collect_existing_numbers(document_type):
         DOC_INVOICE: Invoice.objects.values_list('invoice_number', flat=True),
         DOC_PURCHASE_ORDER: [],
     }
+    try:
+        from enquiries.models import Enquiry
+        field_map[DOC_ENQUIRY] = Enquiry.objects.exclude(
+            enquiry_number='',
+        ).values_list('enquiry_number', flat=True)
+    except Exception:
+        field_map[DOC_ENQUIRY] = []
+    try:
+        from estimate_boq.models import EstimateBOQ
+        field_map[DOC_ESTIMATE_BOQ] = EstimateBOQ.objects.exclude(
+            estimate_boq_number='',
+        ).values_list('estimate_boq_number', flat=True)
+    except Exception:
+        field_map[DOC_ESTIMATE_BOQ] = []
     return list(field_map.get(document_type, []))
 
 
@@ -169,6 +197,8 @@ def seed_counters_from_existing():
         (DOC_BOQ, 'BOQ'),
         (DOC_INVOICE, 'Invoice'),
         (DOC_PURCHASE_ORDER, 'Purchase Order'),
+        (DOC_ENQUIRY, 'Enquiry'),
+        (DOC_ESTIMATE_BOQ, 'Estimate BOQ'),
     ):
         max_by_series = {}
         for number in _collect_existing_numbers(document_type):

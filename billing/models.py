@@ -1,9 +1,19 @@
 from decimal import Decimal, ROUND_HALF_UP
+
+from django.conf import settings
 from django.db import models
-from django.db.models import Sum
-from orders.models import Order
-from config.company import COMPANY
+
+from billing.approval import (
+    APPROVAL_STATUS_CHOICES,
+    REJECTION_REASON_CHOICES,
+    ACTION_CHOICES,
+    STATUS_APPROVED,
+    STATUS_DRAFT,
+)
+from billing.gst import GST_TYPE_CHOICES, GST_TYPE_INTRA, calculate_gst_breakdown
 from company_settings.mixins import AuthorizedSignatoryMixin
+from config.company import COMPANY
+from orders.models import Order
 
 
 class Invoice(AuthorizedSignatoryMixin, models.Model):
@@ -37,6 +47,15 @@ class Invoice(AuthorizedSignatoryMixin, models.Model):
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     gst = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    cgst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    sgst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    igst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    gst_type = models.CharField(
+        max_length=15,
+        choices=GST_TYPE_CHOICES,
+        default=GST_TYPE_INTRA,
+        verbose_name='GST Type',
+    )
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     invoice_date = models.DateField(auto_now_add=True)
     due_date = models.DateField()
@@ -48,26 +67,83 @@ class Invoice(AuthorizedSignatoryMixin, models.Model):
         choices=PAYMENT_STATUS_CHOICES,
         default='PENDING',
     )
+    approval_status = models.CharField(
+        max_length=15,
+        choices=APPROVAL_STATUS_CHOICES,
+        default=STATUS_DRAFT,
+        db_index=True,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='invoices_created',
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='invoices_submitted',
+    )
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='invoices_approved',
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='invoices_rejected',
+    )
+    rejected_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.CharField(
+        max_length=20,
+        blank=True,
+        choices=REJECTION_REASON_CHOICES,
+    )
+    approval_remarks = models.TextField(blank=True)
 
-    def recalculate_totals(self):
+    def recalculate_totals(self, gst_type=None):
         subtotal = sum(
             (line.line_amount for line in self.line_items.all()),
             Decimal('0'),
         )
         self.amount = subtotal.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        rate = Decimal(COMPANY['gst_rate_percent']) / 100
-        self.gst = (self.amount * rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        if gst_type:
+            self.gst_type = gst_type
+        breakdown = calculate_gst_breakdown(self.amount, self.gst_type)
+        self.gst = breakdown['gst']
+        self.cgst_amount = breakdown['cgst_amount']
+        self.sgst_amount = breakdown['sgst_amount']
+        self.igst_amount = breakdown['igst_amount']
         self.total = self.amount + self.gst
 
-    def save(self, *args, **kwargs):
-        if self.pk and self.line_items.exists():
-            self.recalculate_totals()
-        super().save(*args, **kwargs)
+    def _sync_order_billing_status(self):
+        if self.approval_status != STATUS_APPROVED:
+            return
         if self.payment_status == 'RECEIVED':
             self.order.status = 'CLOSED'
         else:
             self.order.status = 'BILLED'
         self.order.save(update_fields=['status'])
+
+    def save(self, *args, **kwargs):
+        if self.pk and self.line_items.exists():
+            self.recalculate_totals()
+        super().save(*args, **kwargs)
+        self._sync_order_billing_status()
+
+    @property
+    def is_pdf_available(self):
+        return self.approval_status == STATUS_APPROVED
 
     def __str__(self):
         return self.invoice_number
@@ -94,3 +170,60 @@ class InvoiceLineItem(models.Model):
 
     def __str__(self):
         return f"{self.sl_no}. {self.description[:40]}"
+
+
+class InvoiceGstAuditLog(models.Model):
+    invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.CASCADE,
+        related_name='gst_audit_logs',
+    )
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='invoice_gst_audits',
+    )
+    client_gst_type = models.CharField(max_length=15, blank=True)
+    previous_gst_type = models.CharField(max_length=15, blank=True)
+    new_gst_type = models.CharField(max_length=15)
+    note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.invoice.invoice_number}: {self.previous_gst_type} → {self.new_gst_type}'
+
+
+class InvoiceApprovalAuditLog(models.Model):
+    invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.CASCADE,
+        related_name='approval_audit_logs',
+    )
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    performed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='invoice_approval_actions',
+    )
+    previous_status = models.CharField(max_length=15, blank=True)
+    new_status = models.CharField(max_length=15, blank=True)
+    remarks = models.TextField(blank=True)
+    rejection_reason = models.CharField(max_length=20, blank=True)
+    notification_channel = models.CharField(
+        max_length=30,
+        blank=True,
+        help_text='Reserved for future email/WhatsApp/mobile notifications',
+    )
+    notification_sent_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.invoice.invoice_number}: {self.action}'

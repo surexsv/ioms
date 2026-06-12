@@ -12,7 +12,8 @@ from reportlab.platypus import (
 
 from company_settings.signatory import format_signatory_html, get_document_signatory
 from config.company import COMPANY, LOGO_PATH
-from billing.utils import amount_in_words_indian, split_gst
+from billing.gst import GST_TYPE_INTRA, resolve_client_state_display
+from billing.utils import amount_in_words_indian
 
 PAGE_W, PAGE_H = A4
 MARGIN = 14 * mm
@@ -180,17 +181,18 @@ def build_invoice_pdf(invoice):
 
     # --- Billed To | Shipped To ---
     client_addr = client.address.replace('\n', ', ')
+    client_state, client_state_code = resolve_client_state_display(client)
     gst_line = f"GSTIN: {client.gst_number}" if client.gst_number else 'GSTIN: —'
     bill_text = (
         f"<b>Details of Receiver / Billed To:</b><br/>"
         f"M/S {client.name}<br/>{client_addr}<br/>"
-        f"{gst_line}<br/>State: {COMPANY['state']} | State Code: {COMPANY['state_code']}<br/>"
+        f"{gst_line}<br/>State: {client_state} | State Code: {client_state_code}<br/>"
         f"Contact: {client.contact_person} — {client.phone}"
     )
     ship_text = (
         f"<b>Details of Consignee / Shipped To:</b><br/>"
         f"M/S {client.name}<br/>{client_addr}<br/>"
-        f"{gst_line}<br/>State: {COMPANY['state']} | State Code: {COMPANY['state_code']}"
+        f"{gst_line}<br/>State: {client_state} | State Code: {client_state_code}"
     )
     addr_table = Table(
         [[_p(bill_text, small), _p(ship_text, small)]],
@@ -209,7 +211,6 @@ def build_invoice_pdf(invoice):
     elements.append(Spacer(1, 6))
 
     # --- Line items ---
-    cgst, sgst = split_gst(invoice.gst)
     line_items = list(invoice.line_items.all())
 
     cw = [
@@ -257,13 +258,21 @@ def build_invoice_pdf(invoice):
 
     # --- Totals ---
     words = amount_in_words_indian(invoice.total)
-    summary_rows = [
-        ['Total amount Before Tax:', _fmt_money(invoice.amount)],
-        [f"CGST @ {COMPANY['cgst_percent']}%:", _fmt_money(cgst)],
-        [f"SGST @ {COMPANY['sgst_percent']}%:", _fmt_money(sgst)],
+    summary_rows = [['Total amount Before Tax:', _fmt_money(invoice.amount)]]
+    if invoice.gst_type == GST_TYPE_INTRA:
+        summary_rows.extend([
+            [f"CGST @ {COMPANY['cgst_percent']}%:", _fmt_money(invoice.cgst_amount)],
+            [f"SGST @ {COMPANY['sgst_percent']}%:", _fmt_money(invoice.sgst_amount)],
+        ])
+    else:
+        summary_rows.append([
+            f"IGST @ {COMPANY['gst_rate_percent']}%:",
+            _fmt_money(invoice.igst_amount),
+        ])
+    summary_rows.extend([
         ['Tax Amount (GST):', _fmt_money(invoice.gst)],
         ['Total amount After Tax:', _fmt_money(invoice.total)],
-    ]
+    ])
     summary_inner = Table(summary_rows, colWidths=[1.55 * inch, 0.95 * inch])
     summary_inner.setStyle(TableStyle([
         ('FONTSIZE', (0, 0), (-1, -1), 8),

@@ -173,6 +173,10 @@
     <div class="card line-formset">
 
         <h3>Material Lines</h3>
+        <p class="cl-meta-hint">
+            Select items from the <a href="{% url 'material_rate_list' %}">Material Master</a> to auto-fill rate and description.
+            {% if can_manage_rates %}<a href="{% url 'material_rate_create' %}">Add material</a>{% endif %}
+        </p>
 
         {{ mat_formset.management_form }}
 
@@ -225,6 +229,10 @@
     <div class="card line-formset">
 
         <h3>Service Lines</h3>
+        <p class="cl-meta-hint">
+            Select items from the <a href="{% url 'service_rate_list' %}">Service Master</a> to auto-fill rate and description.
+            {% if can_manage_rates %}<a href="{% url 'service_rate_create' %}">Add service</a>{% endif %}
+        </p>
 
         {{ svc_formset.management_form }}
 

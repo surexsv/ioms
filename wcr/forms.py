@@ -22,7 +22,7 @@ class WCRForm(AuthorizedSignatoryFormMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, user=user, **kwargs)
         qs = Order.objects.filter(status='COMPLETED').filter(workcompletionreport__isnull=True)
         if user and user.role in ('ENGINEER', 'Technician'):
             qs = qs.filter(

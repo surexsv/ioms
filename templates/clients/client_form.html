@@ -5,15 +5,30 @@
     <h1>{{ title }}</h1>
     <a href="{% url 'client_list' %}" class="btn btn-secondary">Back</a>
 </div>
-<div class="card" style="max-width:600px;">
+<div class="card" style="max-width:640px;">
     <form method="post">
         {% csrf_token %}
+        <h3 style="margin:0 0 12px;font-size:1rem;">Client Details</h3>
         {% for field in form %}
-        <div class="form-group">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.errors %}<span style="color:#dc3545;font-size:0.85rem;">{{ field.errors.0 }}</span>{% endif %}
-        </div>
+            {% if field.name == 'name' or field.name == 'company_type' or field.name == 'address' or field.name == 'contact_person' or field.name == 'phone' %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<small style="color:#666;display:block;margin-top:4px;">{{ field.help_text }}</small>{% endif %}
+                {% if field.errors %}<span style="color:#dc3545;font-size:0.85rem;">{{ field.errors.0 }}</span>{% endif %}
+            </div>
+            {% endif %}
+        {% endfor %}
+        <h3 style="margin:20px 0 12px;font-size:1rem;">Tax &amp; GST</h3>
+        {% for field in form %}
+            {% if field.name == 'gst_number' or field.name == 'pan_number' or field.name == 'state' or field.name == 'state_code' or field.name == 'gst_type' %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<small style="color:#666;display:block;margin-top:4px;">{{ field.help_text }}</small>{% endif %}
+                {% if field.errors %}<span style="color:#dc3545;font-size:0.85rem;">{{ field.errors.0 }}</span>{% endif %}
+            </div>
+            {% endif %}
         {% endfor %}
         <button type="submit" class="btn btn-primary">Save Client</button>
     </form>

@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block title %}Invoice {{ invoice.invoice_number }} — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Invoice {{ invoice.invoice_number }}</h1>
+    <div>
+        <a href="{% url 'invoice_list' %}" class="btn btn-secondary">Back</a>
+        {% if can_pdf %}
+        <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-primary" target="_blank">Download PDF</a>
+        {% endif %}
+    </div>
+</div>
+
+{% if is_locked %}
+<div class="card" style="margin-bottom:16px;background:#fff3cd;border:1px solid #ffc107;">
+    <p style="margin:0;"><strong>{{ locked_message }}</strong></p>
+    {% if can_unlock %}
+    <form method="post" action="{% url 'unlock_invoice' invoice.pk %}" style="margin-top:12px;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Unlock this invoice for editing? Status will reset to Draft.');">Unlock for Editing</button>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card" style="margin-bottom:16px;">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;">
+        <div><strong>Approval:</strong> {% include 'billing/_approval_badge.html' with status=invoice.approval_status %}</div>
+        <div><strong>Payment:</strong>
+            {% if invoice.payment_status == 'RECEIVED' %}
+            <span class="badge badge-approved">Paid</span>
+            {% else %}
+            <span class="badge badge-pending">Pending</span>
+            {% endif %}
+        </div>
+        <div><strong>Client:</strong> {{ invoice.order.client.name }}</div>
+        <div><strong>Total:</strong> ₹{{ invoice.total }}</div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+    <div class="card">
+        <h3 style="margin-top:0;">Invoice Summary</h3>
+        <p><strong>Order:</strong> #{{ invoice.order.order_id }}</p>
+        <p><strong>Taxable:</strong> ₹{{ invoice.amount }}</p>
+        <p><strong>GST:</strong> ₹{{ invoice.gst }}</p>
+        <p><strong>Due Date:</strong> {{ invoice.due_date }}</p>
+        {% if invoice.service_title %}<p><strong>Service:</strong> {{ invoice.service_title }}</p>{% endif %}
+    </div>
+    <div class="card">
+        <h3 style="margin-top:0;">Approval Trail</h3>
+        <p><strong>Created By:</strong> {{ invoice.created_by|default:"—" }}{% if invoice.created_by %} ({{ invoice.invoice_date }}){% endif %}</p>
+        <p><strong>Submitted By:</strong> {{ invoice.submitted_by|default:"—" }}{% if invoice.submitted_at %} — {{ invoice.submitted_at|date:"d M Y H:i" }}{% endif %}</p>
+        <p><strong>Approved By:</strong> {{ invoice.approved_by|default:"—" }}{% if invoice.approved_at %} — {{ invoice.approved_at|date:"d M Y H:i" }}{% endif %}</p>
+        <p><strong>Rejected By:</strong> {{ invoice.rejected_by|default:"—" }}{% if invoice.rejected_at %} — {{ invoice.rejected_at|date:"d M Y H:i" }}{% endif %}</p>
+        {% if invoice.rejection_reason %}<p><strong>Rejection Reason:</strong> {{ invoice.get_rejection_reason_display }}</p>{% endif %}
+        {% if invoice.approval_remarks %}<p><strong>Remarks:</strong> {{ invoice.approval_remarks }}</p>{% endif %}
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+    <h3 style="margin-top:0;">Line Items</h3>
+    <table class="ioms-table">
+        <thead><tr><th>Sl</th><th>Description</th><th>HSN</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
+        <tbody>
+            {% for line in invoice.line_items.all %}
+            <tr>
+                <td>{{ line.sl_no }}</td>
+                <td>{{ line.description }}</td>
+                <td>{{ line.hsn_sac }}</td>
+                <td>{{ line.qty }} {{ line.unit }}</td>
+                <td>₹{{ line.rate }}</td>
+                <td>₹{{ line.line_amount }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if can_edit or can_submit or can_approve %}
+<div class="card" style="margin-bottom:16px;">
+    <h3 style="margin-top:0;">Actions</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+        {% if can_edit %}
+        <a href="{% url 'edit_invoice' invoice.pk %}" class="btn btn-secondary">Edit Invoice</a>
+        {% endif %}
+        {% if can_submit %}
+        <form method="post" action="{% url 'submit_invoice' invoice.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">Submit For Approval</button>
+        </form>
+        {% endif %}
+    </div>
+
+    {% if can_approve %}
+    <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <form method="post" action="{% url 'approve_invoice' invoice.pk %}">
+            {% csrf_token %}
+            <h4>Approve Invoice</h4>
+            {{ approve_form.approval_remarks.label_tag }}
+            {{ approve_form.approval_remarks }}
+            <button type="submit" class="btn btn-success" style="margin-top:10px;">Approve Invoice</button>
+        </form>
+        <form method="post" action="{% url 'reject_invoice' invoice.pk %}">
+            {% csrf_token %}
+            <h4>Reject Invoice</h4>
+            {{ reject_form.rejection_reason.label_tag }}
+            {{ reject_form.rejection_reason }}
+            {{ reject_form.approval_remarks.label_tag }}
+            {{ reject_form.approval_remarks }}
+            <button type="submit" class="btn btn-danger" style="margin-top:10px;">Reject Invoice</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if not can_pdf and invoice.approval_status != 'APPROVED' %}
+<div class="card" style="background:#fff8e6;border:1px solid #ffe08a;">
+    <p style="margin:0;">Invoice approval is pending. Final invoice generation is allowed only after approval.</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3 style="margin-top:0;">Audit Log</h3>
+    <table class="ioms-table">
+        <thead><tr><th>When</th><th>Action</th><th>By</th><th>From</th><th>To</th><th>Notes</th></tr></thead>
+        <tbody>
+            {% for log in audit_logs %}
+            <tr>
+                <td>{{ log.created_at|date:"d M Y H:i" }}</td>
+                <td>{{ log.get_action_display }}</td>
+                <td>{{ log.performed_by|default:"—" }}</td>
+                <td>{{ log.previous_status|default:"—" }}</td>
+                <td>{{ log.new_status|default:"—" }}</td>
+                <td>{{ log.remarks }}{% if log.rejection_reason %} ({{ log.get_rejection_reason_display }}){% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No audit entries yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

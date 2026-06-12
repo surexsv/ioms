@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Project Manager Dashboard — IOMS{% endblock %}
+{% block content %}
+<h2 class="ioms-section-title">{{ dashboard_title }}</h2>
+<div class="ioms-kpi-grid">
+    <div class="ioms-kpi"><div class="value">{{ assigned_enquiries }}</div><div class="label">Assigned Enquiries</div></div>
+    <div class="ioms-kpi"><div class="value">{{ assigned_orders }}</div><div class="label">Assigned Orders</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ pending_surveys }}</div><div class="label">Pending Surveys</div></div>
+    <div class="ioms-kpi"><div class="value">{{ pending_quotations }}</div><div class="label">Pending Quotations</div></div>
+    <div class="ioms-kpi"><div class="value text-danger">{{ delayed_projects|length }}</div><div class="label">Delayed Projects</div></div>
+</div>
+<div class="card ioms-dashboard-section">
+    <h3>Team Productivity</h3>
+    <table class="ioms-table">
+        <tr><th>Name</th><th>Role</th><th>Assigned Jobs</th></tr>
+        {% for m in team_stats %}<tr><td>{{ m.name }}</td><td>{{ m.role }}</td><td>{{ m.assigned }}</td></tr>
+        {% empty %}<tr><td colspan="3">No direct reports configured.</td></tr>{% endfor %}
+    </table>
+</div>
+<div class="card ioms-dashboard-section">
+    <h3>Recent Enquiries</h3>
+    <table class="ioms-table">
+        <tr><th>Number</th><th>Client</th><th>Status</th></tr>
+        {% for e in recent_enquiries %}
+        <tr><td><a href="{% url 'enquiry_detail' e.pk %}">{{ e.enquiry_number }}</a></td><td>{{ e.client.name }}</td><td>{{ e.get_status_display }}</td></tr>
+        {% empty %}<tr><td colspan="3">No enquiries assigned.</td></tr>{% endfor %}
+    </table>
+</div>
+{% endblock %}

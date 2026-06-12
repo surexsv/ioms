@@ -32,15 +32,8 @@
     <p style="line-height:1.6;">{{ para|linebreaksbr }}</p>
     {% endfor %}
     {% if cl.closing_paragraph %}<p>{{ cl.closing_paragraph }}</p>{% endif %}
-    <div style="margin-top:32px;">
-        <p><strong>For Infomates Techno Solutions (P) Ltd</strong></p>
-        {% if cl.include_signature and cl.signature_image %}
-        <p><img src="{{ cl.signature_image.url }}" alt="Signature" style="max-height:50px;"></p>
-        {% endif %}
-        <p>{% with signatory=cl.signatory %}{% include 'company_settings/_signatory_block.html' %}{% endwith %}</p>
-        {% if cl.include_company_seal and cl.company_seal %}
-        <p><img src="{{ cl.company_seal.url }}" alt="Seal" style="max-height:70px;"></p>
-        {% endif %}
-    </div>
+    {% with signatory=cl.signatory company_name=cl.company_name show_thanks_closing=cl.show_thanks_closing %}
+    {% include 'company_settings/_covering_letter_signatory_block.html' %}
+    {% endwith %}
 </div>
 {% endblock %}

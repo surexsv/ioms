@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
-{% block title %}Service Rate Card{% endblock %}
+{% block title %}Service Master{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>Service Rate Card</h1>
+    <h1>Service Master</h1>
     {% if can_manage %}<a href="{% url 'service_rate_create' %}" class="btn btn-primary">+ Add Service</a>{% endif %}
 </div>
 <div class="filter-bar">
     <a href="{% url 'quotation_list' %}">Quotations</a>
-    <a href="{% url 'material_rate_list' %}">Material Rates</a>
+    <a href="{% url 'material_rate_list' %}">Material Master</a>
     <a href="{% url 'rate_audit_list' %}?type=SERVICE">Audit Log</a>
 </div>
 <div class="ioms-table-wrap">

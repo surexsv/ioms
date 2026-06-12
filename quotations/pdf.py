@@ -17,7 +17,12 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from company_settings.signatory import format_signatory_html
+from company_settings.signatory import (
+    closing_already_has_thanks,
+    format_covering_letter_signatory_html,
+    format_signatory_approval_html,
+    strip_signatory_footer_paragraphs,
+)
 from config.company import COMPANY, LOGO_PATH
 from .covering_letter_utils import covering_letter_context
 from .settings_utils import quotation_document_sections
@@ -100,8 +105,10 @@ def _build_covering_letter_elements(quotation, content_w, styles):
     subject_style = ParagraphStyle('CLS', fontSize=10, fontName='Helvetica-Bold', spaceAfter=8)
 
     elements = []
+    elements.append(Spacer(1, 18))
     elements.append(Paragraph('<b>COVERING LETTER</b>', ParagraphStyle(
-        'CLT', fontSize=12, fontName='Helvetica-Bold', alignment=TA_CENTER, spaceAfter=10,
+        'CLT', fontSize=12, fontName='Helvetica-Bold', alignment=TA_CENTER,
+        spaceBefore=6, spaceAfter=12,
     )))
 
     ref_lines = [
@@ -137,39 +144,35 @@ def _build_covering_letter_elements(quotation, content_w, styles):
         elements.append(_p(cl['company_introduction'], body_style))
         elements.append(Spacer(1, 6))
 
-    for para in cl['body_paragraphs']:
+    body_paragraphs = strip_signatory_footer_paragraphs(cl['body_paragraphs'])
+    for para in body_paragraphs:
         elements.append(_p(para, body_style))
         elements.append(Spacer(1, 6))
 
     if cl['closing_paragraph']:
-        elements.append(_p(cl['closing_paragraph'], body_style))
-        elements.append(Spacer(1, 10))
+        closing_lower = cl['closing_paragraph'].strip().lower()
+        last_body = (body_paragraphs[-1].strip().lower() if body_paragraphs else '')
+        if closing_lower and closing_lower != last_body:
+            elements.append(_p(cl['closing_paragraph'], body_style))
+            elements.append(Spacer(1, 6))
 
-    sig_style = ParagraphStyle('SIG', fontSize=9, leading=12)
-    left_rows = [[Paragraph(f"<b>For {COMPANY['name']}</b>", sig_style)]]
-    sig_img = None
-    if cl['include_signature'] and cl['signature_image']:
-        sig_img = _image_element(cl['signature_image'], 1.8 * inch, 0.6 * inch)
-    if sig_img:
-        left_rows.append([sig_img])
-    left_rows.append([Paragraph(format_signatory_html(cl['signatory_name'], cl['designation']), sig_style)])
-    left_table = Table(left_rows, colWidths=[content_w * 0.65])
+    sig_style = ParagraphStyle(
+        'CLSIG', parent=body_style, spaceBefore=10, leading=14,
+    )
+    elements.append(Spacer(1, 8))
+    elements.append(Paragraph(
+        format_covering_letter_signatory_html(
+            cl['signatory_name'],
+            cl['designation'],
+            COMPANY['name'],
+            include_thanks=not closing_already_has_thanks(
+                body_paragraphs, cl['closing_paragraph'],
+            ),
+        ),
+        sig_style,
+    ))
+    elements.append(Spacer(1, 6))
 
-    seal_img = None
-    if cl['include_company_seal'] and cl['company_seal']:
-        seal_img = _image_element(cl['company_seal'], 1.2 * inch, 1.2 * inch)
-
-    if seal_img:
-        sign_table = Table([[left_table, seal_img]], colWidths=[content_w * 0.65, content_w * 0.35])
-    else:
-        sign_table = Table([[left_table]], colWidths=[content_w])
-
-    sign_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'BOTTOM'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-    ]))
-    elements.append(sign_table)
     return elements
 
 
@@ -351,7 +354,12 @@ def _build_final_approval_elements(quotation, content_w):
     else:
         left_rows.append([Spacer(1, 24)])
 
-    left_rows.append([Paragraph(format_signatory_html(cl['signatory_name'], cl['designation']), sig_style)])
+    left_rows.append([
+        Paragraph(
+            format_signatory_approval_html(cl['signatory_name'], cl['designation']),
+            sig_style,
+        ),
+    ])
 
     if cl['include_company_seal'] and cl['company_seal']:
         seal_img = _image_element(cl['company_seal'], 1.0 * inch, 1.0 * inch)

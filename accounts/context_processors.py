@@ -1,8 +1,10 @@
 from .utils import dashboard_url_name_for_user
 from .models import User
+from .roles import user_role, is_field_staff, ROLE_SUPERVISOR, LEGACY_SUPERVISOR
 from .permissions import (
     can_view_clients,
     can_view_orders,
+    can_view_enquiries,
     can_view_wcr,
     can_view_boq,
     can_view_billing,
@@ -21,6 +23,8 @@ def _active_nav(request):
     path = request.path
     if path.startswith('/dashboard'):
         return 'dashboard'
+    if path.startswith('/enquiries'):
+        return 'enquiries'
     if path.startswith('/orders'):
         return 'orders'
     if path.startswith('/clients'):
@@ -50,7 +54,8 @@ def oms_navigation(request):
         return {}
     if not getattr(user, 'is_profile_approved', True):
         return {}
-    role = user.role
+    role = user_role(user)
+    raw_role = getattr(user, 'role', None)
     pending_approval_count = 0
     if can_manage_user_approvals(user):
         pending_approval_count = User.objects.filter(
@@ -60,10 +65,10 @@ def oms_navigation(request):
         'dashboard_url': dashboard_url_name_for_user(user),
         'nav_active': _active_nav(request),
         'is_superuser': has_full_access(user),
-        'user_role': role,
-        'user_role_display': user.get_role_display() if hasattr(user, 'get_role_display') else role,
-        # Sidebar visibility (RBAC)
+        'user_role': raw_role,
+        'user_role_display': user.get_role_display() if hasattr(user, 'get_role_display') else raw_role,
         'show_nav_dashboard': True,
+        'show_nav_enquiries': can_view_enquiries(user),
         'show_nav_orders': can_view_orders(user),
         'show_nav_clients': can_view_clients(user),
         'show_nav_quotations': can_view_quotations(user),
@@ -72,13 +77,12 @@ def oms_navigation(request):
         'show_nav_billing': can_view_billing(user),
         'show_nav_attendance': can_manage_attendance(user) or can_view_own_attendance(user),
         'attendance_nav_url': attendance_nav_url(user),
-        'is_field_staff': role in ('ENGINEER', 'Technician'),
+        'is_field_staff': is_field_staff(raw_role),
         'can_view_financial': can_view_financial(user),
-        # Legacy flags (minimize template breakage)
-        'is_management': can_view_clients(user) and role in ('DIRECTOR', 'OPERATIONS'),
-        'is_supervisor': role == 'Supervisor',
+        'is_management': can_view_clients(user) and role in ('DIRECTOR', 'OPERATIONS', 'PROJECT_MANAGER'),
+        'is_supervisor': role == ROLE_SUPERVISOR or raw_role == LEGACY_SUPERVISOR,
         'is_management_attendance': can_manage_attendance(user),
-        'can_check_in': can_view_own_attendance(user) and role in ('ENGINEER', 'Technician', 'Supervisor'),
+        'can_check_in': can_view_own_attendance(user) and is_field_staff(raw_role),
         'can_view_quotations': can_view_quotations(user),
         'show_nav_document_numbers': user.is_superuser or role == 'DIRECTOR',
         'show_nav_company_settings': can_view_company_settings(user),

@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
-{% block title %}Material Rate Card{% endblock %}
+{% block title %}Material Master{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>Material Rate Card</h1>
+    <h1>Material Master</h1>
     {% if can_manage %}<a href="{% url 'material_rate_create' %}" class="btn btn-primary">+ Add Material</a>{% endif %}
 </div>
 <div class="filter-bar">
     <a href="{% url 'quotation_list' %}">Quotations</a>
-    <a href="{% url 'service_rate_list' %}">Service Rates</a>
+    <a href="{% url 'service_rate_list' %}">Service Master</a>
     <a href="{% url 'rate_audit_list' %}?type=MATERIAL">Audit Log</a>
 </div>
 <div class="ioms-table-wrap">

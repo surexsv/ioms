@@ -23,7 +23,7 @@
             <img src="{% static 'branding/infomates_logo.png' %}" alt="Infomates" style="max-width:220px;">
             <div style="font-size:0.8rem;margin-top:8px;">Door No: 32/260A-3, 1st Floor, Bava Complex, Thammanam Jn., Kochi-682 032</div>
         </div>
-        <h2 style="text-align:center;margin:16px 0;">COVERING LETTER</h2>
+        <h2 style="text-align:center;margin-top:28px;margin-bottom:20px;padding-top:12px;">COVERING LETTER</h2>
         <p><strong>Date:</strong> {{ cl.quotation_date|date:"d.m.Y" }} &nbsp; <strong>Quotation No.:</strong> {{ cl.quotation_number }}
         {% if cl.reference_number %} &nbsp; <strong>Reference:</strong> {{ cl.reference_number }}{% endif %}</p>
         <div style="border:1px solid #000;padding:10px;margin:12px 0;">
@@ -35,12 +35,9 @@
         {% if cl.company_introduction %}<p>{{ cl.company_introduction }}</p>{% endif %}
         {% for para in cl.body_paragraphs %}<p style="line-height:1.55;">{{ para|linebreaksbr }}</p>{% endfor %}
         {% if cl.closing_paragraph %}<p>{{ cl.closing_paragraph }}</p>{% endif %}
-        <div style="margin-top:40px;">
-            <strong>For Infomates Techno Solutions (P) Ltd</strong><br><br>
-            {% if cl.include_signature and cl.signature_image %}<img src="{{ cl.signature_image.url }}" style="max-height:50px;"><br>{% endif %}
-            {% with signatory=cl.signatory %}{% include 'company_settings/_signatory_block.html' %}{% endwith %}
-            {% if cl.include_company_seal and cl.company_seal %}<br><img src="{{ cl.company_seal.url }}" style="max-height:70px;">{% endif %}
-        </div>
+        {% with signatory=cl.signatory company_name=cl.company_name show_thanks_closing=cl.show_thanks_closing %}
+        {% include 'company_settings/_covering_letter_signatory_block.html' %}
+        {% endwith %}
     </div>
 </body>
 </html>

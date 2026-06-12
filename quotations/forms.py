@@ -83,7 +83,10 @@ class MaterialLineForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['material_item'].queryset = MaterialRateCard.objects.filter(is_active=True)
         self.fields['material_item'].required = False
-        self.fields['material_item'].empty_label = '— Select material —'
+        self.fields['material_item'].empty_label = '— Select from Material Master —'
+        self.fields['material_item'].label_from_instance = (
+            lambda obj: f'{obj.item_code} — {obj.item_name}'
+        )
 
 
 class ServiceLineForm(forms.ModelForm):
@@ -101,7 +104,10 @@ class ServiceLineForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['service_item'].queryset = ServiceRateCard.objects.filter(is_active=True)
         self.fields['service_item'].required = False
-        self.fields['service_item'].empty_label = '— Select service —'
+        self.fields['service_item'].empty_label = '— Select from Service Master —'
+        self.fields['service_item'].label_from_instance = (
+            lambda obj: f'{obj.service_code} — {obj.service_name}'
+        )
 
 
 MaterialLineFormSet = inlineformset_factory(

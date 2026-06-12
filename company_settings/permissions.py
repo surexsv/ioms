@@ -1,5 +1,5 @@
 def can_view_company_settings(user):
-    return user.is_authenticated and (
+    return user is not None and user.is_authenticated and (
         user.is_superuser or getattr(user, 'role', None) == 'DIRECTOR'
     )
 
@@ -10,7 +10,7 @@ def can_manage_company_settings(user):
 
 def can_edit_document_signatory(user):
     """Superuser, Director, and Accounts users may set per-document signatory."""
-    if not user.is_authenticated:
+    if user is None or not user.is_authenticated:
         return False
     if user.is_superuser:
         return True

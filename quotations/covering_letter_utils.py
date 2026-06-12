@@ -1,6 +1,11 @@
 from company_settings.models import CompanySettings
 
-from company_settings.signatory import get_document_signatory
+from config.company import COMPANY
+from company_settings.signatory import (
+    closing_already_has_thanks,
+    get_document_signatory,
+    strip_signatory_footer_paragraphs,
+)
 
 
 
@@ -132,7 +137,7 @@ def covering_letter_context(quotation, cl_settings=None):
 
     company_seal = company_settings.company_seal if quotation.include_company_seal else None
 
-
+    body_paragraphs = strip_signatory_footer_paragraphs(body_to_paragraphs(body))
 
     return {
 
@@ -142,7 +147,7 @@ def covering_letter_context(quotation, cl_settings=None):
 
         'body': body,
 
-        'body_paragraphs': body_to_paragraphs(body),
+        'body_paragraphs': body_paragraphs,
 
         'closing_paragraph': closing,
 
@@ -179,6 +184,10 @@ def covering_letter_context(quotation, cl_settings=None):
         'signature_image': signature_image,
 
         'company_seal': company_seal,
+
+        'company_name': COMPANY['name'],
+
+        'show_thanks_closing': not closing_already_has_thanks(body_paragraphs, closing),
 
     }
 

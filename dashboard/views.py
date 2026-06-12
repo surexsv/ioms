@@ -9,24 +9,20 @@ from datetime import date
 from accounts.decorators import module_required
 
 from accounts.permissions import (
-
     MODULE_DASHBOARD_DIRECTOR,
-
     MODULE_DASHBOARD_OPERATIONS,
-
     MODULE_DASHBOARD_ACCOUNTS,
-
     MODULE_DASHBOARD_ENGINEER,
-
     MODULE_DASHBOARD_SUPERVISOR,
-
+    MODULE_DASHBOARD_PROJECT_MANAGER,
 )
+from accounts.roles import ROLE_SUPERVISOR, ROLE_TECHNICIAN, ROLE_ENGINEER, user_role
 
 from orders.models import Order
 
 from scheduling.models import WorkSchedule
 
-from .services import build_dashboard_context
+from .services import build_dashboard_context, build_project_manager_context
 
 
 
@@ -174,13 +170,17 @@ def engineer_dashboard(request):
 
 
 
+@module_required(MODULE_DASHBOARD_PROJECT_MANAGER)
+def project_manager_dashboard(request):
+    context = build_project_manager_context(request.user)
+    context['dashboard_title'] = 'Project Manager Dashboard'
+    return render(request, 'dashboard/project_manager_dashboard.html', context)
+
+
 @module_required(MODULE_DASHBOARD_SUPERVISOR)
-
 def supervisor_dashboard(request):
-
     today = date.today()
-
-    field_roles = ['ENGINEER', 'Technician']
+    field_roles = [ROLE_ENGINEER, ROLE_TECHNICIAN]
 
     team_schedules = WorkSchedule.objects.filter(
 
@@ -242,8 +242,18 @@ def supervisor_dashboard(request):
 
 
 
-    context = {
+    from enquiries.models import SiteProgressUpdate
+    from attendance.models import Attendance
 
+    recent_updates = SiteProgressUpdate.objects.filter(
+        supervisor=request.user,
+    ).select_related('enquiry', 'order')[:8]
+    today_attendance = Attendance.objects.filter(attendance_date=today).count()
+    pending_work = team_schedules.exclude(
+        status=WorkSchedule.STATUS_COMPLETED,
+    ).count()
+
+    context = {
         'total_team_orders': team_schedules.count(),
 
         'in_progress_count': team_schedules.filter(status=WorkSchedule.STATUS_IN_PROGRESS).count(),
@@ -261,7 +271,10 @@ def supervisor_dashboard(request):
         'recent_orders': team_schedules.order_by('-created_at')[:10],
 
         'overdue_orders': overdue.order_by('scheduled_end_date')[:10],
-
+        'recent_site_updates': recent_updates,
+        'attendance_today_count': today_attendance,
+        'pending_work_count': pending_work,
+        'can_add_site_update': True,
     }
 
     return render(request, 'dashboard/supervisor_dashboard.html', context)

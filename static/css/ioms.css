@@ -95,6 +95,27 @@ body.ioms-app.ioms-guest {
     opacity: 0.95;
     margin-top: 2px;
 }
+.ioms-sidebar-brand .ioms-sidebar-version {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    opacity: 0.85;
+    margin-top: 4px;
+    color: #b8d4f0;
+}
+.ioms-app-title-wrap {
+    width: 100%;
+    text-align: center;
+}
+.ioms-app-header .ioms-app-subtitle {
+    margin: 4px 0 0;
+    font-size: clamp(0.7rem, 1.6vw, 0.85rem);
+    font-weight: 500;
+    opacity: 0.88;
+    letter-spacing: 0.02em;
+}
 
 .ioms-sidebar-nav {
     flex: 1;
@@ -518,6 +539,12 @@ table:not(.ioms-table) tbody tr:hover td {
 .badge-billed { background: #ffeaa7; color: #6c5b00; }
 .badge-closed { background: #d6d8db; color: #383d41; }
 .badge-pending { background: #f8d7da; color: #721c24; }
+.badge-invoice-draft { background: #e9ecef; color: #495057; }
+.badge-invoice-submitted { background: #cce5ff; color: #004085; }
+.badge-invoice-review { background: #ffe8cc; color: #8a4b00; }
+.badge-invoice-approved { background: #c3e6cb; color: #155724; }
+.badge-invoice-rejected { background: #f8d7da; color: #721c24; }
+.badge-invoice-cancelled { background: #6c757d; color: #fff; }
 
 /* —— Forms & utilities —— */
 .form-group { margin-bottom: 18px; }

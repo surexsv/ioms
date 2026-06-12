@@ -45,6 +45,10 @@
             padding: 10px;
             margin: 12px 0;
         }
+        .print-title.covering-letter {
+            margin-top: 28px;
+            padding-top: 18px;
+        }
         .print-box { border: 1px solid #000; padding: 8px 10px; margin-bottom: 10px; font-size: 0.85rem; }
         .print-box h4 { margin: 0 0 6px; font-size: 0.9rem; }
         .print-meta { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 10px; }
@@ -89,7 +93,7 @@
                 GSTIN: 32AACCI5396N1Z5
             </div>
         </div>
-        <div class="print-title">COVERING LETTER</div>
+        <div class="print-title covering-letter">COVERING LETTER</div>
         <p><strong>Date:</strong> {{ cl.quotation_date|date:"d.m.Y" }} &nbsp; <strong>Quotation No.:</strong> {{ cl.quotation_number }}
         {% if cl.reference_number %} &nbsp; <strong>Reference:</strong> {{ cl.reference_number }}{% endif %}</p>
         <div class="print-box">
@@ -101,12 +105,9 @@
         {% if cl.company_introduction %}<p>{{ cl.company_introduction }}</p>{% endif %}
         {% for para in cl.body_paragraphs %}<p style="line-height:1.55;">{{ para|linebreaksbr }}</p>{% endfor %}
         {% if cl.closing_paragraph %}<p>{{ cl.closing_paragraph }}</p>{% endif %}
-        <div style="margin-top:36px;">
-            <strong>For Infomates Techno Solutions (P) Ltd</strong><br><br>
-            {% if cl.include_signature and cl.signature_image %}<img src="{{ cl.signature_image.url }}" style="max-height:50px;"><br>{% endif %}
-            {% with signatory=cl.signatory %}{% include 'company_settings/_signatory_block.html' %}{% endwith %}
-            {% if cl.include_company_seal and cl.company_seal %}<br><img src="{{ cl.company_seal.url }}" style="max-height:70px;">{% endif %}
-        </div>
+        {% with signatory=cl.signatory company_name=cl.company_name show_thanks_closing=cl.show_thanks_closing %}
+        {% include 'company_settings/_covering_letter_signatory_block.html' %}
+        {% endwith %}
         <div class="page-break"></div>
         {% endif %}
 

@@ -1,0 +1,167 @@
+from django.contrib import messages
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect, render
+
+from accounts.access_control import REASON_UNAUTHORIZED
+from accounts.decorators import access_denied_response, module_required
+from accounts.permissions import (
+    MODULE_ENQUIRIES,
+    MODULE_ENQUIRIES_MANAGE,
+    MODULE_SITE_PROGRESS,
+    can_manage_enquiries,
+)
+from accounts.roles import (
+    user_role,
+    ROLE_DIRECTOR,
+    ROLE_ENGINEER,
+    ROLE_OPERATIONS,
+    ROLE_PROJECT_MANAGER,
+    ROLE_SUPERVISOR,
+    ROLE_TECHNICIAN,
+)
+from .forms import EnquiryForm, SiteProgressUpdateForm
+from .models import Enquiry, SiteProgressUpdate
+from .services import convert_enquiry_to_order
+
+
+def _enquiries_for_user(user):
+    qs = Enquiry.objects.select_related(
+        'client', 'assigned_project_manager', 'assigned_supervisor',
+    ).order_by('-enquiry_date')
+    role = user_role(user)
+    if user.is_superuser or role in (ROLE_DIRECTOR, ROLE_OPERATIONS):
+        return qs
+    if role == ROLE_PROJECT_MANAGER:
+        return qs.filter(
+            Q(assigned_project_manager=user) | Q(assigned_to=user) | Q(created_by=user),
+        )
+    if role == ROLE_SUPERVISOR:
+        return qs.filter(
+            Q(assigned_supervisor=user) | Q(assigned_to=user),
+        )
+    if role in (ROLE_ENGINEER, ROLE_TECHNICIAN):
+        return qs.filter(survey_engineer=user)
+    return qs.none()
+
+
+def _can_access_enquiry(user, enquiry):
+    return _enquiries_for_user(user).filter(pk=enquiry.pk).exists()
+
+
+@module_required(MODULE_ENQUIRIES)
+def enquiry_list(request):
+    enquiries = _enquiries_for_user(request.user)
+    status = request.GET.get('status')
+    if status:
+        enquiries = enquiries.filter(status=status)
+    return render(request, 'enquiries/enquiry_list.html', {
+        'enquiries': enquiries,
+        'status_filter': status,
+        'status_choices': Enquiry.STATUS_CHOICES,
+        'can_manage': can_manage_enquiries(request.user),
+    })
+
+
+@module_required(MODULE_ENQUIRIES_MANAGE)
+def create_enquiry(request):
+    if request.method == 'POST':
+        form = EnquiryForm(request.POST)
+        if form.is_valid():
+            enquiry = form.save(commit=False)
+            enquiry.created_by = request.user
+            if enquiry.status == Enquiry.STATUS_NEW and enquiry.assigned_project_manager:
+                enquiry.status = Enquiry.STATUS_ASSIGNED
+            enquiry.save()
+            messages.success(request, f'Enquiry {enquiry.enquiry_number} created.')
+            return redirect('enquiry_detail', pk=enquiry.pk)
+    else:
+        form = EnquiryForm(initial={'status': Enquiry.STATUS_NEW})
+    return render(request, 'enquiries/enquiry_form.html', {
+        'form': form,
+        'page_title': 'Create Enquiry',
+    })
+
+
+@module_required(MODULE_ENQUIRIES)
+def enquiry_detail(request, pk):
+    enquiry = get_object_or_404(
+        Enquiry.objects.select_related(
+            'client', 'assigned_project_manager', 'assigned_supervisor',
+            'survey_engineer', 'converted_order',
+        ),
+        pk=pk,
+    )
+    if not _can_access_enquiry(request.user, enquiry):
+        return access_denied_response(request, reason=REASON_UNAUTHORIZED)
+
+    estimate_boqs = enquiry.estimate_boqs.all().order_by('-created_at')
+    quotations = enquiry.quotations.all().order_by('-created_at')
+    site_updates = enquiry.site_updates.all()[:10]
+
+    return render(request, 'enquiries/enquiry_detail.html', {
+        'enquiry': enquiry,
+        'estimate_boqs': estimate_boqs,
+        'quotations': quotations,
+        'site_updates': site_updates,
+        'can_manage': can_manage_enquiries(request.user),
+        'can_convert': enquiry.can_convert_to_order and can_manage_enquiries(request.user),
+        'can_create_estimate': can_manage_enquiries(request.user),
+        'can_create_quotation': can_manage_enquiries(request.user),
+    })
+
+
+@module_required(MODULE_ENQUIRIES_MANAGE)
+def edit_enquiry(request, pk):
+    enquiry = get_object_or_404(Enquiry, pk=pk)
+    if not _can_access_enquiry(request.user, enquiry):
+        return access_denied_response(request, reason=REASON_UNAUTHORIZED)
+    if request.method == 'POST':
+        form = EnquiryForm(request.POST, instance=enquiry)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Enquiry updated.')
+            return redirect('enquiry_detail', pk=pk)
+    else:
+        form = EnquiryForm(instance=enquiry)
+    return render(request, 'enquiries/enquiry_form.html', {
+        'form': form,
+        'enquiry': enquiry,
+        'page_title': f'Edit {enquiry.enquiry_number}',
+    })
+
+
+@module_required(MODULE_ENQUIRIES_MANAGE)
+def convert_enquiry_order(request, pk):
+    enquiry = get_object_or_404(Enquiry, pk=pk)
+    if request.method == 'POST':
+        try:
+            order = convert_enquiry_to_order(enquiry, request.user)
+            messages.success(request, f'Order {order.order_no} created from enquiry.')
+            return redirect('order_detail', pk=order.pk)
+        except ValueError as exc:
+            messages.error(request, str(exc))
+    return redirect('enquiry_detail', pk=pk)
+
+
+@module_required(MODULE_SITE_PROGRESS)
+def site_progress_create(request):
+    if request.method == 'POST':
+        form = SiteProgressUpdateForm(request.POST, request.FILES)
+        if form.is_valid():
+            update = form.save(commit=False)
+            update.supervisor = request.user
+            update.save()
+            messages.success(request, 'Site progress update saved.')
+            if update.enquiry_id:
+                return redirect('enquiry_detail', pk=update.enquiry_id)
+            if update.order_id:
+                return redirect('order_detail', pk=update.order_id)
+            return redirect('supervisor_dashboard')
+    else:
+        initial = {}
+        if request.GET.get('enquiry'):
+            initial['enquiry'] = request.GET.get('enquiry')
+        if request.GET.get('order'):
+            initial['order'] = request.GET.get('order')
+        form = SiteProgressUpdateForm(initial=initial)
+    return render(request, 'enquiries/site_progress_form.html', {'form': form})

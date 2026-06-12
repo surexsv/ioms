@@ -95,9 +95,13 @@
 <div class="card">
     <h3 style="margin-top:0;">Invoice</h3>
     <p>{{ invoice.invoice_number }} — ₹{{ invoice.total }} ({{ invoice.get_payment_status_display }})</p>
-    {% if not is_engineer %}
+    <p>{% include 'billing/_approval_badge.html' with status=invoice.approval_status %}</p>
+    {% if not is_engineer and invoice.is_pdf_available %}
     <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-primary btn-sm" target="_blank">Download PDF</a>
+    {% elif not is_engineer %}
+    <p class="text-muted" style="font-size:0.9rem;">Invoice approval is pending. Final invoice generation is allowed only after approval.</p>
     {% endif %}
+    <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-secondary btn-sm">View Invoice</a>
 </div>
 {% elif order.status == 'APPROVED' %}
 <div class="card">

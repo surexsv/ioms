@@ -35,6 +35,7 @@ def create_boq(request):
                 formset.save()
             messages.success(request, f'BOQ {boq.boq_number} created.')
             return redirect('boq_detail', pk=boq.pk)
+        messages.error(request, 'Could not save BOQ. Please correct the line item errors below.')
     else:
         order_id = request.GET.get('order')
         form = BOQForm(initial={'order': order_id} if order_id else None, user=request.user)
@@ -66,10 +67,12 @@ def edit_boq(request, pk):
         form = BOQForm(request.POST, request.FILES, instance=boq, user=request.user)
         formset = BOQLineItemFormSet(request.POST, instance=boq, prefix='lines')
         if form.is_valid() and formset.is_valid():
-            form.save()
-            formset.save()
+            with transaction.atomic():
+                form.save()
+                formset.save()
             messages.success(request, 'BOQ updated.')
             return redirect('boq_detail', pk=pk)
+        messages.error(request, 'Could not update BOQ. Please correct the line item errors below.')
     else:
         form = BOQForm(instance=boq, user=request.user)
         formset = BOQLineItemFormSet(instance=boq, prefix='lines')

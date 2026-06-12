@@ -8,8 +8,9 @@ from .security_log import log_access_denied, log_system_error
 
 def _error_context(request, title, message, status_code):
     dashboard_name = 'login'
-    if request.user.is_authenticated:
-        dashboard_name = allowed_dashboard_url_name(request.user)
+    user = getattr(request, 'user', None)
+    if user is not None and user.is_authenticated:
+        dashboard_name = allowed_dashboard_url_name(user)
     referer = request.META.get('HTTP_REFERER', '')
     return {
         'page_title': title,
@@ -67,8 +68,9 @@ def user_friendly_error_view(request, exc):
         'Please try again later or contact your System Administrator if the problem persists.',
         500,
     )
+    user = getattr(request, 'user', None)
     ctx['dashboard_url_name'] = (
-        allowed_dashboard_url_name(request.user)
-        if request.user.is_authenticated else 'login'
+        allowed_dashboard_url_name(user)
+        if user is not None and user.is_authenticated else 'login'
     )
     return render(request, 'errors/server_error.html', ctx, status=500)

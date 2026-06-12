@@ -76,6 +76,7 @@ def _quotation_form_extras(form, request=None):
     return {
         'covering_letter_paragraphs': _covering_letter_paragraphs_for_form(form, request),
         'can_manage_templates': can_manage_quotation_settings(request.user) if request else False,
+        'can_manage_rates': can_manage_rate_cards(request.user) if request else False,
         'can_edit_signatory': can_edit_document_signatory(request.user) if request else False,
         'signatory_instance': form.instance,
     }
@@ -508,7 +509,26 @@ def quotation_reject(request, pk):
     return _workflow_action(request, pk, 'REJECTED', 'Rejected')
 
 
-@role_required('DIRECTOR', 'OPERATIONS')
+@module_required(MODULE_QUOTATIONS)
+def quotation_create_from_enquiry(request, enquiry_pk):
+    from enquiries.models import Enquiry
+    enquiry = get_object_or_404(Enquiry, pk=enquiry_pk)
+    if request.method == 'POST':
+        estimate_id = request.POST.get('estimate_boq')
+        estimate_boq = None
+        if estimate_id:
+            from estimate_boq.models import EstimateBOQ
+            estimate_boq = get_object_or_404(EstimateBOQ, pk=estimate_id, enquiry=enquiry)
+        q = services.create_quotation_from_enquiry(enquiry, request.user, estimate_boq=estimate_boq)
+        messages.success(request, f'Quotation {q.quotation_number} created from enquiry.')
+        return redirect('quotation_edit', pk=q.pk)
+    return render(request, 'quotations/quotation_from_enquiry.html', {
+        'enquiry': enquiry,
+        'estimate_boqs': enquiry.estimate_boqs.all(),
+    })
+
+
+@role_required('DIRECTOR', 'OPERATIONS', 'PROJECT_MANAGER')
 def quotation_convert_order(request, pk):
     quotation = get_object_or_404(Quotation, pk=pk)
     if quotation.converted_order_id:

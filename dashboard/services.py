@@ -122,7 +122,15 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
 
         payment_pending = Invoice.objects.filter(payment_status='PENDING').count()
 
-        total_revenue = Invoice.objects.aggregate(Sum('total'))['total__sum'] or 0
+        invoice_pending_approval = Invoice.objects.filter(
+            approval_status__in=['SUBMITTED', 'UNDER_REVIEW'],
+        ).count()
+        invoice_approved_count = Invoice.objects.filter(approval_status='APPROVED').count()
+        invoice_rejected_count = Invoice.objects.filter(approval_status='REJECTED').count()
+
+        total_revenue = Invoice.objects.filter(
+            approval_status='APPROVED',
+        ).aggregate(Sum('total'))['total__sum'] or 0
 
         monthly_revenue = (
 
@@ -152,6 +160,12 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
 
             'payment_pending': payment_pending,
 
+            'invoice_pending_approval': invoice_pending_approval,
+
+            'invoice_approved_count': invoice_approved_count,
+
+            'invoice_rejected_count': invoice_rejected_count,
+
             'total_revenue': total_revenue,
 
             'months': json.dumps(months),
@@ -167,6 +181,12 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
             'total_invoices': 0,
 
             'payment_pending': 0,
+
+            'invoice_pending_approval': 0,
+
+            'invoice_approved_count': 0,
+
+            'invoice_rejected_count': 0,
 
             'total_revenue': 0,
 
@@ -394,6 +414,119 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
 
 
 
+    context.update(_enquiry_dashboard_stats())
     return context
+
+
+def _enquiry_dashboard_stats():
+    try:
+        from enquiries.models import Enquiry
+    except Exception:
+        return {
+            'total_enquiries': 0,
+            'open_enquiries': 0,
+            'quotations_submitted': 0,
+            'won_opportunities': 0,
+            'lost_opportunities': 0,
+            'enquiry_pipeline_labels': json.dumps([]),
+            'enquiry_pipeline_values': json.dumps([]),
+        }
+
+    closed_statuses = (
+        Enquiry.STATUS_LOST,
+        Enquiry.STATUS_CLOSED,
+        Enquiry.STATUS_CONVERTED,
+    )
+    pipeline_map = {
+        'NEW': Enquiry.STATUS_NEW,
+        'ASSIGNED': Enquiry.STATUS_ASSIGNED,
+        'SURVEY': [
+            Enquiry.STATUS_SURVEY_SCHEDULED,
+            Enquiry.STATUS_SURVEY_COMPLETED,
+            Enquiry.STATUS_FEASIBILITY_IN_PROGRESS,
+        ],
+        'QUOTATION': [
+            Enquiry.STATUS_QUOTATION_PREPARATION,
+            Enquiry.STATUS_QUOTATION_SUBMITTED,
+            Enquiry.STATUS_FOLLOW_UP,
+        ],
+        'WON': Enquiry.STATUS_WON,
+        'LOST': Enquiry.STATUS_LOST,
+    }
+    labels, values = [], []
+    for label, statuses in pipeline_map.items():
+        labels.append(label)
+        if isinstance(statuses, list):
+            values.append(Enquiry.objects.filter(status__in=statuses).count())
+        else:
+            values.append(Enquiry.objects.filter(status=statuses).count())
+
+    return {
+        'total_enquiries': Enquiry.objects.count(),
+        'open_enquiries': Enquiry.objects.exclude(status__in=closed_statuses).count(),
+        'quotations_submitted': Enquiry.objects.filter(
+            status=Enquiry.STATUS_QUOTATION_SUBMITTED,
+        ).count(),
+        'won_opportunities': Enquiry.objects.filter(status=Enquiry.STATUS_WON).count(),
+        'lost_opportunities': Enquiry.objects.filter(status=Enquiry.STATUS_LOST).count(),
+        'enquiry_pipeline_labels': json.dumps(labels),
+        'enquiry_pipeline_values': json.dumps(values),
+    }
+
+
+def build_project_manager_context(user):
+    from enquiries.models import Enquiry
+    from scheduling.models import WorkSchedule
+
+    today = date.today()
+    my_enquiries = Enquiry.objects.filter(
+        Q(assigned_project_manager=user) | Q(assigned_to=user),
+    ).distinct()
+    my_orders = Order.objects.filter(
+        Q(source_enquiry__assigned_project_manager=user)
+        | Q(work_schedule__team_leader=user),
+    ).distinct()
+
+    pending_surveys = my_enquiries.filter(
+        survey_required=True,
+        status__in=[
+            Enquiry.STATUS_ASSIGNED,
+            Enquiry.STATUS_SURVEY_SCHEDULED,
+        ],
+    )
+    pending_quotations = my_enquiries.filter(
+        status__in=[
+            Enquiry.STATUS_QUOTATION_PREPARATION,
+            Enquiry.STATUS_FOLLOW_UP,
+        ],
+    )
+    delayed = WorkSchedule.objects.filter(
+        scheduled_end_date__lt=today,
+        order__source_enquiry__assigned_project_manager=user,
+    ).exclude(
+        status__in=[WorkSchedule.STATUS_COMPLETED, WorkSchedule.STATUS_CANCELLED],
+    ).select_related('order', 'order__client')[:10]
+
+    team = User.objects.filter(reports_to=user, is_active_employee=True)
+    team_stats = []
+    for member in team:
+        assigned = WorkSchedule.objects.filter(assigned_engineers=member).exclude(
+            status=WorkSchedule.STATUS_CANCELLED,
+        ).count()
+        team_stats.append({
+            'name': member.get_full_name() or member.username,
+            'role': member.get_role_display(),
+            'assigned': assigned,
+        })
+
+    return {
+        'assigned_enquiries': my_enquiries.count(),
+        'assigned_orders': my_orders.count(),
+        'pending_surveys': pending_surveys.count(),
+        'pending_quotations': pending_quotations.count(),
+        'delayed_projects': delayed,
+        'team_stats': team_stats,
+        'recent_enquiries': my_enquiries.order_by('-enquiry_date')[:8],
+    }
 
 

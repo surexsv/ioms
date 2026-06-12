@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'document_generator',
     'company_settings',
     'scheduling',
+    'enquiries',
+    'estimate_boq',
 ]
 
 MIDDLEWARE = [
@@ -78,6 +80,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.oms_navigation',
+                'accounts.version_context.ioms_version',
             ],
         },
     },

@@ -54,13 +54,7 @@ The detailed quotation is enclosed for your review.
 
 Should you require any clarification, please feel free to contact us.
 
-Thanking you and assuring you of our best attention at all times.
-
-Yours faithfully,
-
-For Infomates Techno Solutions (P) Ltd
-
-Authorized Signatory"""
+Thanking you and assuring you of our best attention at all times."""
 
 DEFAULT_COMPANY_INTRODUCTION = (
     'Infomates Techno Solutions (P) Ltd is a leading provider of telecom, IT, '
@@ -95,13 +89,7 @@ The detailed commercial quotation is enclosed for your review.
 
 Should you require any clarification, please feel free to contact us.
 
-Thanking you and assuring you of our best attention at all times.
-
-Yours faithfully,
-
-For Infomates Techno Solutions (P) Ltd
-
-Authorized Signatory""",
+Thanking you and assuring you of our best attention at all times.""",
     },
     {
         'name': 'ISP Project Proposal',
@@ -120,13 +108,7 @@ The detailed quotation is enclosed for your kind consideration.
 
 Should you require any clarification, please feel free to contact us.
 
-Thanking you and assuring you of our best attention at all times.
-
-Yours faithfully,
-
-For Infomates Techno Solutions (P) Ltd
-
-Authorized Signatory""",
+Thanking you and assuring you of our best attention at all times.""",
     },
     {
         'name': 'AMC Proposal',
@@ -145,13 +127,7 @@ The detailed quotation is enclosed for your review.
 
 Should you require any clarification, please feel free to contact us.
 
-Thanking you and assuring you of our best attention at all times.
-
-Yours faithfully,
-
-For Infomates Techno Solutions (P) Ltd
-
-Authorized Signatory""",
+Thanking you and assuring you of our best attention at all times.""",
     },
     {
         'name': 'Corporate IT Support Proposal',
@@ -170,12 +146,6 @@ The detailed quotation is enclosed for your review.
 
 Should you require any clarification, please feel free to contact us.
 
-Thanking you and assuring you of our best attention at all times.
-
-Yours faithfully,
-
-For Infomates Techno Solutions (P) Ltd
-
-Authorized Signatory""",
+Thanking you and assuring you of our best attention at all times.""",
     },
 ]

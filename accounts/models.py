@@ -10,10 +10,12 @@ class User(AbstractUser):
     ROLE_CHOICES = (
         ('DIRECTOR', 'Director'),
         ('OPERATIONS', 'Operations Manager'),
+        ('PROJECT_MANAGER', 'Project Manager'),
+        ('SUPERVISOR', 'Supervisor'),
         ('ACCOUNTS', 'Accounts Manager'),
         ('ENGINEER', 'Field Engineer'),
         ('Technician', 'Field Technician'),
-        ('Supervisor', 'Field Supervisor'),
+        ('Supervisor', 'Field Supervisor (Legacy)'),
     )
 
     ROLE_REQUEST_CHOICES = (
@@ -36,10 +38,18 @@ class User(AbstractUser):
         'ENGINEER': 'ENGINEER',
         'OPERATIONS': 'OPERATIONS',
         'ACCOUNTS': 'ACCOUNTS',
-        'MANAGER': 'Supervisor',
+        'MANAGER': 'PROJECT_MANAGER',
     }
 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, blank=True, default='')
+    reports_to = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='direct_reports',
+        help_text='Organizational reporting line (Director → Operations → PM → Supervisor).',
+    )
     phone = models.CharField(max_length=15, blank=True)
     is_active_employee = models.BooleanField(default=True)
 

@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% block title %}Estimate BOQ — IOMS{% endblock %}
+{% block extra_css %}
+<style>
+    .line-table { width:100%; margin-top:16px; border-collapse:collapse; }
+    .line-table th { background:#0F2D52; color:#fff; font-size:0.8rem; padding:10px 8px; }
+    .line-table td { padding:8px; border-bottom:1px solid #eee; vertical-align:top; }
+    .line-table input, .line-table textarea { width:100%; padding:6px; border:1px solid #ddd; border-radius:4px; font-size:0.9rem; box-sizing:border-box; }
+    .line-table .row-actions { white-space:nowrap; }
+    .formset-header { display:flex; justify-content:space-between; align-items:center; margin:20px 0 8px; flex-wrap:wrap; gap:8px; }
+    .formset-errors { color:#b02a37; margin:8px 0; }
+    .field-error { color:#b02a37; font-size:0.8rem; display:block; margin-top:4px; }
+    .formset-row.is-deleted { opacity:0.45; }
+    @media (max-width: 900px) {
+        .line-table-wrap { overflow-x:auto; }
+        .line-table { min-width:820px; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{% if estimate_boq %}Edit{% else %}Create{% endif %} Estimate BOQ</h1>
+    {% if enquiry %}<a href="{% url 'enquiry_detail' enquiry.pk %}" class="btn btn-secondary">Back to Enquiry</a>{% endif %}
+</div>
+<div class="card">
+    <form method="post" id="estimateBoqForm">
+        {% csrf_token %}
+        {% if enquiry and not estimate_boq %}<input type="hidden" name="enquiry" value="{{ enquiry.pk }}">{% endif %}
+        {% for field in form %}
+        <div class="form-group">{{ field.label_tag }}{{ field }}{% for e in field.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+        {% endfor %}
+        <div class="formset-header">
+            <h3 style="margin:0;">Line Items</h3>
+            <button type="button" class="btn btn-secondary btn-sm" id="addEstimateRow">+ Add Item</button>
+        </div>
+        {% if formset.non_form_errors %}
+        <div class="formset-errors">{{ formset.non_form_errors }}</div>
+        {% endif %}
+        {{ formset.management_form }}
+        <div class="line-table-wrap">
+        <table class="line-table">
+            <thead>
+                <tr>
+                    <th style="width:50px;">Sl No</th>
+                    <th style="width:180px;">Item</th>
+                    <th>Description</th>
+                    <th style="width:80px;">Qty</th>
+                    <th style="width:70px;">Unit</th>
+                    <th style="width:100px;">Rate</th>
+                    <th style="width:90px;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="estimate-lines">
+                {% for f in formset %}
+                <tr class="formset-row">
+                    <td>
+                        {{ f.id }}
+                        {{ f.sl_no }}
+                        {% for e in f.sl_no.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+                    </td>
+                    <td>
+                        {{ f.item }}
+                        {% for e in f.item.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+                    </td>
+                    <td>
+                        {{ f.description }}
+                        {% for e in f.description.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+                    </td>
+                    <td>
+                        {{ f.quantity }}
+                        {% for e in f.quantity.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+                    </td>
+                    <td>
+                        {{ f.unit }}
+                        {% for e in f.unit.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+                    </td>
+                    <td>
+                        {{ f.rate }}
+                        {% for e in f.rate.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+                    </td>
+                    <td class="row-actions">
+                        {% if f.DELETE %}<span class="delete-field" style="display:none;">{{ f.DELETE }}</span>{% endif %}
+                        <button type="button" class="btn btn-secondary btn-sm delete-item-btn">Delete Item</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:16px;">Save</button>
+    </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function() {
+    const form = document.getElementById('estimateBoqForm');
+    const tbody = document.getElementById('estimate-lines');
+    const total = form && form.querySelector('[name$="-TOTAL_FORMS"]');
+    const addBtn = document.getElementById('addEstimateRow');
+
+    function formPrefix() {
+        if (!total || !total.name) return 'lines';
+        return total.name.replace('-TOTAL_FORMS', '');
+    }
+
+    function renumberSlNo() {
+        let n = 1;
+        tbody.querySelectorAll('.formset-row').forEach(function(row) {
+            const del = row.querySelector('input[name$="-DELETE"]');
+            if (del && del.checked) return;
+            const sl = row.querySelector('input[name$="-sl_no"]');
+            if (sl && !sl.dataset.userEdited) sl.value = n++;
+        });
+    }
+
+    function bindRow(row) {
+        const sl = row.querySelector('input[name$="-sl_no"]');
+        if (sl) {
+            sl.addEventListener('input', function() { sl.dataset.userEdited = '1'; });
+        }
+        const delBtn = row.querySelector('.delete-item-btn');
+        if (delBtn) {
+            delBtn.addEventListener('click', function() {
+                const del = row.querySelector('input[name$="-DELETE"]');
+                if (del) {
+                    del.checked = true;
+                    row.classList.add('is-deleted');
+                } else {
+                    row.remove();
+                    const count = tbody.querySelectorAll('.formset-row').length;
+                    if (total) total.value = count;
+                }
+                renumberSlNo();
+            });
+        }
+    }
+
+    tbody.querySelectorAll('.formset-row').forEach(bindRow);
+    renumberSlNo();
+
+    if (addBtn && tbody && total) {
+        addBtn.addEventListener('click', function() {
+            const prefix = formPrefix();
+            const n = parseInt(total.value, 10);
+            const last = tbody.querySelector('.formset-row:last-child');
+            if (!last) return;
+            const row = last.cloneNode(true);
+            row.classList.remove('is-deleted');
+            row.querySelectorAll('input, textarea, select').forEach(function(inp) {
+                const re = new RegExp(prefix + '-\\d+-');
+                if (inp.name) inp.name = inp.name.replace(re, prefix + '-' + n + '-');
+                if (inp.id) inp.id = inp.id.replace(re, prefix + '-' + n + '-');
+                if (inp.type === 'checkbox') inp.checked = false;
+                else if (inp.type === 'hidden' && inp.name && inp.name.endsWith('-id')) inp.value = '';
+                else if (inp.name && inp.name.endsWith('-DELETE')) inp.value = '';
+                else if (inp.name && inp.name.endsWith('-unit')) inp.value = 'Nos';
+                else if (inp.name && inp.name.endsWith('-quantity')) inp.value = '1';
+                else if (inp.name && inp.name.endsWith('-rate')) inp.value = '0';
+                else if (inp.name && inp.name.endsWith('-sl_no')) { inp.value = ''; inp.dataset.userEdited = ''; }
+                else inp.value = '';
+            });
+            row.querySelectorAll('.field-error').forEach(function(el) { el.remove(); });
+            tbody.appendChild(row);
+            total.value = n + 1;
+            bindRow(row);
+            renumberSlNo();
+        });
+    }
+})();
+</script>
+{% endblock %}
