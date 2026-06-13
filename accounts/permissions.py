@@ -5,6 +5,8 @@ Superusers always have full access (except explicit admin-only paths).
 
 from .roles import (
     ROLE_ACCOUNTS,
+    ROLE_ACCOUNTS_EXECUTIVE,
+    ROLE_BACK_OFFICE,
     ROLE_DIRECTOR,
     ROLE_ENGINEER,
     ROLE_OPERATIONS,
@@ -44,6 +46,7 @@ MODULE_SCHEDULING = 'scheduling'
 MODULE_SCHEDULING_MANAGE = 'scheduling_manage'
 MODULE_USER_APPROVAL = 'user_approval'
 MODULE_SITE_PROGRESS = 'site_progress'
+MODULE_PRODUCTIVITY = 'productivity'
 
 # Role → allowed modules
 _ACCESS = {
@@ -56,7 +59,7 @@ _ACCESS = {
         MODULE_QUOTATIONS, MODULE_QUOTATION_RATES, MODULE_FINANCIAL,
         MODULE_DOCUMENT_GENERATOR, MODULE_COMPANY_SETTINGS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
-        MODULE_USER_APPROVAL, MODULE_SITE_PROGRESS,
+        MODULE_USER_APPROVAL, MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
     },
     ROLE_OPERATIONS: {
         MODULE_DASHBOARD_OPERATIONS,
@@ -67,7 +70,7 @@ _ACCESS = {
         MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
         MODULE_QUOTATIONS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
-        MODULE_SITE_PROGRESS,
+        MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
     },
     ROLE_PROJECT_MANAGER: {
         MODULE_DASHBOARD_PROJECT_MANAGER,
@@ -78,7 +81,7 @@ _ACCESS = {
         MODULE_BILLING_VIEW,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
         MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
-        MODULE_SITE_PROGRESS,
+        MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
     },
     ROLE_SUPERVISOR: {
         MODULE_DASHBOARD_SUPERVISOR,
@@ -89,24 +92,36 @@ _ACCESS = {
         MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
         MODULE_QUOTATIONS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
-        MODULE_SITE_PROGRESS,
+        MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
     },
     ROLE_ACCOUNTS: {
         MODULE_DASHBOARD_ACCOUNTS,
         MODULE_CLIENTS, MODULE_BOQ, MODULE_BILLING,
         MODULE_ATTENDANCE_SELF,
         MODULE_QUOTATION_RATES, MODULE_FINANCIAL,
-        MODULE_SCHEDULING,
+        MODULE_SCHEDULING, MODULE_PRODUCTIVITY,
     },
     ROLE_ENGINEER: {
         MODULE_DASHBOARD_ENGINEER,
         MODULE_ORDERS, MODULE_WCR, MODULE_ATTENDANCE_SELF,
-        MODULE_SCHEDULING,
+        MODULE_SCHEDULING, MODULE_PRODUCTIVITY,
     },
     ROLE_TECHNICIAN: {
         MODULE_DASHBOARD_ENGINEER,
         MODULE_ORDERS, MODULE_WCR, MODULE_ATTENDANCE_SELF,
-        MODULE_SCHEDULING,
+        MODULE_SCHEDULING, MODULE_PRODUCTIVITY,
+    },
+    ROLE_ACCOUNTS_EXECUTIVE: {
+        MODULE_DASHBOARD_ACCOUNTS,
+        MODULE_BILLING,
+        MODULE_ATTENDANCE_SELF,
+        MODULE_PRODUCTIVITY,
+    },
+    ROLE_BACK_OFFICE: {
+        MODULE_DASHBOARD_OPERATIONS,
+        MODULE_ENQUIRIES,
+        MODULE_ATTENDANCE_SELF,
+        MODULE_PRODUCTIVITY,
     },
 }
 
@@ -224,6 +239,11 @@ def can_manage_site_progress(user):
     return can_access(user, MODULE_SITE_PROGRESS)
 
 
+def can_view_productivity(user):
+    from productivity.permissions import can_view_productivity as _can
+    return can_access(user, MODULE_PRODUCTIVITY) and _can(user)
+
+
 def attendance_nav_url(user):
     if can_manage_attendance(user):
         return 'attendance_dashboard'
@@ -260,6 +280,8 @@ def resolve_path_module(path):
         return MODULE_COMPANY_SETTINGS
     if path.startswith('/scheduling/'):
         return MODULE_SCHEDULING
+    if path.startswith('/productivity/'):
+        return MODULE_PRODUCTIVITY
     if path.startswith('/user-approvals/'):
         return MODULE_USER_APPROVAL
     if path.startswith('/dashboard/'):

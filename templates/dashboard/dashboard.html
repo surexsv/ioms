@@ -25,6 +25,12 @@
     {% if show_operations %}
     <div class="ioms-kpi"><div class="value text-success">{{ attendance_stats.present }}</div><div class="label">Present Today</div></div>
     <div class="ioms-kpi"><div class="value text-primary">{{ attendance_stats.attendance_percentage }}%</div><div class="label">Attendance Today</div></div>
+    <div class="ioms-kpi"><div class="value">{{ prod_active_engineers|default:0 }}</div><div class="label">Active Engineers</div></div>
+    <div class="ioms-kpi"><div class="value">{{ prod_active_technicians|default:0 }}</div><div class="label">Active Technicians</div></div>
+    <div class="ioms-kpi"><div class="value">{{ prod_man_days_month|default:0 }}</div><div class="label">Man-Days This Month</div></div>
+    <div class="ioms-kpi"><div class="value text-success">{{ prod_jobs_completed|default:0 }}</div><div class="label">Jobs Completed (WCR)</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ prod_pending_jobs|default:0 }}</div><div class="label">Pending Jobs</div></div>
+    <div class="ioms-kpi"><div class="value">{{ prod_utilization|default:"—" }}{% if prod_utilization %}%{% endif %}</div><div class="label">Team Utilization</div></div>
     {% endif %}
 </div>
 
@@ -45,6 +51,27 @@
     <div class="ioms-kpi"><div class="value text-success">{{ qt_accepted }}</div><div class="label">Accepted</div></div>
     <div class="ioms-kpi"><div class="value text-danger">{{ qt_rejected }}</div><div class="label">Rejected</div></div>
     <div class="ioms-kpi"><div class="value">₹{{ quotation_value|floatformat:0 }}</div><div class="label">Quotation Value</div></div>
+</div>
+{% endif %}
+
+{% if show_operations and prod_trend %}
+<h3 class="ioms-section-title" style="margin-top:8px;">Field Productivity</h3>
+<p class="ioms-action-row">
+    {% if show_nav_productivity %}<a href="{% url 'productivity_dashboard' %}" class="btn btn-sm btn-primary">Productivity Dashboard</a>{% endif %}
+</p>
+<div class="ioms-charts-row ioms-charts-row-3">
+    <div class="ioms-chart-card">
+        <h3>Monthly Man-Days Trend</h3>
+        <div class="ioms-chart-wrap"><canvas id="prodTrendDashChart"></canvas></div>
+    </div>
+    <div class="ioms-chart-card">
+        <h3>Top Engineers (Man-Days)</h3>
+        <div class="ioms-chart-wrap"><canvas id="prodEngDashChart"></canvas></div>
+    </div>
+    <div class="ioms-chart-card">
+        <h3>Top Technicians (Man-Days)</h3>
+        <div class="ioms-chart-wrap"><canvas id="prodTechDashChart"></canvas></div>
+    </div>
 </div>
 {% endif %}
 
@@ -159,6 +186,35 @@ if (document.getElementById('orderTypeChart')) {
         type: 'doughnut',
         data: { labels: ['Survey', 'Installation', 'Complaint', 'Maintenance'], datasets: [{ data: [{{ survey_count }}, {{ install_count }}, {{ complaint_count }}, {{ maintenance_count }}], backgroundColor: ['#2C5282', '#28A745', '#FFC107', '#DC3545'] }] },
         options: { ...chartDefaults, plugins: { legend: { position: 'right' } } }
+    });
+}
+{% endif %}
+{% if show_operations and prod_trend %}
+const prodTrendLabels = [{% for p in prod_trend %}'{{ p.month }}/{{ p.year }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+const prodTrendData = [{% for p in prod_trend %}{{ p.man_days|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const prodEngLabels = [{% for r in prod_eng_rank %}'{{ r.employee__first_name|default:r.employee__username }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+const prodEngData = [{% for r in prod_eng_rank %}{{ r.total_man_days|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const prodTechLabels = [{% for r in prod_tech_rank %}'{{ r.employee__first_name|default:r.employee__username }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+const prodTechData = [{% for r in prod_tech_rank %}{{ r.total_man_days|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+if (document.getElementById('prodTrendDashChart')) {
+    new Chart(document.getElementById('prodTrendDashChart'), {
+        type: 'line',
+        data: { labels: prodTrendLabels, datasets: [{ label: 'Man-Days', data: prodTrendData, borderColor: '#0d6efd', fill: false }] },
+        options: chartDefaults
+    });
+}
+if (document.getElementById('prodEngDashChart')) {
+    new Chart(document.getElementById('prodEngDashChart'), {
+        type: 'bar',
+        data: { labels: prodEngLabels, datasets: [{ label: 'Man-Days', data: prodEngData, backgroundColor: '#198754' }] },
+        options: { ...chartDefaults, indexAxis: 'y', plugins: { legend: { display: false } } }
+    });
+}
+if (document.getElementById('prodTechDashChart')) {
+    new Chart(document.getElementById('prodTechDashChart'), {
+        type: 'bar',
+        data: { labels: prodTechLabels, datasets: [{ label: 'Man-Days', data: prodTechData, backgroundColor: '#fd7e14' }] },
+        options: { ...chartDefaults, indexAxis: 'y', plugins: { legend: { display: false } } }
     });
 }
 {% endif %}

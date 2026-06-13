@@ -83,6 +83,16 @@
                     {% if pending_approval_count %}<span class="badge">{{ pending_approval_count }}</span>{% endif %}
                 </a>
                 {% endif %}
+                {% if show_nav_productivity %}
+                <a href="{% url 'productivity_dashboard' %}" class="{% if nav_active == 'productivity' %}active{% endif %}">
+                    <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Productivity
+                </a>
+                {% endif %}
+                {% if show_nav_gps %}
+                <a href="{% url 'gps_dashboard' %}" class="{% if nav_active == 'gps' %}active{% endif %}">
+                    <i class="bi bi-geo-alt" aria-hidden="true"></i> GPS Tracking
+                </a>
+                {% endif %}
             </nav>
             <div class="ioms-sidebar-footer">
                 <strong>{{ user.get_full_name|default:user.username }}</strong>

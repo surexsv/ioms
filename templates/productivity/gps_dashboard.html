@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}GPS Field Dashboard — {{ ioms_product_name }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>#gpsMap { height: 420px; border-radius: 8px; }</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>GPS Field Operations</h1>
+    <div>
+        <a href="{% url 'productivity_dashboard' %}" class="btn btn-secondary btn-sm">Productivity</a>
+        <a href="{% url 'field_activity_list' %}" class="btn btn-secondary btn-sm">Field Activity Log</a>
+        {% if can_full_gps %}
+        <a href="{% url 'field_export_csv' %}?report=gps" class="btn btn-secondary btn-sm">Export GPS CSV</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="ioms-kpi-grid">
+    <div class="ioms-kpi"><div class="value">{{ site_visits_today }}</div><div class="label">Site Visits Today</div></div>
+    <div class="ioms-kpi"><div class="value">{{ gps_captures_today }}</div><div class="label">GPS Captures Today</div></div>
+</div>
+
+<div class="card ioms-dashboard-section">
+    <h3>Today's Field Activity Map</h3>
+    <div id="gpsMap"></div>
+    <p style="color:#6c757d;font-size:0.85rem;margin-top:8px;">Locations from GPS captures today. Addresses resolved via OpenStreetMap.</p>
+</div>
+
+<div class="ioms-charts-row ioms-charts-row-2">
+    <div class="card ioms-dashboard-section">
+        <h3>Recent Check-Ins</h3>
+        <div class="ioms-table-wrap">
+            <table class="ioms-table">
+                <thead><tr><th>Time</th><th>Employee</th><th>Order</th><th>Location</th></tr></thead>
+                <tbody>
+                    {% for log in recent_checkins %}
+                    <tr>
+                        <td>{{ log.created_at|date:"H:i" }}</td>
+                        <td>{{ log.employee.get_full_name|default:log.employee.username }}</td>
+                        <td>{% if log.order %}#{{ log.order.order_id }}{% else %}—{% endif %}</td>
+                        <td>{{ log.address|truncatewords:8|default:"—" }}</td>
+                    </tr>
+                    {% empty %}<tr><td colspan="4">No check-ins recorded yet.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card ioms-dashboard-section">
+        <h3>Recent Check-Outs</h3>
+        <div class="ioms-table-wrap">
+            <table class="ioms-table">
+                <thead><tr><th>Time</th><th>Employee</th><th>Order</th><th>Location</th></tr></thead>
+                <tbody>
+                    {% for log in recent_checkouts %}
+                    <tr>
+                        <td>{{ log.created_at|date:"H:i" }}</td>
+                        <td>{{ log.employee.get_full_name|default:log.employee.username }}</td>
+                        <td>{% if log.order %}#{{ log.order.order_id }}{% else %}—{% endif %}</td>
+                        <td>{{ log.address|truncatewords:8|default:"—" }}</td>
+                    </tr>
+                    {% empty %}<tr><td colspan="4">No check-outs recorded yet.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="ioms-charts-row ioms-charts-row-2">
+    <div class="card ioms-dashboard-section">
+        <h3>Order Completion Locations</h3>
+        <ul>
+            {% for log in order_completions %}
+            <li>{{ log.employee }} — Order #{{ log.order.order_id }} — {{ log.address|truncatewords:10|default:"GPS only" }}</li>
+            {% empty %}<li>No order completion GPS records.</li>{% endfor %}
+        </ul>
+    </div>
+    <div class="card ioms-dashboard-section">
+        <h3>Survey Completion Locations</h3>
+        <ul>
+            {% for log in survey_completions %}
+            <li>{{ log.employee }} — {{ log.enquiry.enquiry_number }} — {{ log.address|truncatewords:10|default:"GPS only" }}</li>
+            {% empty %}<li>No survey completion GPS records.</li>{% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const mapPoints = {{ map_points_json|safe }};
+const map = L.map('gpsMap').setView([10.0, 76.3], 7);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+}).addTo(map);
+if (mapPoints.length) {
+    const bounds = [];
+    mapPoints.forEach(function (p) {
+        const m = L.marker([p.lat, p.lng]).addTo(map);
+        m.bindPopup('<strong>' + p.employee + '</strong><br>' + p.label + '<br>' + p.address + '<br>' + p.time);
+        bounds.push([p.lat, p.lng]);
+    });
+    map.fitBounds(bounds, { padding: [30, 30] });
+}
+</script>
+{% endblock %}

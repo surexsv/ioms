@@ -296,6 +296,37 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
 
         })
 
+        try:
+            from productivity.services import monthly_trend, productivity_dashboard_kpis
+            prod = productivity_dashboard_kpis()
+            context.update({
+                'prod_active_engineers': prod['active_engineers'],
+                'prod_active_technicians': prod['active_technicians'],
+                'prod_man_days_month': prod['total_man_days_month'],
+                'prod_jobs_completed': prod['jobs_completed'],
+                'prod_pending_jobs': prod['pending_jobs'],
+                'prod_utilization': prod['team_utilization_pct'],
+                'prod_top_engineer': prod['top_engineer'],
+                'prod_top_technician': prod['top_technician'],
+                'prod_trend': monthly_trend(),
+                'prod_eng_rank': prod['engineer_ranking'][:5],
+                'prod_tech_rank': prod['technician_ranking'][:5],
+            })
+        except Exception:
+            context.update({
+                'prod_active_engineers': 0,
+                'prod_active_technicians': 0,
+                'prod_man_days_month': 0,
+                'prod_jobs_completed': 0,
+                'prod_pending_jobs': 0,
+                'prod_utilization': None,
+                'prod_top_engineer': None,
+                'prod_top_technician': None,
+                'prod_trend': [],
+                'prod_eng_rank': [],
+                'prod_tech_rank': [],
+            })
+
     else:
 
         context.update({

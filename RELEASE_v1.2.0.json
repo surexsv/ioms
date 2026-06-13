@@ -1,0 +1,42 @@
+{
+  "product": "Infomates Operations Management System",
+  "short_name": "IOMS",
+  "display_title": "Infomates Operations Management System",
+  "version": "1.2.0",
+  "version_label": "1.2",
+  "release_date": "2026-06-04",
+  "status": "stable",
+  "rollback_tag": "v1.1.0",
+  "ui": {
+    "sidebar_label": "IOMS",
+    "sidebar_version": "v1.2",
+    "center_header_title": "Infomates Operations Management System",
+    "theme_primary": "#0F2D52"
+  },
+  "modules": [
+    "accounts",
+    "clients",
+    "enquiries",
+    "estimate_boq",
+    "orders",
+    "wcr",
+    "boq",
+    "billing",
+    "attendance",
+    "quotations",
+    "dashboard",
+    "scheduling",
+    "document_generator",
+    "company_settings",
+    "productivity"
+  ],
+  "features_v1_2": [
+    "Multi-resource schedule team assignment",
+    "WCR team participation and per-person man-day credit",
+    "Employee activity auto-logging",
+    "Productivity dashboard and reports",
+    "KPI-ready snapshot architecture"
+  ],
+  "git_tag": "v1.2.0",
+  "git_commit_message": "Release IOMS Version 1.2: Employee Productivity Management Module"
+}

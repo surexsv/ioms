@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'scheduling',
     'enquiries',
     'estimate_boq',
+    'productivity',
 ]
 
 MIDDLEWARE = [

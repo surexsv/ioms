@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if mode == 'checkout' %}Site Check-Out{% else %}Site Check-In{% endif %} — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{% if mode == 'checkout' %}Site Check-Out{% else %}Site Check-In{% endif %}</h1>
+    <a href="{% url 'order_detail' order.pk %}" class="btn btn-secondary">Back to Order</a>
+</div>
+
+<div class="card" style="max-width:560px;">
+    <p><strong>Order:</strong> {{ order.order_no|default:order.order_id }} — {{ order.display_site_name }}</p>
+    <p><strong>Schedule:</strong> {{ schedule.schedule_number }}</p>
+    <p style="color:#6c757d;">GPS location will be captured automatically from your browser.</p>
+
+    <form method="post" enctype="multipart/form-data" data-gps-capture>
+        {% csrf_token %}
+        <input type="hidden" name="latitude" value="">
+        <input type="hidden" name="longitude" value="">
+        {% if mode == 'checkout' %}
+        <div class="form-group">
+            <label>Work Completion Photo (optional)</label>
+            <input type="file" name="work_photo" accept="image/*">
+        </div>
+        {% else %}
+        <div class="form-group">
+            <label>Site Photo (optional)</label>
+            <input type="file" name="site_photo" accept="image/*">
+        </div>
+        {% endif %}
+        <p id="gpsStatus" style="font-size:0.9rem;color:#6c757d;">Acquiring GPS…</p>
+        <button type="submit" class="btn btn-primary">
+            {% if mode == 'checkout' %}Confirm Check-Out{% else %}Confirm Check-In{% endif %}
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/ioms-gps.js' %}"></script>
+<script>
+IOMSGps.capture(function (lat, lng, err) {
+    var el = document.getElementById('gpsStatus');
+    if (lat && lng) el.textContent = 'GPS ready: ' + lat + ', ' + lng;
+    else el.textContent = err ? ('GPS unavailable: ' + err) : 'Waiting for GPS…';
+});
+</script>
+{% endblock %}

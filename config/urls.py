@@ -25,6 +25,7 @@ urlpatterns = [
     path('document-generator/', include('document_generator.urls')),
     path('company-settings/', include('company_settings.urls')),
     path('scheduling/', include('scheduling.urls')),
+    path('productivity/', include('productivity.urls')),
 ]
 
 if settings.DEBUG:

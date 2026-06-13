@@ -43,13 +43,31 @@
         <div class="detail-item"><label>Schedule Status</label><p>{{ schedule.get_status_display }}</p></div>
         <div class="detail-item"><label>Start Date</label><p>{{ schedule.scheduled_start_date|date:"d M Y" }}</p></div>
         <div class="detail-item"><label>End Date</label><p>{{ schedule.scheduled_end_date|date:"d M Y" }}</p></div>
-        <div class="detail-item"><label>Assigned Engineer(s)</label><p>{{ schedule.engineer_names }}</p></div>
+        <div class="detail-item"><label>Assigned Engineer(s)</label><p>{{ schedule.team_member_names }}</p></div>
         {% if schedule.team_leader %}<div class="detail-item"><label>Team Leader</label><p>{{ schedule.team_leader }}</p></div>{% endif %}
         {% if schedule.vehicle_assigned %}<div class="detail-item"><label>Vehicle</label><p>{{ schedule.vehicle_assigned }}</p></div>{% endif %}
     </div>
     {% if schedule.work_instructions %}<p><strong>Work Instructions:</strong> {{ schedule.work_instructions }}</p>{% endif %}
     {% if can_manage_schedule %}
     <a href="{% url 'schedule_edit' schedule.pk %}" class="btn btn-secondary btn-sm" style="margin-top:12px;">Edit Schedule</a>
+    {% endif %}
+    {% if can_site_attendance %}
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+        {% if not site_attendance or not site_attendance.check_in_at or site_attendance.check_out_at %}
+        <a href="{% url 'site_check_in' schedule.pk %}" class="btn btn-success btn-sm">Site Check-In (GPS)</a>
+        {% endif %}
+        {% if site_attendance and site_attendance.check_in_at and not site_attendance.check_out_at %}
+        <a href="{% url 'site_check_out' schedule.pk %}" class="btn btn-warning btn-sm">Site Check-Out (GPS)</a>
+        {% endif %}
+    </div>
+    {% if site_attendance %}
+    <p style="font-size:0.9rem;color:#6c757d;margin-top:8px;">
+        Check-in: {{ site_attendance.check_in_at|date:"d M Y H:i"|default:"—" }}
+        {% if site_attendance.check_in_address %} — {{ site_attendance.check_in_address|truncatewords:8 }}{% endif %}
+        <br>Check-out: {{ site_attendance.check_out_at|date:"d M Y H:i"|default:"—" }}
+        {% if site_attendance.check_out_address %} — {{ site_attendance.check_out_address|truncatewords:8 }}{% endif %}
+    </p>
+    {% endif %}
     {% endif %}
     {% else %}
     <p style="color:#6c757d;">No Schedule Created</p>
@@ -63,9 +81,11 @@
 <div class="card">
     <h3 style="margin-top:0;">Update Status</h3>
     {% for code, label in transitions %}
-    <form method="post" style="display:inline;margin-right:8px;">
+    <form method="post" style="display:inline;margin-right:8px;" data-gps-capture class="gps-status-form">
         {% csrf_token %}
         <input type="hidden" name="new_status" value="{{ code }}">
+        <input type="hidden" name="latitude" value="">
+        <input type="hidden" name="longitude" value="">
         <button type="submit" class="btn btn-primary btn-sm">{{ label }}</button>
     </form>
     {% endfor %}
@@ -121,4 +141,9 @@
     {% endif %}
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'js/ioms-gps.js' %}"></script>
 {% endblock %}

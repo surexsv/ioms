@@ -6,18 +6,39 @@
     <a href="{% url 'order_detail' order.pk %}" class="btn btn-secondary">Back to Order</a>
 </div>
 
-<div class="card" style="max-width:760px;">
+<div class="card" style="max-width:860px;">
     <p style="color:#6c757d;margin-top:0;">
         Order: <strong>{{ order.order_no|default:order.order_id }}</strong> — {{ order.client.name }} — {{ order.display_site_name }}
     </p>
     {% if schedule %}<p><strong>Schedule #:</strong> {{ schedule.schedule_number }}</p>{% endif %}
 
-    <form method="post">
+    <form method="post" data-gps-capture>
         {% csrf_token %}
+        <input type="hidden" name="latitude" value="">
+        <input type="hidden" name="longitude" value="">
+        <h3 style="margin-top:20px;">Team Assignment</h3>
+        <div class="form-row">
+            <div class="form-group">{{ form.project_manager.label_tag }}{{ form.project_manager }}</div>
+            <div class="form-group">{{ form.supervisor.label_tag }}{{ form.supervisor }}</div>
+        </div>
+        <div class="form-group">{{ form.lead_engineer.label_tag }}{{ form.lead_engineer }}</div>
+        <div class="form-row">
+            <div class="form-group">{{ form.supporting_engineers.label_tag }}{{ form.supporting_engineers }}<small class="text-muted">Hold Ctrl/Cmd to select multiple</small></div>
+            <div class="form-group">{{ form.technicians.label_tag }}{{ form.technicians }}<small class="text-muted">Hold Ctrl/Cmd to select multiple</small></div>
+        </div>
+
+        <h3 style="margin-top:20px;">Schedule Details</h3>
         <div class="form-row">
             <div class="form-group">{{ form.scheduled_start_date.label_tag }}{{ form.scheduled_start_date }}</div>
             <div class="form-group">{{ form.scheduled_end_date.label_tag }}{{ form.scheduled_end_date }}</div>
+            <div class="form-group">{{ form.scheduled_time.label_tag }}{{ form.scheduled_time }}</div>
         </div>
+        <div class="form-row">
+            <div class="form-group">{{ form.expected_duration_hours.label_tag }}{{ form.expected_duration_hours }}</div>
+            <div class="form-group">{{ form.expected_man_days.label_tag }}{{ form.expected_man_days }}</div>
+        </div>
+
+        <h3 style="margin-top:20px;">Resources</h3>
         <div class="form-group">{{ form.assigned_engineers.label_tag }}{{ form.assigned_engineers }}</div>
         <div class="form-group">{{ form.team_leader.label_tag }}{{ form.team_leader }}</div>
         <div class="form-group">{{ form.vehicle_assigned.label_tag }}{{ form.vehicle_assigned }}</div>
@@ -29,4 +50,9 @@
         {% endif %}
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'js/ioms-gps.js' %}"></script>
 {% endblock %}

@@ -13,6 +13,8 @@ class User(AbstractUser):
         ('PROJECT_MANAGER', 'Project Manager'),
         ('SUPERVISOR', 'Supervisor'),
         ('ACCOUNTS', 'Accounts Manager'),
+        ('ACCOUNTS_EXECUTIVE', 'Accounts Executive'),
+        ('BACK_OFFICE', 'Back Office Staff'),
         ('ENGINEER', 'Field Engineer'),
         ('Technician', 'Field Technician'),
         ('Supervisor', 'Field Supervisor (Legacy)'),

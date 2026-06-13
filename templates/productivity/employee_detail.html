@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}{{ detail.employee.get_full_name|default:detail.employee.username }} — Productivity{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ detail.employee.get_full_name|default:detail.employee.username }}</h1>
+    <a href="{% url 'productivity_dashboard' %}?year={{ year }}&month={{ month }}" class="btn btn-secondary">Back</a>
+</div>
+<p style="color:#6c757d;">Role: {{ detail.role }} — Period: {{ month }}/{{ year }}</p>
+
+<div class="ioms-kpi-grid">
+    <div class="ioms-kpi"><div class="value">{{ detail.jobs_attended }}</div><div class="label">Jobs Attended</div></div>
+    <div class="ioms-kpi"><div class="value">{{ detail.wcr_submitted }}</div><div class="label">WCR Submitted</div></div>
+    <div class="ioms-kpi"><div class="value">{{ detail.hours_worked }}</div><div class="label">Hours Worked</div></div>
+    <div class="ioms-kpi"><div class="value">{{ detail.man_days }}</div><div class="label">Man-Days</div></div>
+    <div class="ioms-kpi"><div class="value">{{ detail.completion_pct|default:"—" }}{% if detail.completion_pct %}%{% endif %}</div><div class="label">Completion %</div></div>
+    <div class="ioms-kpi"><div class="value">{{ detail.attendance_pct|default:"—" }}{% if detail.attendance_pct %}%{% endif %}</div><div class="label">Attendance %</div></div>
+    <div class="ioms-kpi"><div class="value">{{ detail.activities_count }}</div><div class="label">Back-Office Activities</div></div>
+</div>
+
+<div class="card ioms-dashboard-section">
+    <h3>Recent Activity Log</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Date</th><th>Department</th><th>Activity</th><th>Document</th></tr></thead>
+            <tbody>
+                {% for log in activities %}
+                <tr>
+                    <td>{{ log.activity_date }}</td>
+                    <td>{{ log.get_department_display }}</td>
+                    <td>{{ log.get_activity_type_display }}</td>
+                    <td>{{ log.related_document }}</td>
+                </tr>
+                {% empty %}<tr><td colspan="4">No activities logged this period.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

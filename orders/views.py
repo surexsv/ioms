@@ -122,6 +122,14 @@ def create_order(request):
                 order.save()
                 attachment_formset.instance = order
                 attachment_formset.save()
+            from productivity.activity_logger import log_activity
+            from productivity.constants import ACT_ORDER_PROCESSED
+            log_activity(
+                request.user, ACT_ORDER_PROCESSED,
+                related_document=order.order_no or str(order.order_id),
+                related_model='Order',
+                related_object_id=order.pk,
+            )
             messages.success(request, f'Order {order.order_no} created.')
             return redirect('order_detail', pk=order.pk)
     else:
@@ -164,7 +172,10 @@ def order_detail(request, pk):
 
     if request.method == 'POST' and 'new_status' in request.POST:
         new_status = request.POST['new_status']
+        old_status = order.status
         if order.update_status(new_status):
+            from productivity.gps_service import record_order_status_gps
+            record_order_status_gps(request.user, order, old_status, new_status, request)
             messages.success(request, f'Status updated to {STATUS_LABELS.get(new_status, new_status)}.')
         else:
             messages.error(request, 'Invalid status transition.')
@@ -175,6 +186,14 @@ def order_detail(request, pk):
     transitions = next_statuses.get(order.status, [])
     boqs = order.boqs.all().order_by('-created_at') if hasattr(order, 'boqs') else []
 
+    site_attendance = None
+    can_site_attendance = is_engineer and schedule is not None
+    if schedule and can_site_attendance:
+        from productivity.models import ScheduleSiteAttendance
+        site_attendance = ScheduleSiteAttendance.objects.filter(
+            schedule=schedule, employee=request.user,
+        ).first()
+
     return render(request, 'orders/order_detail.html', {
         'order': order,
         'schedule': schedule,
@@ -184,4 +203,6 @@ def order_detail(request, pk):
         'is_engineer': is_engineer,
         'boqs': boqs,
         'can_manage_schedule': can_manage_scheduling(request.user),
+        'site_attendance': site_attendance,
+        'can_site_attendance': can_site_attendance,
     })

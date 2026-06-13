@@ -26,6 +26,48 @@ class WorkSchedule(models.Model):
     )
     scheduled_start_date = models.DateField()
     scheduled_end_date = models.DateField()
+    scheduled_time = models.TimeField(null=True, blank=True, verbose_name='Scheduled Time')
+    expected_duration_hours = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True,
+        verbose_name='Expected Duration (Hours)',
+    )
+    expected_man_days = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True,
+        verbose_name='Expected Man-Days (Team Total)',
+    )
+    project_manager = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='schedules_as_pm',
+        limit_choices_to={'role': 'PROJECT_MANAGER'},
+    )
+    supervisor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='schedules_as_supervisor',
+        limit_choices_to={'role__in': ['SUPERVISOR', 'Supervisor']},
+    )
+    lead_engineer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='schedules_as_lead_engineer',
+        limit_choices_to={'role': 'ENGINEER'},
+    )
+    supporting_engineers = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='schedules_as_supporting_engineer',
+        blank=True,
+        limit_choices_to={'role': 'ENGINEER'},
+    )
+    technicians = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='schedules_as_technician',
+        blank=True,
+        limit_choices_to={'role': 'Technician'},
+    )
     assigned_engineers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         related_name='work_schedules',
@@ -77,3 +119,19 @@ class WorkSchedule(models.Model):
             for u in self.assigned_engineers.all()
         ]
         return ', '.join(names) if names else '—'
+
+    def team_member_names(self):
+        parts = []
+        if self.project_manager:
+            parts.append(f'PM: {self.project_manager.get_full_name() or self.project_manager.username}')
+        if self.supervisor:
+            parts.append(f'Supervisor: {self.supervisor.get_full_name() or self.supervisor.username}')
+        if self.lead_engineer:
+            parts.append(f'Lead: {self.lead_engineer.get_full_name() or self.lead_engineer.username}')
+        for u in self.supporting_engineers.all():
+            parts.append(u.get_full_name() or u.username)
+        for u in self.technicians.all():
+            parts.append(u.get_full_name() or u.username)
+        if not parts:
+            return self.engineer_names()
+        return ', '.join(parts)

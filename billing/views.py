@@ -189,6 +189,14 @@ def create_invoice(request):
         formset = InvoiceLineItemFormSet(request.POST, prefix='items')
         if form.is_valid() and formset.is_valid():
             invoice = _save_invoice_from_form(request, form, formset)
+            from productivity.activity_logger import log_activity
+            from productivity.constants import ACT_INVOICE_CREATED
+            log_activity(
+                request.user, ACT_INVOICE_CREATED,
+                related_document=invoice.invoice_number,
+                related_model='Invoice',
+                related_object_id=invoice.pk,
+            )
             messages.success(
                 request,
                 f'Draft invoice {invoice.invoice_number} created. Submit for approval when ready.',
@@ -297,6 +305,14 @@ def submit_invoice_view(request, pk):
         messages.error(request, 'You cannot submit this invoice for approval.')
         return redirect('invoice_detail', pk=pk)
     submit_invoice(invoice, request.user)
+    from productivity.activity_logger import log_activity
+    from productivity.constants import ACT_INVOICE_VERIFIED
+    log_activity(
+        request.user, ACT_INVOICE_VERIFIED,
+        related_document=invoice.invoice_number,
+        related_model='Invoice',
+        related_object_id=invoice.pk,
+    )
     messages.success(request, f'Invoice {invoice.invoice_number} submitted for approval.')
     return redirect('invoice_detail', pk=pk)
 
@@ -311,6 +327,14 @@ def approve_invoice_view(request, pk):
     form = InvoiceApproveForm(request.POST)
     if form.is_valid():
         approve_invoice(invoice, request.user, form.cleaned_data.get('approval_remarks', ''))
+        from productivity.activity_logger import log_activity
+        from productivity.constants import ACT_INVOICE_APPROVED
+        log_activity(
+            request.user, ACT_INVOICE_APPROVED,
+            related_document=invoice.invoice_number,
+            related_model='Invoice',
+            related_object_id=invoice.pk,
+        )
         messages.success(request, f'Invoice {invoice.invoice_number} approved. PDF is now available.')
     else:
         messages.error(request, 'Could not approve invoice. Please try again.')

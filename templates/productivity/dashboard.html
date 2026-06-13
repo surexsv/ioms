@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}Productivity Dashboard — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Employee Productivity</h1>
+    <div>
+        <a href="{% url 'productivity_activities' %}" class="btn btn-secondary btn-sm">Activity Log</a>
+        <a href="{% url 'gps_dashboard' %}" class="btn btn-secondary btn-sm">GPS Dashboard</a>
+        <a href="{% url 'field_activity_list' %}" class="btn btn-secondary btn-sm">Field Log</a>
+        {% if can_full %}
+        <a href="{% url 'productivity_export_csv' %}?year={{ year }}&month={{ month }}" class="btn btn-secondary btn-sm">Export CSV</a>
+        <a href="{% url 'productivity_export_pdf' %}?year={{ year }}&month={{ month }}" class="btn btn-secondary btn-sm" target="_blank">Print Report</a>
+        {% endif %}
+    </div>
+</div>
+
+<form method="get" class="card" style="padding:12px 16px;margin-bottom:16px;display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
+    <div class="form-group" style="margin:0;">
+        <label>Month</label>
+        <input type="number" name="month" min="1" max="12" value="{{ month }}" class="form-control" style="width:80px;">
+    </div>
+    <div class="form-group" style="margin:0;">
+        <label>Year</label>
+        <input type="number" name="year" value="{{ year }}" class="form-control" style="width:100px;">
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+</form>
+
+<div class="ioms-kpi-grid">
+    <div class="ioms-kpi"><div class="value">{{ kpis.active_engineers }}</div><div class="label">Active Engineers</div></div>
+    <div class="ioms-kpi"><div class="value">{{ kpis.active_technicians }}</div><div class="label">Active Technicians</div></div>
+    <div class="ioms-kpi"><div class="value">{{ kpis.total_man_days_month }}</div><div class="label">Man-Days (Month)</div></div>
+    <div class="ioms-kpi"><div class="value">{{ kpis.total_hours_month|default:0 }}</div><div class="label">Hours Worked (Month)</div></div>
+    <div class="ioms-kpi"><div class="value text-success">{{ kpis.jobs_completed }}</div><div class="label">Jobs Completed</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ kpis.pending_jobs }}</div><div class="label">Pending Jobs</div></div>
+    <div class="ioms-kpi"><div class="value">{{ kpis.team_utilization_pct|default:"—" }}{% if kpis.team_utilization_pct %}%{% endif %}</div><div class="label">Team Utilization</div></div>
+    <div class="ioms-kpi"><div class="value">{% if kpis.top_engineer %}{{ kpis.top_engineer.employee__first_name|default:kpis.top_engineer.employee__username }}{% else %}—{% endif %}</div><div class="label">Top Engineer</div></div>
+    <div class="ioms-kpi"><div class="value">{% if kpis.top_technician %}{{ kpis.top_technician.employee__first_name|default:kpis.top_technician.employee__username }}{% else %}—{% endif %}</div><div class="label">Top Technician</div></div>
+</div>
+
+<div class="ioms-charts-row ioms-charts-row-3" style="margin-top:20px;">
+    <div class="ioms-chart-card">
+        <h3>Monthly Productivity Trend</h3>
+        <div class="ioms-chart-wrap"><canvas id="prodTrendChart"></canvas></div>
+    </div>
+    <div class="ioms-chart-card">
+        <h3>Engineer Ranking (Man-Days)</h3>
+        <div class="ioms-chart-wrap"><canvas id="engRankChart"></canvas></div>
+    </div>
+    <div class="ioms-chart-card">
+        <h3>Technician Ranking (Man-Days)</h3>
+        <div class="ioms-chart-wrap"><canvas id="techRankChart"></canvas></div>
+    </div>
+</div>
+
+<div class="card ioms-dashboard-section">
+    <h3>Engineer Productivity — {{ month }}/{{ year }}</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Employee</th><th>Man-Days</th><th>Hours</th><th>Jobs</th><th></th></tr></thead>
+            <tbody>
+                {% for row in kpis.engineer_ranking %}
+                <tr>
+                    <td>{{ row.employee__first_name }} {{ row.employee__last_name|default:row.employee__username }}</td>
+                    <td>{{ row.total_man_days|default:0 }}</td>
+                    <td>{{ row.total_hours|default:0 }}</td>
+                    <td>{{ row.job_count|default:0 }}</td>
+                    <td><a href="{% url 'employee_productivity' row.employee %}">Details</a></td>
+                </tr>
+                {% empty %}<tr><td colspan="5">No field productivity data for this period.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card ioms-dashboard-section">
+    <h3>Technician Productivity — {{ month }}/{{ year }}</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Employee</th><th>Man-Days</th><th>Hours</th><th>Jobs</th><th></th></tr></thead>
+            <tbody>
+                {% for row in kpis.technician_ranking %}
+                <tr>
+                    <td>{{ row.employee__first_name }} {{ row.employee__last_name|default:row.employee__username }}</td>
+                    <td>{{ row.total_man_days|default:0 }}</td>
+                    <td>{{ row.total_hours|default:0 }}</td>
+                    <td>{{ row.job_count|default:0 }}</td>
+                    <td><a href="{% url 'employee_productivity' row.employee %}">Details</a></td>
+                </tr>
+                {% empty %}<tr><td colspan="5">No technician data for this period.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const trendLabels = [{% for p in trend %}'{{ p.month }}/{{ p.year }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+const trendManDays = [{% for p in trend %}{{ p.man_days|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const engLabels = [{% for r in kpis.engineer_ranking %}'{{ r.employee__first_name|default:r.employee__username }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+const engData = [{% for r in kpis.engineer_ranking %}{{ r.total_man_days|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const techLabels = [{% for r in kpis.technician_ranking %}'{{ r.employee__first_name|default:r.employee__username }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+const techData = [{% for r in kpis.technician_ranking %}{{ r.total_man_days|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+new Chart(document.getElementById('prodTrendChart'), {
+    type: 'line',
+    data: { labels: trendLabels, datasets: [{ label: 'Man-Days', data: trendManDays, borderColor: '#0d6efd', fill: false }] },
+    options: { responsive: true, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('engRankChart'), {
+    type: 'bar',
+    data: { labels: engLabels, datasets: [{ label: 'Man-Days', data: engData, backgroundColor: '#198754' }] },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
+});
+new Chart(document.getElementById('techRankChart'), {
+    type: 'bar',
+    data: { labels: techLabels, datasets: [{ label: 'Man-Days', data: techData, backgroundColor: '#fd7e14' }] },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
+});
+</script>
+{% endblock %}

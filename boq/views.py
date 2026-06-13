@@ -33,6 +33,14 @@ def create_boq(request):
                 boq.save()
                 formset.instance = boq
                 formset.save()
+            from productivity.activity_logger import log_activity
+            from productivity.constants import ACT_EXECUTION_BOQ
+            log_activity(
+                request.user, ACT_EXECUTION_BOQ,
+                related_document=boq.boq_number,
+                related_model='BOQ',
+                related_object_id=boq.pk,
+            )
             messages.success(request, f'BOQ {boq.boq_number} created.')
             return redirect('boq_detail', pk=boq.pk)
         messages.error(request, 'Could not save BOQ. Please correct the line item errors below.')
@@ -102,6 +110,15 @@ def verify_boq(request, pk):
         boq.verified_by = request.user
         boq.verified_at = timezone.now()
         boq.save()
+        from productivity.activity_logger import log_activity
+        from productivity.constants import ACT_EXECUTION_BOQ
+        log_activity(
+            request.user, ACT_EXECUTION_BOQ,
+            related_document=boq.boq_number,
+            related_model='BOQ',
+            related_object_id=boq.pk,
+            remarks='BOQ verified',
+        )
         messages.success(request, f'BOQ {boq.boq_number} verified. It can now be used on invoices.')
         return redirect('boq_detail', pk=pk)
     return render(request, 'boq/boq_verify.html', {'boq': boq})

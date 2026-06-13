@@ -38,6 +38,14 @@ def create_estimate_boq(request):
                 if eboq.enquiry.status == Enquiry.STATUS_SURVEY_COMPLETED:
                     eboq.enquiry.status = Enquiry.STATUS_QUOTATION_PREPARATION
                     eboq.enquiry.save(update_fields=['status', 'updated_at'])
+            from productivity.activity_logger import log_activity
+            from productivity.constants import ACT_ESTIMATE_BOQ
+            log_activity(
+                request.user, ACT_ESTIMATE_BOQ,
+                related_document=eboq.estimate_boq_number,
+                related_model='EstimateBOQ',
+                related_object_id=eboq.pk,
+            )
             messages.success(request, f'Estimate BOQ {eboq.estimate_boq_number} created.')
             return redirect('estimate_boq_detail', pk=eboq.pk)
         messages.error(request, 'Could not save Estimate BOQ. Please correct the line item errors below.')

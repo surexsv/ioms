@@ -8,6 +8,9 @@ from accounts.permissions import MODULE_SCHEDULING, MODULE_ORDERS
 from orders.models import Order
 from orders.views import _can_access_order
 
+from productivity.activity_logger import log_activity
+from productivity.constants import ACT_SCHEDULE_CREATED
+
 from .forms import WorkScheduleForm
 from .models import WorkSchedule
 from .permissions import can_manage_scheduling, can_view_schedule
@@ -42,6 +45,12 @@ def schedule_create(request, order_pk):
                 if schedule.assigned_engineers.exists() and schedule.status == WorkSchedule.STATUS_PLANNED:
                     schedule.status = WorkSchedule.STATUS_ASSIGNED
                     schedule.save(update_fields=['status'])
+            log_activity(
+                request.user, ACT_SCHEDULE_CREATED,
+                related_document=schedule.schedule_number,
+                related_model='WorkSchedule',
+                related_object_id=schedule.pk,
+            )
             messages.success(request, f'Schedule {schedule.schedule_number} created.')
             return redirect('order_detail', pk=order.pk)
     else:
@@ -60,7 +69,9 @@ def schedule_create(request, order_pk):
 @module_required(MODULE_SCHEDULING)
 def schedule_edit(request, pk):
     schedule = get_object_or_404(
-        WorkSchedule.objects.select_related('order', 'order__client').prefetch_related('assigned_engineers'),
+        WorkSchedule.objects.select_related('order', 'order__client').prefetch_related(
+            'assigned_engineers', 'supporting_engineers', 'technicians',
+        ),
         pk=pk,
     )
     if not can_view_schedule(request.user, schedule):
@@ -77,7 +88,12 @@ def schedule_edit(request, pk):
             return access_denied_response(request, reason=REASON_ROLE)
         form = WorkScheduleForm(request.POST, instance=schedule)
         if form.is_valid():
+            old_status = schedule.status
             form.save()
+            schedule.refresh_from_db()
+            if schedule.status != old_status:
+                from productivity.gps_service import record_schedule_status_gps
+                record_schedule_status_gps(request.user, schedule, old_status, schedule.status, request)
             messages.success(request, 'Schedule updated.')
             return redirect('order_detail', pk=schedule.order_id)
     else:

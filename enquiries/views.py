@@ -72,6 +72,14 @@ def create_enquiry(request):
             if enquiry.status == Enquiry.STATUS_NEW and enquiry.assigned_project_manager:
                 enquiry.status = Enquiry.STATUS_ASSIGNED
             enquiry.save()
+            from productivity.activity_logger import log_activity
+            from productivity.constants import ACT_ENQUIRY_PROCESSED
+            log_activity(
+                request.user, ACT_ENQUIRY_PROCESSED,
+                related_document=enquiry.enquiry_number,
+                related_model='Enquiry',
+                related_object_id=enquiry.pk,
+            )
             messages.success(request, f'Enquiry {enquiry.enquiry_number} created.')
             return redirect('enquiry_detail', pk=enquiry.pk)
     else:
@@ -118,7 +126,11 @@ def edit_enquiry(request, pk):
     if request.method == 'POST':
         form = EnquiryForm(request.POST, instance=enquiry)
         if form.is_valid():
-            form.save()
+            old_status = enquiry.status
+            enquiry = form.save()
+            if enquiry.status != old_status:
+                from productivity.gps_service import record_survey_status_gps
+                record_survey_status_gps(request.user, enquiry, old_status, enquiry.status, request)
             messages.success(request, 'Enquiry updated.')
             return redirect('enquiry_detail', pk=pk)
     else:

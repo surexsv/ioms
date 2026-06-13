@@ -164,6 +164,14 @@ def quotation_create(request):
                 svc_formset.save()
                 q.recalculate_totals()
                 q.save(update_fields=['subtotal', 'gst_total', 'grand_total'])
+            from productivity.activity_logger import log_activity
+            from productivity.constants import ACT_QUOTATION_CREATED
+            log_activity(
+                request.user, ACT_QUOTATION_CREATED,
+                related_document=q.quotation_number,
+                related_model='Quotation',
+                related_object_id=q.pk,
+            )
             messages.success(request, f'Quotation {q.quotation_number} created.')
             return redirect('quotation_detail', pk=q.pk)
     else:

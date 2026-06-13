@@ -14,9 +14,11 @@ from .permissions import (
     can_view_financial,
     can_view_company_settings,
     can_manage_user_approvals,
+    can_view_productivity,
     has_full_access,
     attendance_nav_url,
 )
+from productivity.permissions import can_view_gps_dashboard
 
 
 def _active_nav(request):
@@ -43,6 +45,10 @@ def _active_nav(request):
         return 'document_numbers'
     if path.startswith('/company-settings'):
         return 'company_settings'
+    if path.startswith('/productivity/gps'):
+        return 'gps'
+    if path.startswith('/productivity'):
+        return 'productivity'
     if path.startswith('/user-approvals'):
         return 'user_approvals'
     return ''
@@ -87,5 +93,7 @@ def oms_navigation(request):
         'show_nav_document_numbers': user.is_superuser or role == 'DIRECTOR',
         'show_nav_company_settings': can_view_company_settings(user),
         'show_nav_user_approvals': can_manage_user_approvals(user),
+        'show_nav_productivity': can_view_productivity(user),
+        'show_nav_gps': can_view_gps_dashboard(user),
         'pending_approval_count': pending_approval_count,
     }

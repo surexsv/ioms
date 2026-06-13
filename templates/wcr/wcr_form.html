@@ -1,26 +1,129 @@
 {% extends 'base.html' %}
 {% block title %}Submit WCR — Infomates Operations Management System{% endblock %}
 {% block content %}
-{% with t='div' %}
-<{{ t }} class="page-header">
+<div class="page-header">
     <h1>Submit Work Completion Report</h1>
     <a href="{% url 'wcr_list' %}" class="btn btn-secondary">Back</a>
-</{{ t }}>
-<{{ t }} class="card" style="max-width:700px;">
-    <form method="post" enctype="multipart/form-data">
+</div>
+
+<div class="card" style="max-width:900px;">
+    <form method="post" enctype="multipart/form-data" id="wcrForm" data-gps-capture>
         {% csrf_token %}
-        {% for field in form %}
-        {% if field.name != 'authorized_signatory_name' and field.name != 'authorized_signatory_designation' and field.name != 'signature_image' %}
-        <{{ t }} class="form-group">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.errors %}<span style="color:#dc3545;">{{ field.errors.0 }}</span>{% endif %}
-        </{{ t }}>
-        {% endif %}
-        {% endfor %}
+        <input type="hidden" name="latitude" value="">
+        <input type="hidden" name="longitude" value="">
+        <div class="form-group">
+            <label for="{{ form.order.id_for_label }}">{{ form.order.label }}</label>
+            {{ form.order }}
+            {% if form.order.errors %}<span style="color:#dc3545;">{{ form.order.errors.0 }}</span>{% endif %}
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">{{ form.work_start_time.label_tag }}{{ form.work_start_time }}</div>
+            <div class="form-group">{{ form.work_end_time.label_tag }}{{ form.work_end_time }}</div>
+            <div class="form-group">{{ form.completion_status.label_tag }}{{ form.completion_status }}</div>
+        </div>
+
+        <div class="form-group">{{ form.work_description.label_tag }}{{ form.work_description }}</div>
+        <div class="form-group">{{ form.material_used.label_tag }}{{ form.material_used }}</div>
+        <div class="form-group">{{ form.photo.label_tag }}{{ form.photo }}</div>
         {% include 'company_settings/_signatory_form_fields.html' %}
-        <button type="submit" class="btn btn-primary">Submit WCR</button>
+
+        <h3 style="margin-top:24px;">Team Participation</h3>
+        <p style="color:#6c757d;font-size:0.9rem;">Confirm who worked on this job. Team is auto-loaded from the schedule; uncheck absent members or add missed participants.</p>
+        <div id="teamParticipants">
+            <table class="ioms-table" id="teamTable">
+                <thead>
+                    <tr>
+                        <th>Attended</th><th>Employee</th><th>Role</th><th>Hours</th><th>Man-Days</th><th></th>
+                    </tr>
+                </thead>
+                <tbody id="teamBody"></tbody>
+            </table>
+            <button type="button" class="btn btn-secondary btn-sm" id="addParticipant">+ Add Participant</button>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top:16px;">Submit WCR</button>
     </form>
-</{{ t }}>
-{% endwith %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'js/ioms-gps.js' %}"></script>
+<script>
+(function() {
+    const roleChoices = [
+        ['PROJECT_MANAGER', 'Project Manager'],
+        ['SUPERVISOR', 'Supervisor'],
+        ['LEAD_ENGINEER', 'Lead Engineer'],
+        ['SUPPORTING_ENGINEER', 'Supporting Engineer'],
+        ['TECHNICIAN', 'Technician'],
+    ];
+    let rowIndex = 0;
+    const teamBody = document.getElementById('teamBody');
+    const orderSelect = document.getElementById('{{ form.order.id_for_label }}');
+
+    function addRow(data) {
+        data = data || {};
+        const idx = rowIndex++;
+        const tr = document.createElement('tr');
+        const roleOpts = roleChoices.map(function(r) {
+            const sel = data.role === r[0] ? ' selected' : '';
+            return '<option value="' + r[0] + '"' + sel + '>' + r[1] + '</option>';
+        }).join('');
+        tr.innerHTML =
+            '<td><input type="checkbox" name="participants-' + idx + '-attended" ' + (data.attended !== false ? 'checked' : '') + '></td>' +
+            '<td><input type="hidden" name="participants-' + idx + '-employee" value="' + (data.employee_id || '') + '">' +
+            '<input type="text" value="' + (data.name || '') + '" class="participant-name" placeholder="Select from schedule or add manually" readonly style="width:100%"></td>' +
+            '<td><select name="participants-' + idx + '-participant_role">' + roleOpts + '</select>' +
+            '<input type="hidden" name="participants-' + idx + '-from_schedule" value="' + (data.from_schedule ? '1' : '0') + '"></td>' +
+            '<td><input type="number" name="participants-' + idx + '-hours_worked" step="0.5" min="0" value="' + (data.hours_worked || '0') + '" style="width:80px"></td>' +
+            '<td><input type="number" name="participants-' + idx + '-man_days" step="0.5" min="0" value="' + (data.man_days || '0') + '" style="width:80px"></td>' +
+            '<td><button type="button" class="btn btn-sm btn-danger remove-row">Remove</button></td>';
+        teamBody.appendChild(tr);
+        tr.querySelector('.remove-row').addEventListener('click', function() { tr.remove(); });
+    }
+
+    function loadScheduleTeam(orderId) {
+        if (!orderId) return;
+        fetch('{% url "wcr_schedule_team" 0 %}'.replace('/0/', '/' + orderId + '/'))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                teamBody.innerHTML = '';
+                rowIndex = 0;
+                (data.team || []).forEach(function(m) { addRow(m); });
+            });
+    }
+
+    if (orderSelect) {
+        orderSelect.addEventListener('change', function() { loadScheduleTeam(this.value); });
+        if (orderSelect.value) loadScheduleTeam(orderSelect.value);
+    }
+
+    document.getElementById('addParticipant').addEventListener('click', function() {
+        const name = prompt('Enter employee user ID (numeric) for manual add, or load from schedule first:');
+        if (name) addRow({ employee_id: name, name: 'User #' + name, role: 'TECHNICIAN', from_schedule: false });
+    });
+
+    {% if schedule_team %}
+    (function initTeam() {
+        const initial = [
+            {% for row in schedule_team %}
+            {
+                employee_id: {{ row.employee.pk }},
+                name: '{{ row.employee.get_full_name|default:row.employee.username|escapejs }}',
+                role: '{{ row.participant_role }}',
+                hours_worked: '{{ row.hours_worked }}',
+                man_days: '{{ row.man_days }}',
+                from_schedule: true,
+                attended: true
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+        initial.forEach(function(m) { addRow(m); });
+    })();
+    {% endif %}
+})();
+</script>
 {% endblock %}
