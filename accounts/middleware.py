@@ -8,9 +8,11 @@ from .error_handlers import user_friendly_error_view
 from .permissions import (
     can_access,
     can_manage_billing,
+    can_view_attendance_audit_data,
     resolve_path_module,
     allowed_dashboard_url_name,
     MODULE_DASHBOARD_DIRECTOR,
+    MODULE_VIEW_ATTENDANCE_AUDIT_DATA,
 )
 from .security_log import log_access_denied
 
@@ -47,6 +49,25 @@ class OMSAccessMiddleware:
         path = request.path
         normalized = path.rstrip('/') or '/'
 
+        if path.startswith('/media/attendance_photos/'):
+            if not request.user.is_authenticated:
+                return redirect_to_login(path, login_url=reverse('login'))
+            if not can_view_attendance_audit_data(request.user):
+                log_access_denied(
+                    request,
+                    reason=REASON_MODULE,
+                    module_key=MODULE_VIEW_ATTENDANCE_AUDIT_DATA,
+                    attempted_url=request.get_full_path(),
+                )
+                store_denial_context(
+                    request,
+                    reason=REASON_MODULE,
+                    module_key=MODULE_VIEW_ATTENDANCE_AUDIT_DATA,
+                    attempted_url=request.get_full_path(),
+                )
+                return redirect('access_denied')
+            return self.get_response(request)
+
         if self._is_exempt(path):
             return self.get_response(request)
 
@@ -73,6 +94,22 @@ class OMSAccessMiddleware:
                     request,
                     reason=REASON_MODULE,
                     module_key='manage_billing',
+                    attempted_url=request.get_full_path(),
+                )
+                return redirect('access_denied')
+        elif path.startswith('/attendance/team'):
+            from attendance.permissions import can_view_team_attendance_page
+            if not can_view_team_attendance_page(request.user):
+                log_access_denied(
+                    request,
+                    reason=REASON_MODULE,
+                    module_key='attendance_team',
+                    attempted_url=request.get_full_path(),
+                )
+                store_denial_context(
+                    request,
+                    reason=REASON_MODULE,
+                    module_key='attendance_team',
                     attempted_url=request.get_full_path(),
                 )
                 return redirect('access_denied')

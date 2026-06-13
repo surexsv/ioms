@@ -34,7 +34,7 @@
 
 <h3>{{ summary.employee.username }} — {{ month }}/{{ year }}</h3>
 <table>
-    <tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Hours</th><th>Location</th></tr>
+    <tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Hours</th>{% if can_view_attendance_audit_data %}<th>Location</th>{% endif %}</tr>
     {% for r in summary.records %}
     <tr>
         <td>{{ r.attendance_date }}</td>
@@ -42,10 +42,10 @@
         <td>{{ r.check_in_time|default:"—" }}</td>
         <td>{{ r.check_out_time|default:"—" }}</td>
         <td>{{ r.working_hours|default:"—" }}</td>
-        <td>{{ r.location|truncatechars:30|default:"—" }}</td>
+        {% if can_view_attendance_audit_data %}<td>{{ r.location|truncatechars:30|default:"—" }}</td>{% endif %}
     </tr>
     {% empty %}
-    <tr><td colspan="6">No records this month.</td></tr>
+    <tr><td colspan="{% if can_view_attendance_audit_data %}6{% else %}5{% endif %}">No records this month.</td></tr>
     {% endfor %}
 </table>
 {% endif %}

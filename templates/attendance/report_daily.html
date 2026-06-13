@@ -21,7 +21,7 @@
 <table>
     <tr>
         <th>Employee</th><th>Role</th><th>Status</th>
-        <th>Check In</th><th>Check Out</th><th>Hours</th><th>Location</th>
+        <th>Check In</th><th>Check Out</th><th>Hours</th>{% if can_view_attendance_audit_data %}<th>Location</th>{% endif %}
     </tr>
     {% for row in rows %}
     <tr>
@@ -32,9 +32,9 @@
         <td>{{ row.record.check_in_time|default:"—" }}</td>
         <td>{{ row.record.check_out_time|default:"—" }}</td>
         <td>{{ row.record.working_hours|default:"—" }}</td>
-        <td>{{ row.record.location|truncatechars:35|default:"—" }}</td>
+        {% if can_view_attendance_audit_data %}<td>{{ row.record.location|truncatechars:35|default:"—" }}</td>{% endif %}
         {% else %}
-        <td colspan="5"><span class="badge badge-pending">Not Marked</span></td>
+        <td colspan="{% if can_view_attendance_audit_data %}5{% else %}4{% endif %}"><span class="badge badge-pending">Not Marked</span></td>
         {% endif %}
     </tr>
     {% endfor %}

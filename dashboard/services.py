@@ -244,38 +244,46 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
 
 
 
+        from scheduling.engine import (
+            resolve_client_name,
+            resolve_detail_url,
+            resolve_reference_display,
+        )
+
         overdue_schedules = WorkSchedule.objects.filter(
-
             scheduled_end_date__lt=today,
-
         ).exclude(
-
             status__in=[WorkSchedule.STATUS_COMPLETED, WorkSchedule.STATUS_CANCELLED],
-
-        ).select_related('order', 'order__client').prefetch_related('assigned_engineers')[:20]
-
-
+        ).select_related(
+            'order', 'order__client', 'enquiry', 'enquiry__client',
+        ).prefetch_related('assigned_engineers')[:20]
 
         overdue_list = []
-
         for schedule in overdue_schedules:
-
             engineer = schedule.engineer_names()
-
+            client_name = resolve_client_name(schedule)
+            if client_name == '—':
+                client_name = 'Unknown Client'
+            if schedule.order_id:
+                schedule_type = 'ORDER'
+            elif schedule.enquiry_id:
+                schedule_type = 'SURVEY'
+            else:
+                schedule_type = '—'
+            detail = resolve_detail_url(schedule)
             overdue_list.append({
-
                 'order_id': schedule.order_id,
-
+                'enquiry_id': schedule.enquiry_id,
                 'schedule_number': schedule.schedule_number,
-
-                'client': schedule.order.client.name,
-
+                'reference': resolve_reference_display(schedule),
+                'client': client_name,
+                'schedule_type': schedule_type,
+                'status': schedule.get_status_display(),
                 'engineer': engineer,
-
                 'target_date': schedule.scheduled_end_date,
-
                 'delay_days': (today - schedule.scheduled_end_date).days,
-
+                'url_name': detail[0] if detail else None,
+                'url_pk': detail[1] if detail else None,
             })
 
 

@@ -48,6 +48,7 @@ PERMISSION_LABELS = {
     'attendance_self': 'Own Attendance (My Attendance)',
     'attendance_team': 'Team Attendance Monitoring',
     'attendance_supervisor_team': 'Assigned Team Attendance View',
+    'view_attendance_audit_data': 'View Attendance Audit Data (Photos & GPS)',
     'quotations': 'Quotations',
     'quotation_rates': 'Quotation Rates',
     'financial': 'Financial Reports',

@@ -20,26 +20,31 @@
 <div style="overflow-x:auto;">
 <table>
     <tr>
-        <th>Employee</th><th>Date</th><th>Status</th>
-        <th>Check In</th><th>Check Out</th><th>Hours</th><th>Location</th><th>Photos</th><th></th>
+        <th>Employee</th><th>Date</th><th>Check In</th><th>Check Out</th><th>Hours</th>
+        <th>Status</th><th>Late Status</th>
+        {% if can_view_attendance_audit_data %}<th>Location</th><th>Photos</th>{% endif %}
+        <th></th>
     </tr>
     {% for r in records %}
     <tr>
         <td>{{ r.employee.username }}</td>
         <td>{{ r.attendance_date }}</td>
-        <td>{{ r.get_status_display }}</td>
         <td>{{ r.check_in_time|default:"—" }}</td>
         <td>{{ r.check_out_time|default:"—" }}</td>
         <td>{{ r.working_hours|default:"—" }}</td>
+        <td>{{ r.get_status_display }}</td>
+        <td>{% if r.status == 'LATE' %}<span class="badge badge-pending">Late</span>{% else %}—{% endif %}</td>
+        {% if can_view_attendance_audit_data %}
         <td>{{ r.location|truncatechars:40|default:"—" }}</td>
         <td>{% if r.has_check_in_photo %}<span class="badge badge-approved">In</span>{% endif %}{% if r.has_check_out_photo %} <span class="badge badge-approved">Out</span>{% endif %}</td>
+        {% endif %}
         <td>
             <a href="{% url 'attendance_detail' r.pk %}" class="btn btn-sm btn-secondary">View</a>
             <a href="{% url 'attendance_edit' r.pk %}" class="btn btn-sm btn-primary">Edit</a>
         </td>
     </tr>
     {% empty %}
-    <tr><td colspan="8" class="empty-state">No records match your filters.</td></tr>
+    <tr><td colspan="{% if can_view_attendance_audit_data %}10{% else %}8{% endif %}" class="empty-state">No records match your filters.</td></tr>
     {% endfor %}
 </table>
 </div>

@@ -16,12 +16,14 @@
         <div class="detail-item"><label>Employee</label><p>{{ record.employee.get_full_name|default:record.employee.username }}</p></div>
         <div class="detail-item"><label>Date</label><p>{{ record.attendance_date|date:"d-M-Y" }}</p></div>
         <div class="detail-item"><label>Status</label><p><strong>{{ record.get_status_display }}</strong></p></div>
+        <div class="detail-item"><label>Late Status</label><p>{% if record.status == 'LATE' %}Late Arrival{% else %}—{% endif %}</p></div>
         <div class="detail-item"><label>Working Hours</label><p>{{ record.working_hours|default:"—" }}</p></div>
         <div class="detail-item"><label>Check-In</label><p>{{ record.check_in_time|default:"—" }}{% if record.check_in_at %} ({{ record.check_in_at|date:"d-M-Y H:i" }}){% endif %}</p></div>
         <div class="detail-item"><label>Check-Out</label><p>{{ record.check_out_time|default:"—" }}{% if record.check_out_at %} ({{ record.check_out_at|date:"d-M-Y H:i" }}){% endif %}</p></div>
     </div>
 </div>
 
+{% if can_view_attendance_audit_data %}
 <div class="card">
     <h3 style="margin-top:0;">Check-In Location</h3>
     <p>{{ record.location|default:"—" }}</p>
@@ -56,8 +58,8 @@
         {% for photo in record.photos.all %}
         <div>
             <p><strong>{{ photo.get_photo_type_display }}</strong> — {{ photo.captured_at|date:"d-M-Y H:i" }}</p>
-            <a href="{{ photo.image.url }}" target="_blank" rel="noopener">
-                <img src="{{ photo.image.url }}" alt="{{ photo.get_photo_type_display }}" class="attendance-detail-photo">
+            <a href="{% url 'attendance_photo' photo.pk %}" target="_blank" rel="noopener">
+                <img src="{% url 'attendance_photo' photo.pk %}" alt="{{ photo.get_photo_type_display }}" class="attendance-detail-photo">
             </a>
         </div>
         {% empty %}
@@ -84,5 +86,6 @@
         </tbody>
     </table>
 </div>
+{% endif %}
 {% endif %}
 {% endblock %}

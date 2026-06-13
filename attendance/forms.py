@@ -7,6 +7,12 @@ from .models import Attendance
 from .services import active_employees
 
 
+SENSITIVE_FORM_FIELDS = (
+    'location', 'latitude', 'longitude',
+    'check_out_location', 'check_out_latitude', 'check_out_longitude',
+)
+
+
 class AttendanceForm(forms.ModelForm):
     class Meta:
         model = Attendance
@@ -26,9 +32,14 @@ class AttendanceForm(forms.ModelForm):
             'check_out_remarks': forms.Textarea(attrs={'rows': 2}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['employee'].queryset = active_employees().order_by('username')
+        if user is not None:
+            from attendance.permissions import can_view_attendance_audit_data
+            if not can_view_attendance_audit_data(user):
+                for name in SENSITIVE_FORM_FIELDS:
+                    self.fields.pop(name, None)
 
 
 class AttendanceFilterForm(forms.Form):

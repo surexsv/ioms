@@ -3,6 +3,6 @@
 {% block content %}
 <div class="page-header"><h1>Late Arrival — {{ date|date:"d M Y" }}</h1><a href="{% url 'attendance_reports' %}" class="btn btn-secondary">Back</a></div>
 <form method="get" class="filter-bar" style="margin-bottom:16px;"><input type="date" name="date" value="{{ date|date:'Y-m-d' }}"><button type="submit" class="btn btn-sm btn-primary">Go</button></form>
-<table class="ioms-table"><thead><tr><th>Employee</th><th>Check In</th><th>Location</th><th></th></tr></thead>
-<tbody>{% for r in records %}<tr><td>{{ r.employee.get_full_name|default:r.employee.username }}</td><td>{{ r.check_in_time }}</td><td>{{ r.location|truncatechars:40 }}</td><td><a href="{% url 'attendance_detail' r.pk %}" class="btn btn-sm btn-secondary">Details</a></td></tr>{% empty %}<tr><td colspan="4">No late arrivals.</td></tr>{% endfor %}</tbody></table>
+<table class="ioms-table"><thead><tr><th>Employee</th><th>Check In</th>{% if can_view_attendance_audit_data %}<th>Location</th>{% endif %}<th></th></tr></thead>
+<tbody>{% for r in records %}<tr><td>{{ r.employee.get_full_name|default:r.employee.username }}</td><td>{{ r.check_in_time }}</td>{% if can_view_attendance_audit_data %}<td>{{ r.location|truncatechars:40 }}</td>{% endif %}<td><a href="{% url 'attendance_detail' r.pk %}" class="btn btn-sm btn-secondary">Details</a></td></tr>{% empty %}<tr><td colspan="{% if can_view_attendance_audit_data %}4{% else %}3{% endif %}">No late arrivals.</td></tr>{% endfor %}</tbody></table>
 {% endblock %}

@@ -130,16 +130,26 @@
     <h3>Overdue Scheduled Jobs</h3>
     <div class="ioms-table-wrap">
         <table class="ioms-table">
-            <thead><tr><th>Order</th><th>Schedule</th><th>Client</th><th>Engineer</th><th>End Date</th><th>Delay (days)</th></tr></thead>
+            <thead><tr><th>Schedule</th><th>Reference</th><th>Client</th><th>Type</th><th>Status</th><th>Engineer</th><th>End Date</th><th>Delay (days)</th></tr></thead>
             <tbody>
                 {% for o in overdue_orders %}
                 <tr>
-                    <td><a href="{% url 'order_detail' o.order_id %}">#{{ o.order_id }}</a></td>
                     <td>{{ o.schedule_number }}</td>
-                    <td>{{ o.client }}</td><td>{{ o.engineer }}</td><td>{{ o.target_date }}</td>
+                    <td>
+                        {% if o.url_name and o.url_pk %}
+                        <a href="{% url o.url_name o.url_pk %}">{{ o.reference }}</a>
+                        {% else %}
+                        {{ o.reference|default:"—" }}
+                        {% endif %}
+                    </td>
+                    <td>{{ o.client }}</td>
+                    <td>{{ o.schedule_type }}</td>
+                    <td>{{ o.status }}</td>
+                    <td>{{ o.engineer }}</td>
+                    <td>{{ o.target_date }}</td>
                     <td><span class="badge badge-pending">{{ o.delay_days }}</span></td>
                 </tr>
-                {% empty %}<tr><td colspan="6">No overdue scheduled jobs.</td></tr>{% endfor %}
+                {% empty %}<tr><td colspan="8">No overdue scheduled jobs.</td></tr>{% endfor %}
             </tbody>
         </table>
     </div>

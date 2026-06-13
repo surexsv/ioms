@@ -73,7 +73,7 @@
                 <th>Check In</th>
                 <th>Check Out</th>
                 <th>Hours</th>
-                <th>Location</th>
+                {% if can_view_attendance_audit_data %}<th>Location</th>{% endif %}
                 <th></th>
             </tr>
             {% for r in recent %}
@@ -89,12 +89,12 @@
                 <td>{{ r.check_in_time|default:"—" }}</td>
                 <td>{{ r.check_out_time|default:"—" }}</td>
                 <td>{{ r.working_hours|default:"—" }}</td>
-                <td>{{ r.location|truncatechars:30|default:"—" }}</td>
+                {% if can_view_attendance_audit_data %}<td>{{ r.location|truncatechars:30|default:"—" }}</td>{% endif %}
                 <td><a href="{% url 'attendance_detail' r.pk %}" class="btn btn-sm btn-secondary">View</a>
                 <a href="{% url 'attendance_edit' r.pk %}" class="btn btn-sm btn-secondary">Edit</a></td>
             </tr>
             {% empty %}
-            <tr><td colspan="8" class="empty-state">No records yet.</td></tr>
+            <tr><td colspan="{% if can_view_attendance_audit_data %}8{% else %}7{% endif %}" class="empty-state">No records yet.</td></tr>
             {% endfor %}
         </table>
     </div>

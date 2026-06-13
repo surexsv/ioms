@@ -5,6 +5,7 @@ urlpatterns = [
     path('', views.attendance_dashboard, name='attendance_dashboard'),
     path('list/', views.attendance_list, name='attendance_list'),
     path('create/', views.attendance_create, name='attendance_create'),
+    path('photos/<int:pk>/', views.attendance_photo, name='attendance_photo'),
     path('<int:pk>/', views.attendance_detail, name='attendance_detail'),
     path('<int:pk>/edit/', views.attendance_edit, name='attendance_edit'),
     path('my/', views.my_attendance, name='my_attendance'),

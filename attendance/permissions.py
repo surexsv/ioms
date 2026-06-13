@@ -1,10 +1,15 @@
 """Attendance eligibility and RBAC-driven view helpers."""
 
 from accounts.permissions import (
+    MODULE_ATTENDANCE_SELF,
+    MODULE_ATTENDANCE_SUPERVISOR_TEAM,
+    MODULE_ATTENDANCE_TEAM,
     can_manage_attendance,
+    can_view_attendance_audit_data as rbac_can_view_attendance_audit_data,
     can_view_team_attendance as rbac_can_view_team_attendance,
     has_full_access,
 )
+from accounts.rbac_service import user_has_permission
 from accounts.roles import user_role
 
 
@@ -60,9 +65,16 @@ def can_view_team_attendance(user):
     return rbac_can_view_team_attendance(user)
 
 
+def can_view_team_attendance_page(user):
+    """Team attendance monitoring — Ops, PM, or Supervisor scoped team."""
+    if can_manage_attendance(user):
+        return True
+    return user_has_permission(user, MODULE_ATTENDANCE_TEAM) or user_has_permission(
+        user, MODULE_ATTENDANCE_SUPERVISOR_TEAM,
+    )
+
+
 def can_view_all_operational_attendance(user):
-    from accounts.rbac_service import user_has_permission
-    from accounts.permissions import MODULE_ATTENDANCE_TEAM
     return user_has_permission(user, MODULE_ATTENDANCE_TEAM) or can_manage_attendance(user)
 
 
@@ -72,3 +84,32 @@ def can_correct_attendance(user):
 
 def can_edit_attendance_records(user):
     return can_manage_attendance(user) or has_full_access(user)
+
+
+def can_view_attendance_audit_data(user):
+    """Director and Admin/Superuser only — photos, GPS, address, maps, audit details."""
+    return rbac_can_view_attendance_audit_data(user)
+
+
+def user_in_attendance_scope(viewer, employee):
+    """Whether viewer may open a specific employee's attendance record."""
+    if can_manage_attendance(viewer):
+        return True
+    if viewer.pk == employee.pk and user_requires_attendance(viewer):
+        return True
+    from attendance.services import employees_for_manager
+    return employees_for_manager(viewer).filter(pk=employee.pk).exists()
+
+
+def user_can_view_attendance_detail(user, record):
+    """Non-audit attendance detail — manage, team scope, or own record."""
+    if can_manage_attendance(user):
+        return True
+    if user.pk == record.employee_id and user_requires_attendance(user):
+        return True
+    if user_has_permission(user, MODULE_ATTENDANCE_TEAM) or user_has_permission(
+        user, MODULE_ATTENDANCE_SUPERVISOR_TEAM,
+    ):
+        from attendance.services import employees_for_manager
+        return employees_for_manager(user).filter(pk=record.employee_id).exists()
+    return False

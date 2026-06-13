@@ -106,6 +106,15 @@ def _enrich_rows(rows):
     return enriched
 
 
+def _invoice_client_name(invoice):
+    """Safe client name — invoices should have an order, but guard against missing links."""
+    order = getattr(invoice, 'order', None)
+    client = getattr(order, 'client', None) if order else None
+    if client:
+        return client.name
+    return 'Unknown Client'
+
+
 def list_pending_enquiries():
     from enquiries.models import Enquiry
 
@@ -273,7 +282,7 @@ def list_invoice_approval_pending():
         rows.append({
             'document_number': inv.invoice_number,
             'document_type': 'Invoice',
-            'client': inv.order.client.name,
+            'client': _invoice_client_name(inv),
             'status': inv.get_approval_status_display(),
             'assigned_to': 'Accounts / Director',
             'days_pending': days,
@@ -300,7 +309,7 @@ def list_pending_payments():
         rows.append({
             'document_number': inv.invoice_number,
             'document_type': 'Invoice',
-            'client': inv.order.client.name,
+            'client': _invoice_client_name(inv),
             'status': inv.payment_status,
             'assigned_to': 'Accounts',
             'days_pending': days,

@@ -41,6 +41,7 @@ MODULE_ATTENDANCE_MANAGE = 'attendance_manage'
 MODULE_ATTENDANCE_SELF = 'attendance_self'
 MODULE_ATTENDANCE_TEAM = 'attendance_team'
 MODULE_ATTENDANCE_SUPERVISOR_TEAM = 'attendance_supervisor_team'
+MODULE_VIEW_ATTENDANCE_AUDIT_DATA = 'view_attendance_audit_data'
 MODULE_QUOTATIONS = 'quotations'
 MODULE_QUOTATION_RATES = 'quotation_rates'
 MODULE_FINANCIAL = 'financial'
@@ -69,6 +70,7 @@ _ACCESS = {
         MODULE_ORDERS, MODULE_ORDERS_CREATE,
         MODULE_WCR, MODULE_WCR_APPROVE, MODULE_BOQ,
         MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
+        MODULE_VIEW_ATTENDANCE_AUDIT_DATA,
         MODULE_QUOTATIONS, MODULE_QUOTATION_RATES, MODULE_FINANCIAL,
         MODULE_DOCUMENT_GENERATOR, MODULE_COMPANY_SETTINGS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
@@ -273,6 +275,17 @@ def can_manage_attendance(user):
     return can_access(user, MODULE_ATTENDANCE_MANAGE)
 
 
+def can_view_attendance_audit_data(user):
+    """Photos, GPS, address, maps, and attendance audit details — Director and Admin only."""
+    if user is None or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    if not getattr(user, 'is_profile_approved', True):
+        return False
+    return can_access(user, MODULE_VIEW_ATTENDANCE_AUDIT_DATA)
+
+
 def can_view_team_attendance(user):
     return can_access(user, MODULE_ATTENDANCE_TEAM)
 
@@ -365,11 +378,18 @@ def resolve_path_module(path):
     if path.startswith('/quotations/'):
         return MODULE_QUOTATIONS
     if path.startswith('/attendance/'):
+        if path.startswith('/attendance/photos/'):
+            return MODULE_VIEW_ATTENDANCE_AUDIT_DATA
+        if '/reports/location' in path or '/reports/photo' in path:
+            return MODULE_VIEW_ATTENDANCE_AUDIT_DATA
         self_paths = ('/attendance/my/', '/attendance/check-in/', '/attendance/check-out/')
         if any(path.startswith(p) for p in self_paths):
             return MODULE_ATTENDANCE_SELF
         if path.startswith('/attendance/team'):
-            return MODULE_ATTENDANCE_TEAM
+            return None
+        import re
+        if re.match(r'^/attendance/\d+/?$', path):
+            return None
         return MODULE_ATTENDANCE_MANAGE
     if path.startswith('/document-generator/'):
         return MODULE_DOCUMENT_GENERATOR

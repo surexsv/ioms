@@ -1,17 +1,29 @@
 from datetime import date
+import mimetypes
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import FileResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
 from accounts.decorators import module_required, access_denied_response
-from accounts.permissions import MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF, MODULE_ATTENDANCE_TEAM, can_manage_attendance
+from accounts.permissions import (
+    MODULE_ATTENDANCE_MANAGE,
+    MODULE_ATTENDANCE_SELF,
+    MODULE_ATTENDANCE_TEAM,
+    MODULE_VIEW_ATTENDANCE_AUDIT_DATA,
+    can_manage_attendance,
+    can_view_attendance_audit_data,
+)
 from accounts.models import User
 from attendance.audit import log_attendance_event
 from attendance.permissions import (
     can_mark_own_attendance,
     can_correct_attendance,
     can_edit_attendance_records,
+    can_view_team_attendance_page,
+    user_can_view_attendance_detail,
     user_requires_attendance,
 )
 from attendance.utils import (
@@ -36,6 +48,17 @@ def _require_attendance_marking(request):
     return None
 
 
+def _privacy_context(user):
+    audit = can_view_attendance_audit_data(user)
+    return {'can_view_attendance_audit_data': audit}
+
+
+def _require_attendance_audit(request):
+    if not can_view_attendance_audit_data(request.user):
+        return access_denied_response(request, module_key=MODULE_VIEW_ATTENDANCE_AUDIT_DATA)
+    return None
+
+
 @module_required(MODULE_ATTENDANCE_MANAGE)
 def attendance_dashboard(request):
     report_date = request.GET.get('date')
@@ -56,6 +79,7 @@ def attendance_dashboard(request):
         'stats': stats,
         'recent': recent,
         'report_date': report_date,
+        **_privacy_context(request.user),
     })
 
 
@@ -76,13 +100,14 @@ def attendance_list(request):
     return render(request, 'attendance/attendance_list.html', {
         'records': qs[:200],
         'filter_form': form,
+        **_privacy_context(request.user),
     })
 
 
 @module_required(MODULE_ATTENDANCE_MANAGE)
 def attendance_create(request):
     if request.method == 'POST':
-        form = AttendanceForm(request.POST)
+        form = AttendanceForm(request.POST, user=request.user)
         if form.is_valid():
             record = form.save(commit=False)
             if can_correct_attendance(request.user):
@@ -93,7 +118,7 @@ def attendance_create(request):
             messages.success(request, 'Attendance record saved.')
             return redirect('attendance_list')
     else:
-        form = AttendanceForm(initial={'attendance_date': timezone.localdate()})
+        form = AttendanceForm(initial={'attendance_date': timezone.localdate()}, user=request.user)
     return render(request, 'attendance/attendance_form.html', {
         'form': form, 'title': 'Add Attendance',
     })
@@ -103,7 +128,7 @@ def attendance_create(request):
 def attendance_edit(request, pk):
     record = get_object_or_404(Attendance, pk=pk)
     if request.method == 'POST':
-        form = AttendanceForm(request.POST, instance=record)
+        form = AttendanceForm(request.POST, instance=record, user=request.user)
         if form.is_valid():
             record = form.save(commit=False)
             if can_correct_attendance(request.user):
@@ -114,7 +139,7 @@ def attendance_edit(request, pk):
             messages.success(request, 'Attendance updated.')
             return redirect('attendance_list')
     else:
-        form = AttendanceForm(instance=record)
+        form = AttendanceForm(instance=record, user=request.user)
     return render(request, 'attendance/attendance_form.html', {
         'form': form, 'title': 'Edit Attendance', 'record': record,
     })
@@ -251,7 +276,7 @@ def check_out(request):
     return render(request, 'attendance/check_out.html', {'form': form, 'record': record})
 
 
-@module_required(MODULE_ATTENDANCE_MANAGE)
+@login_required(login_url='login')
 def attendance_detail(request, pk):
     record = get_object_or_404(
         Attendance.objects.select_related('employee', 'corrected_by').prefetch_related(
@@ -259,14 +284,19 @@ def attendance_detail(request, pk):
         ),
         pk=pk,
     )
+    if not user_can_view_attendance_detail(request.user, record):
+        return access_denied_response(request, module_key=MODULE_ATTENDANCE_MANAGE)
     return render(request, 'attendance/attendance_detail.html', {
         'record': record,
         'can_edit_attendance': can_edit_attendance_records(request.user),
+        **_privacy_context(request.user),
     })
 
 
-@module_required(MODULE_ATTENDANCE_TEAM)
+@login_required(login_url='login')
 def team_attendance(request):
+    if not can_view_team_attendance_page(request.user):
+        return access_denied_response(request, module_key=MODULE_ATTENDANCE_TEAM)
     today = timezone.localdate()
     report_date = today
     if request.GET.get('date'):
@@ -298,7 +328,10 @@ def report_daily(request):
         except ValueError:
             pass
     data = daily_report(report_date)
-    return render(request, 'attendance/report_daily.html', data)
+    return render(request, 'attendance/report_daily.html', {
+        **data,
+        **_privacy_context(request.user),
+    })
 
 
 @module_required(MODULE_ATTENDANCE_MANAGE)
@@ -330,6 +363,7 @@ def report_employee(request):
         'summary': summary,
         'year': year,
         'month': month,
+        **_privacy_context(request.user),
     })
 
 
@@ -352,7 +386,10 @@ def report_late(request):
             report_date = date.fromisoformat(request.GET['date'])
         except ValueError:
             pass
-    return render(request, 'attendance/report_late.html', late_report(report_date))
+    return render(request, 'attendance/report_late.html', {
+        **late_report(report_date),
+        **_privacy_context(request.user),
+    })
 
 
 @module_required(MODULE_ATTENDANCE_MANAGE)
@@ -378,6 +415,9 @@ def report_department(request):
 
 @module_required(MODULE_ATTENDANCE_MANAGE)
 def report_location(request):
+    denied = _require_attendance_audit(request)
+    if denied:
+        return denied
     report_date = date.today()
     if request.GET.get('date'):
         try:
@@ -389,6 +429,9 @@ def report_location(request):
 
 @module_required(MODULE_ATTENDANCE_MANAGE)
 def report_photo(request):
+    denied = _require_attendance_audit(request)
+    if denied:
+        return denied
     report_date = date.today()
     if request.GET.get('date'):
         try:
@@ -400,4 +443,24 @@ def report_photo(request):
 
 @module_required(MODULE_ATTENDANCE_MANAGE)
 def reports_index(request):
-    return render(request, 'attendance/reports_index.html')
+    return render(request, 'attendance/reports_index.html', _privacy_context(request.user))
+
+
+@login_required(login_url='login')
+def attendance_photo(request, pk):
+    photo = get_object_or_404(
+        AttendancePhoto.objects.select_related('attendance', 'attendance__employee'),
+        pk=pk,
+    )
+    if not can_view_attendance_audit_data(request.user):
+        return access_denied_response(request, module_key=MODULE_VIEW_ATTENDANCE_AUDIT_DATA)
+    if not photo.image:
+        raise Http404
+    content_type, _ = mimetypes.guess_type(photo.image.name)
+    try:
+        return FileResponse(
+            photo.image.open('rb'),
+            content_type=content_type or 'image/jpeg',
+        )
+    except FileNotFoundError as exc:
+        raise Http404 from exc
