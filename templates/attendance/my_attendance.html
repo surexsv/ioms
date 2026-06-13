@@ -4,7 +4,9 @@
 <div class="page-header">
     <h1>My Attendance</h1>
     {% if is_management_attendance %}
-    <a href="{% url 'attendance_dashboard' %}" class="btn btn-secondary">Management View</a>
+    <a href="{% url 'attendance_dashboard' %}" class="btn btn-secondary">Attendance Management</a>
+    {% elif show_nav_team_attendance %}
+    <a href="{% url 'attendance_team' %}" class="btn btn-secondary">Team Attendance</a>
     {% endif %}
 </div>
 

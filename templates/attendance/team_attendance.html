@@ -3,7 +3,11 @@
 {% block content %}
 <div class="page-header">
     <h1>Team Attendance — {{ report_date|date:"d M Y" }}</h1>
+    {% if is_management_attendance %}
     <a href="{% url 'attendance_dashboard' %}" class="btn btn-secondary">Back</a>
+    {% else %}
+    <a href="{% url 'my_attendance' %}" class="btn btn-secondary">Back</a>
+    {% endif %}
 </div>
 {% if read_only %}<p class="attendance-capture-hint">Read-only view — you cannot modify attendance records.</p>{% endif %}
 <form method="get" class="filter-bar" style="margin-bottom:16px;">

@@ -62,9 +62,19 @@
                     <i class="bi bi-receipt" aria-hidden="true"></i> Billing
                 </a>
                 {% endif %}
-                {% if show_nav_attendance %}
-                <a href="{% url attendance_nav_url %}" class="{% if nav_active == 'attendance' %}active{% endif %}">
-                    <i class="bi bi-calendar-check" aria-hidden="true"></i> Attendance
+                {% if show_nav_my_attendance %}
+                <a href="{% url 'my_attendance' %}" class="{% if nav_active == 'attendance' %}active{% endif %}">
+                    <i class="bi bi-person-check" aria-hidden="true"></i> My Attendance
+                </a>
+                {% endif %}
+                {% if show_nav_attendance_management %}
+                <a href="{% url 'attendance_dashboard' %}" class="{% if nav_active == 'attendance' %}active{% endif %}">
+                    <i class="bi bi-calendar-check" aria-hidden="true"></i> Attendance Management
+                </a>
+                {% endif %}
+                {% if show_nav_team_attendance %}
+                <a href="{% url 'attendance_team' %}" class="{% if nav_active == 'attendance' %}active{% endif %}">
+                    <i class="bi bi-people" aria-hidden="true"></i> Team Attendance
                 </a>
                 {% endif %}
                 {% if show_nav_document_numbers %}

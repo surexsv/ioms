@@ -5,13 +5,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
 from accounts.decorators import module_required, access_denied_response
-from accounts.permissions import MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF, can_manage_attendance
+from accounts.permissions import MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF, MODULE_ATTENDANCE_TEAM, can_manage_attendance
 from accounts.models import User
 from attendance.audit import log_attendance_event
 from attendance.permissions import (
     can_mark_own_attendance,
-    can_view_team_attendance,
-    can_view_all_operational_attendance,
     can_correct_attendance,
     can_edit_attendance_records,
     user_requires_attendance,
@@ -267,10 +265,8 @@ def attendance_detail(request, pk):
     })
 
 
-@module_required(MODULE_ATTENDANCE_MANAGE)
+@module_required(MODULE_ATTENDANCE_TEAM)
 def team_attendance(request):
-    if not can_view_team_attendance(request.user) and not can_view_all_operational_attendance(request.user):
-        return access_denied_response(request, module_key='attendance')
     today = timezone.localdate()
     report_date = today
     if request.GET.get('date'):

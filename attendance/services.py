@@ -2,7 +2,13 @@ from calendar import monthrange
 from datetime import date, time
 
 from accounts.models import User
-from accounts.roles import user_role, ROLE_SUPERVISOR, ROLE_OPERATIONS
+from accounts.permissions import (
+    MODULE_ATTENDANCE_TEAM,
+    MODULE_ATTENDANCE_SUPERVISOR_TEAM,
+    can_manage_attendance,
+    can_access,
+)
+from accounts.roles import ROLE_ENGINEER, ROLE_TECHNICIAN, ROLE_SUPERVISOR
 from attendance.permissions import user_requires_attendance
 from .models import Attendance, AttendancePhoto
 
@@ -19,13 +25,16 @@ def active_employees():
 
 
 def employees_for_manager(user):
-    """Operational / supervisor scoped employee list."""
-    if user.is_superuser:
+    """Scoped employee list for team monitoring or full management."""
+    if user.is_superuser or can_manage_attendance(user):
         return active_employees()
-    role = user_role(user)
-    if role == ROLE_OPERATIONS:
-        return active_employees()
-    if role == ROLE_SUPERVISOR:
+    if can_access(user, MODULE_ATTENDANCE_TEAM):
+        return User.objects.filter(
+            is_active=True,
+            attendance_required=True,
+            role__in=[ROLE_ENGINEER, ROLE_TECHNICIAN, ROLE_SUPERVISOR, 'Technician', 'Supervisor'],
+        ).order_by('username')
+    if can_access(user, MODULE_ATTENDANCE_SUPERVISOR_TEAM):
         from scheduling.models import WorkSchedule
         team_ids = set()
         team_ids.update(

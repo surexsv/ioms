@@ -32,7 +32,9 @@
         <a href="{% url 'attendance_check_out' %}" class="btn btn-warning btn-sm"><i class="bi bi-camera"></i> Check Out</a>
         {% endif %}
         {% if is_management_attendance %}
-        <a href="{% url 'attendance_dashboard' %}" class="btn btn-secondary btn-sm">Team Dashboard</a>
+        <a href="{% url 'attendance_dashboard' %}" class="btn btn-secondary btn-sm">Attendance Management</a>
+        {% elif show_nav_team_attendance %}
+        <a href="{% url 'attendance_team' %}" class="btn btn-secondary btn-sm">Team Attendance</a>
         {% endif %}
     </div>
 </div>

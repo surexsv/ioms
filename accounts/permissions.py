@@ -37,6 +37,8 @@ MODULE_BILLING_VIEW = 'billing_view'
 MODULE_BILLING_CREATE = 'billing_create'
 MODULE_ATTENDANCE_MANAGE = 'attendance_manage'
 MODULE_ATTENDANCE_SELF = 'attendance_self'
+MODULE_ATTENDANCE_TEAM = 'attendance_team'
+MODULE_ATTENDANCE_SUPERVISOR_TEAM = 'attendance_supervisor_team'
 MODULE_QUOTATIONS = 'quotations'
 MODULE_QUOTATION_RATES = 'quotation_rates'
 MODULE_FINANCIAL = 'financial'
@@ -74,7 +76,7 @@ _ACCESS = {
         MODULE_ORDERS, MODULE_ORDERS_CREATE,
         MODULE_WCR, MODULE_WCR_APPROVE, MODULE_BOQ,
         MODULE_BILLING_CREATE,
-        MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
+        MODULE_ATTENDANCE_SELF, MODULE_ATTENDANCE_TEAM,
         MODULE_QUOTATIONS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
         MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
@@ -89,7 +91,7 @@ _ACCESS = {
         MODULE_QUOTATIONS,
         MODULE_BILLING_VIEW,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
-        MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
+        MODULE_ATTENDANCE_SELF, MODULE_ATTENDANCE_TEAM,
         MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MANAGE,
@@ -100,7 +102,7 @@ _ACCESS = {
         MODULE_ORDERS, MODULE_ORDERS_CREATE,
         MODULE_WCR, MODULE_WCR_APPROVE, MODULE_BOQ,
         MODULE_BILLING_VIEW,
-        MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
+        MODULE_ATTENDANCE_SELF, MODULE_ATTENDANCE_SUPERVISOR_TEAM,
         MODULE_QUOTATIONS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
         MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
@@ -109,7 +111,7 @@ _ACCESS = {
     ROLE_ACCOUNTS: {
         MODULE_DASHBOARD_ACCOUNTS,
         MODULE_CLIENTS, MODULE_BOQ, MODULE_BILLING,
-        MODULE_ATTENDANCE_SELF,
+        MODULE_ATTENDANCE_SELF, MODULE_ATTENDANCE_MANAGE,
         MODULE_QUOTATION_RATES, MODULE_FINANCIAL,
         MODULE_SCHEDULING, MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
@@ -161,11 +163,25 @@ def can_access(user, module_key):
         return True
     if not getattr(user, 'is_profile_approved', True):
         return False
-    # Attendance self-service: driven by attendance_required, not role alone.
+    # Attendance self-service: driven by attendance_required profile flag.
     if module_key == MODULE_ATTENDANCE_SELF:
         from attendance.permissions import user_requires_attendance
         if user_requires_attendance(user):
             return True
+    # Team attendance monitoring (read-only).
+    if module_key == MODULE_ATTENDANCE_TEAM:
+        from accounts.rbac_service import user_has_permission
+        return (
+            user_has_permission(user, MODULE_ATTENDANCE_MANAGE)
+            or user_has_permission(user, MODULE_ATTENDANCE_TEAM)
+            or user_has_permission(user, MODULE_ATTENDANCE_SUPERVISOR_TEAM)
+        )
+    if module_key == MODULE_ATTENDANCE_SUPERVISOR_TEAM:
+        from accounts.rbac_service import user_has_permission
+        return (
+            user_has_permission(user, MODULE_ATTENDANCE_MANAGE)
+            or user_has_permission(user, MODULE_ATTENDANCE_SUPERVISOR_TEAM)
+        )
     from accounts.rbac_service import permissions_for_role
     role = user_role(user)
     if module_key in permissions_for_role(role):
@@ -239,6 +255,24 @@ def can_manage_attendance(user):
     return can_access(user, MODULE_ATTENDANCE_MANAGE)
 
 
+def can_view_team_attendance(user):
+    return can_access(user, MODULE_ATTENDANCE_TEAM)
+
+
+def show_nav_my_attendance(user):
+    from attendance.permissions import user_requires_attendance
+    return user_requires_attendance(user)
+
+
+def show_nav_attendance_management(user):
+    return can_manage_attendance(user)
+
+
+def show_nav_team_attendance(user):
+    """Team monitoring menu — for roles with team view but not full management."""
+    return can_view_team_attendance(user) and not can_manage_attendance(user)
+
+
 def can_view_own_attendance(user):
     from attendance.permissions import user_requires_attendance
     if user_requires_attendance(user):
@@ -283,11 +317,13 @@ def can_view_productivity(user):
 
 
 def attendance_nav_url(user):
-    from attendance.permissions import user_requires_attendance
-    if user_requires_attendance(user):
+    """Legacy single-link helper — prefer separate nav items."""
+    if show_nav_my_attendance(user):
         return 'my_attendance'
-    if can_manage_attendance(user):
+    if show_nav_attendance_management(user):
         return 'attendance_dashboard'
+    if can_view_team_attendance(user):
+        return 'attendance_team'
     return 'my_attendance'
 
 
@@ -314,6 +350,8 @@ def resolve_path_module(path):
         self_paths = ('/attendance/my/', '/attendance/check-in/', '/attendance/check-out/')
         if any(path.startswith(p) for p in self_paths):
             return MODULE_ATTENDANCE_SELF
+        if path.startswith('/attendance/team'):
+            return MODULE_ATTENDANCE_TEAM
         return MODULE_ATTENDANCE_MANAGE
     if path.startswith('/document-generator/'):
         return MODULE_DOCUMENT_GENERATOR

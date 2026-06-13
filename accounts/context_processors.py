@@ -1,7 +1,6 @@
 from .utils import dashboard_url_name_for_user
 from .models import User
 from .roles import user_role, is_field_staff, ROLE_SUPERVISOR, LEGACY_SUPERVISOR
-from attendance.permissions import user_requires_attendance
 from .permissions import (
     can_view_clients,
     can_view_orders,
@@ -11,6 +10,10 @@ from .permissions import (
     can_view_billing,
     can_manage_attendance,
     can_view_own_attendance,
+    can_view_team_attendance,
+    show_nav_my_attendance,
+    show_nav_attendance_management,
+    show_nav_team_attendance,
     can_view_quotations,
     can_view_financial,
     can_view_company_settings,
@@ -94,15 +97,23 @@ def oms_navigation(request):
         'show_nav_wcr': can_view_wcr(user),
         'show_nav_boq': can_view_boq(user),
         'show_nav_billing': can_view_billing(user),
-        'show_nav_attendance': user_requires_attendance(user),
+        'show_nav_my_attendance': show_nav_my_attendance(user),
+        'show_nav_attendance_management': show_nav_attendance_management(user),
+        'show_nav_team_attendance': show_nav_team_attendance(user),
+        'show_nav_attendance': (
+            show_nav_my_attendance(user)
+            or show_nav_attendance_management(user)
+            or show_nav_team_attendance(user)
+        ),
         'attendance_nav_url': attendance_nav_url(user),
-        'attendance_required': user_requires_attendance(user),
+        'attendance_required': show_nav_my_attendance(user),
         'is_field_staff': is_field_staff(raw_role),
         'can_view_financial': can_view_financial(user),
         'is_management': can_view_clients(user) and role in ('DIRECTOR', 'OPERATIONS', 'PROJECT_MANAGER'),
         'is_supervisor': role == ROLE_SUPERVISOR or raw_role == LEGACY_SUPERVISOR,
         'is_management_attendance': can_manage_attendance(user),
-        'can_check_in': user_requires_attendance(user),
+        'can_view_team_attendance': can_view_team_attendance(user),
+        'can_check_in': show_nav_my_attendance(user),
         'can_view_quotations': can_view_quotations(user),
         'show_nav_document_numbers': user.is_superuser or role == 'DIRECTOR',
         'show_nav_company_settings': can_view_company_settings(user),

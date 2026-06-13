@@ -83,7 +83,7 @@
 <p class="ioms-action-row">
     {% if show_nav_quotations %}<a href="{% url 'quotation_list' %}" class="btn btn-sm btn-primary">Quotations</a>{% endif %}
     {% if show_nav_billing %}<a href="{% url 'invoice_list' %}" class="btn btn-sm btn-primary">Billing</a>{% endif %}
-    {% if is_management_attendance %}<a href="{% url 'attendance_dashboard' %}" class="btn btn-sm btn-secondary">Attendance Dashboard</a>{% endif %}
+    {% if is_management_attendance %}<a href="{% url 'attendance_dashboard' %}" class="btn btn-sm btn-secondary">Attendance Management</a>{% elif show_nav_team_attendance %}<a href="{% url 'attendance_team' %}" class="btn btn-sm btn-secondary">Team Attendance</a>{% endif %}
 </p>
 
 <div class="ioms-charts-row ioms-charts-row-3">
