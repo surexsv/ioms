@@ -1,6 +1,6 @@
 """Case intelligence RBAC."""
 
-from accounts.permissions import can_access, MODULE_CASE_INTELLIGENCE
+from accounts.permissions import can_access, can_manage_billing, MODULE_CASE_INTELLIGENCE
 from accounts.roles import (
     ROLE_ACCOUNTS,
     ROLE_ACCOUNTS_EXECUTIVE,
@@ -38,9 +38,8 @@ def can_view_operational_cases(user):
 
 
 def can_view_financial_cases(user):
-    if user.is_superuser:
-        return True
-    return user_role(user) in (ROLE_DIRECTOR, ROLE_ACCOUNTS, ROLE_ACCOUNTS_EXECUTIVE)
+    """Invoice/payment case visibility — finance billing access only."""
+    return can_manage_billing(user)
 
 
 def can_export_case_reports(user):

@@ -40,7 +40,11 @@
                 <td>{{ r.assigned|default:"—" }}</td>
                 <td>
                     {% if r.url_pk %}
+                    {% if r.url_name == 'invoice_detail' and not show_nav_billing %}
+                    <span class="dom-hint">Finance only</span>
+                    {% else %}
                     <a href="{% url r.url_name r.url_pk %}" class="btn btn-secondary btn-sm">Open</a>
+                    {% endif %}
                     {% elif r.url_name %}
                     <a href="{% url r.url_name %}" class="btn btn-secondary btn-sm">Open</a>
                     {% endif %}

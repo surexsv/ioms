@@ -32,6 +32,8 @@ MODULE_ORDERS_CREATE = 'orders_create'
 MODULE_WCR = 'wcr'
 MODULE_WCR_APPROVE = 'wcr_approve'
 MODULE_BOQ = 'boq'
+MODULE_MANAGE_BILLING = 'manage_billing'
+# Legacy keys — retained for migration references only; not assigned in _ACCESS.
 MODULE_BILLING = 'billing'
 MODULE_BILLING_VIEW = 'billing_view'
 MODULE_BILLING_CREATE = 'billing_create'
@@ -65,7 +67,7 @@ _ACCESS = {
         MODULE_DASHBOARD_DIRECTOR,
         MODULE_CLIENTS, MODULE_ENQUIRIES, MODULE_ENQUIRIES_MANAGE, MODULE_ESTIMATE_BOQ,
         MODULE_ORDERS, MODULE_ORDERS_CREATE,
-        MODULE_WCR, MODULE_WCR_APPROVE, MODULE_BOQ, MODULE_BILLING,
+        MODULE_WCR, MODULE_WCR_APPROVE, MODULE_BOQ,
         MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
         MODULE_QUOTATIONS, MODULE_QUOTATION_RATES, MODULE_FINANCIAL,
         MODULE_DOCUMENT_GENERATOR, MODULE_COMPANY_SETTINGS,
@@ -80,7 +82,6 @@ _ACCESS = {
         MODULE_CLIENTS, MODULE_ENQUIRIES, MODULE_ENQUIRIES_MANAGE, MODULE_ESTIMATE_BOQ,
         MODULE_ORDERS, MODULE_ORDERS_CREATE,
         MODULE_WCR, MODULE_WCR_APPROVE, MODULE_BOQ,
-        MODULE_BILLING_CREATE,
         MODULE_ATTENDANCE_SELF, MODULE_ATTENDANCE_TEAM,
         MODULE_QUOTATIONS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
@@ -95,7 +96,6 @@ _ACCESS = {
         MODULE_ORDERS, MODULE_ORDERS_CREATE,
         MODULE_WCR, MODULE_WCR_APPROVE,
         MODULE_QUOTATIONS,
-        MODULE_BILLING_VIEW,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
         MODULE_ATTENDANCE_SELF, MODULE_ATTENDANCE_TEAM,
         MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
@@ -108,7 +108,6 @@ _ACCESS = {
         MODULE_CLIENTS, MODULE_ENQUIRIES,
         MODULE_ORDERS, MODULE_ORDERS_CREATE,
         MODULE_WCR, MODULE_WCR_APPROVE, MODULE_BOQ,
-        MODULE_BILLING_VIEW,
         MODULE_ATTENDANCE_SELF, MODULE_ATTENDANCE_SUPERVISOR_TEAM,
         MODULE_QUOTATIONS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
@@ -118,7 +117,7 @@ _ACCESS = {
     },
     ROLE_ACCOUNTS: {
         MODULE_DASHBOARD_ACCOUNTS,
-        MODULE_CLIENTS, MODULE_BOQ, MODULE_BILLING,
+        MODULE_CLIENTS, MODULE_BOQ, MODULE_MANAGE_BILLING,
         MODULE_ATTENDANCE_SELF, MODULE_ATTENDANCE_MANAGE,
         MODULE_QUOTATION_RATES, MODULE_FINANCIAL,
         MODULE_SCHEDULING, MODULE_PRODUCTIVITY,
@@ -144,7 +143,6 @@ _ACCESS = {
     },
     ROLE_ACCOUNTS_EXECUTIVE: {
         MODULE_DASHBOARD_ACCOUNTS,
-        MODULE_BILLING,
         MODULE_ATTENDANCE_SELF,
         MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
@@ -256,12 +254,19 @@ def can_view_boq(user):
     return can_access(user, MODULE_BOQ)
 
 
+def can_manage_billing(user):
+    """Finance-only billing module — Admin/Superuser and Accounts Manager."""
+    if user is None or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    if not getattr(user, 'is_profile_approved', True):
+        return False
+    return can_access(user, MODULE_MANAGE_BILLING)
+
+
 def can_view_billing(user):
-    return (
-        can_access(user, MODULE_BILLING)
-        or can_access(user, MODULE_BILLING_VIEW)
-        or can_access(user, MODULE_BILLING_CREATE)
-    )
+    return can_manage_billing(user)
 
 
 def can_manage_attendance(user):
@@ -342,7 +347,7 @@ def attendance_nav_url(user):
 
 def resolve_path_module(path):
     if path.startswith('/billing/'):
-        return MODULE_BILLING
+        return MODULE_MANAGE_BILLING
     if path.startswith('/enquiries/'):
         return MODULE_ENQUIRIES
     if path.startswith('/estimate-boq/'):

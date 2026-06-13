@@ -55,7 +55,7 @@ def billing_view_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         if not can_view_invoices(request.user):
-            return access_denied_response(request, reason='unauthorized', module_key='billing')
+            return access_denied_response(request, reason='unauthorized', module_key='manage_billing')
         return view_func(request, *args, **kwargs)
     return wrapper
 
@@ -195,7 +195,7 @@ def invoice_detail(request, pk):
 @billing_view_required
 def create_invoice(request):
     if not can_create_invoice(request.user):
-        return access_denied_response(request, reason='unauthorized', module_key='billing')
+        return access_denied_response(request, reason='unauthorized', module_key='manage_billing')
 
     can_override_gst = can_override_invoice_gst(request.user)
     if request.method == 'POST':

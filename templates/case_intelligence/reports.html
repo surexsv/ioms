@@ -13,8 +13,10 @@
         <li><a href="?report=enquiry_conversion">Enquiry Conversion Report</a></li>
         <li><a href="?report=quotation_conversion">Quotation Conversion Report</a></li>
         <li><a href="?report=delay">Order Delay Report</a></li>
+        {% if show_nav_billing %}
         <li><a href="?report=invoice">Invoice Approval Report</a></li>
         <li><a href="?report=payment">Payment Follow-up Report</a></li>
+        {% endif %}
     </ul>
     {% if can_export %}
     <p style="margin-top:16px;">

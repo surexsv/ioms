@@ -1,43 +1,22 @@
-from accounts.roles import (
-    ROLE_ACCOUNTS,
-    ROLE_DIRECTOR,
-    ROLE_OPERATIONS,
-    ROLE_PROJECT_MANAGER,
-    ROLE_SUPERVISOR,
-    user_role,
-)
+"""Billing permissions — RBAC via manage_billing only."""
+
+from accounts.permissions import can_manage_billing
 
 
 def can_override_invoice_gst(user):
-    """Director and Accounts may override GST type on invoices."""
-    if not user or not user.is_authenticated:
-        return False
-    if user.is_superuser:
-        return True
-    return user_role(user) in (ROLE_DIRECTOR, ROLE_ACCOUNTS)
+    return can_manage_billing(user)
 
 
 def can_view_invoices(user):
-    if not user or not user.is_authenticated:
-        return False
-    if user.is_superuser:
-        return True
-    return user_role(user) in (
-        ROLE_DIRECTOR, ROLE_ACCOUNTS, ROLE_OPERATIONS,
-        ROLE_PROJECT_MANAGER, ROLE_SUPERVISOR,
-    )
+    return can_manage_billing(user)
 
 
 def can_create_invoice(user):
-    if not user or not user.is_authenticated:
-        return False
-    if user.is_superuser:
-        return True
-    return user_role(user) in (ROLE_DIRECTOR, ROLE_ACCOUNTS, ROLE_OPERATIONS)
+    return can_manage_billing(user)
 
 
 def can_edit_invoice(user, invoice=None):
-    if not can_create_invoice(user):
+    if not can_manage_billing(user):
         return False
     if invoice is None:
         return True
@@ -46,11 +25,7 @@ def can_edit_invoice(user, invoice=None):
 
 
 def can_unlock_invoice(user, invoice=None):
-    if not user or not user.is_authenticated:
-        return False
-    if user.is_superuser:
-        return True
-    if user_role(user) != ROLE_DIRECTOR:
+    if not can_manage_billing(user):
         return False
     if invoice is None:
         return True
@@ -59,11 +34,7 @@ def can_unlock_invoice(user, invoice=None):
 
 
 def can_submit_invoice(user, invoice=None):
-    if not user or not user.is_authenticated:
-        return False
-    if user.is_superuser:
-        return True
-    if user_role(user) not in (ROLE_DIRECTOR, ROLE_ACCOUNTS, ROLE_OPERATIONS):
+    if not can_manage_billing(user):
         return False
     if invoice is None:
         return True
@@ -72,11 +43,7 @@ def can_submit_invoice(user, invoice=None):
 
 
 def can_approve_invoice(user, invoice=None):
-    if not user or not user.is_authenticated:
-        return False
-    if user.is_superuser:
-        return True
-    if user_role(user) not in (ROLE_DIRECTOR, ROLE_ACCOUNTS):
+    if not can_manage_billing(user):
         return False
     if invoice is None:
         return True
@@ -86,7 +53,7 @@ def can_approve_invoice(user, invoice=None):
 
 def can_download_invoice_pdf(user, invoice):
     from billing.approval import can_generate_pdf, PDF_BLOCKED_MESSAGE
-    if not can_view_invoices(user):
+    if not can_manage_billing(user):
         return False, 'You do not have permission to access invoices.'
     if not can_generate_pdf(invoice):
         return False, PDF_BLOCKED_MESSAGE

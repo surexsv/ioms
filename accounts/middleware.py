@@ -7,7 +7,7 @@ from .access_control import REASON_MODULE, store_denial_context
 from .error_handlers import user_friendly_error_view
 from .permissions import (
     can_access,
-    can_view_billing,
+    can_manage_billing,
     resolve_path_module,
     allowed_dashboard_url_name,
     MODULE_DASHBOARD_DIRECTOR,
@@ -62,17 +62,17 @@ class OMSAccessMiddleware:
                 return redirect('account_status')
 
         if path.startswith('/billing/'):
-            if not can_view_billing(request.user):
+            if not can_manage_billing(request.user):
                 log_access_denied(
                     request,
                     reason=REASON_MODULE,
-                    module_key='billing',
+                    module_key='manage_billing',
                     attempted_url=request.get_full_path(),
                 )
                 store_denial_context(
                     request,
                     reason=REASON_MODULE,
-                    module_key='billing',
+                    module_key='manage_billing',
                     attempted_url=request.get_full_path(),
                 )
                 return redirect('access_denied')

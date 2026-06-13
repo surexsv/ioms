@@ -10,6 +10,7 @@ from accounts.permissions import (
     MODULE_DASHBOARD_ENGINEER,
     MODULE_DASHBOARD_SUPERVISOR,
     MODULE_DASHBOARD_PROJECT_MANAGER,
+    can_manage_billing,
 )
 from accounts.roles import ROLE_SUPERVISOR, ROLE_TECHNICIAN, ROLE_ENGINEER
 
@@ -21,7 +22,7 @@ from .services import build_dashboard_context, build_project_manager_context, me
 @module_required(MODULE_DASHBOARD_DIRECTOR)
 def director_dashboard(request):
     context = build_dashboard_context(
-        show_financial=True,
+        show_financial=can_manage_billing(request.user),
         show_quotations=True,
         show_operations=True,
     )
@@ -90,7 +91,7 @@ def operations_dashboard(request):
 @module_required(MODULE_DASHBOARD_ACCOUNTS)
 def accounts_dashboard(request):
     context = build_dashboard_context(
-        show_financial=True,
+        show_financial=can_manage_billing(request.user),
         show_quotations=False,
         show_operations=False,
     )

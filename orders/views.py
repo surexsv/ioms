@@ -11,6 +11,7 @@ from accounts.permissions import (
     MODULE_ORDERS,
     MODULE_ORDERS_CREATE,
     can_access,
+    can_manage_billing,
 )
 from scheduling.permissions import can_manage_scheduling
 from accounts.roles import (
@@ -233,6 +234,7 @@ def order_detail(request, pk):
         'is_engineer': is_engineer,
         'boqs': boqs,
         'can_manage_schedule': can_manage_scheduling(request.user),
+        'can_manage_billing': can_manage_billing(request.user),
         'site_attendance': site_attendance,
         'can_site_attendance': can_site_attendance,
         **case_ctx,

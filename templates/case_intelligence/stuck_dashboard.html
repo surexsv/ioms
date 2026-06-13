@@ -94,7 +94,9 @@
                     <td>{{ row.next_action }}</td>
                     <td><span class="case-health-pill case-health-{{ row.health|lower }}">{{ row.health_label }}</span></td>
                     <td class="case-row-actions">
-                        {% if row.url_pk %}
+                        {% if row.url_pk and row.url_name == 'invoice_detail' and not show_nav_billing %}
+                        <span class="dom-hint">Finance only</span>
+                        {% elif row.url_pk %}
                         <a href="{% url row.url_name row.url_pk %}" class="btn btn-secondary btn-sm">Open</a>
                         {% endif %}
                         <a href="{% url 'case_tracker' %}?doc={{ row.document_number }}" class="btn btn-secondary btn-sm">Track</a>
