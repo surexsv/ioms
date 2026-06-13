@@ -41,7 +41,40 @@ def can_view_full_productivity(user):
 def can_view_team_productivity(user):
     if can_view_full_productivity(user):
         return True
-    return user_role(user) in (ROLE_PROJECT_MANAGER, ROLE_SUPERVISOR, ROLE_ENGINEER)
+    return user_role(user) in (ROLE_PROJECT_MANAGER, ROLE_SUPERVISOR)
+
+
+def can_view_management_productivity(user):
+    """Company-wide productivity dashboard — not for field-only roles."""
+    if not can_view_productivity(user):
+        return False
+    if user.is_superuser:
+        return True
+    return user_role(user) in (
+        ROLE_DIRECTOR, ROLE_OPERATIONS, ROLE_PROJECT_MANAGER,
+        ROLE_SUPERVISOR, ROLE_ACCOUNTS, ROLE_ACCOUNTS_EXECUTIVE,
+        ROLE_BACK_OFFICE,
+    )
+
+
+def can_view_gps_dashboard(user):
+    if not can_view_productivity(user):
+        return False
+    if user.is_superuser:
+        return True
+    return user_role(user) == ROLE_DIRECTOR
+
+
+def can_view_field_activity_log(user):
+    return can_view_gps_dashboard(user)
+
+
+def can_view_activity_log(user):
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    return user_role(user) == ROLE_DIRECTOR
 
 
 def can_export_reports(user):
@@ -49,18 +82,10 @@ def can_export_reports(user):
 
 
 def can_view_full_gps(user):
-    """Director, Operations, Admin — full GPS and movement visibility."""
+    """Director and Admin — full GPS and movement visibility."""
     if user.is_superuser:
         return True
-    return user_role(user) in (ROLE_DIRECTOR, ROLE_OPERATIONS)
-
-
-def can_view_gps_dashboard(user):
-    if not can_view_productivity(user):
-        return False
-    if can_view_full_gps(user):
-        return True
-    return user_role(user) in (ROLE_PROJECT_MANAGER, ROLE_SUPERVISOR)
+    return user_role(user) == ROLE_DIRECTOR
 
 
 def productivity_scope_users(user):

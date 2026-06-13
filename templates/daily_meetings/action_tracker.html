@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Action Tracker — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='actions' %}
+<div class="page-header">
+    <h1>Action Tracker</h1>
+    {% if can_add %}<a href="{% url 'dom_action_add' %}" class="btn btn-primary">+ Add Action</a>{% endif %}
+</div>
+<div class="card" style="margin-bottom:16px;">
+    <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
+        {{ filter_form.status }} {{ filter_form.assigned_to }} {{ filter_form.priority }}
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
+</div>
+<table class="ioms-table">
+    <thead><tr><th>#</th><th>Description</th><th>Meeting</th><th>Assigned</th><th>Target</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+    <tbody>{% for a in actions %}
+    <tr>
+        <td>{{ a.action_number }}</td>
+        <td>{{ a.description|truncatechars:60 }}</td>
+        <td>{% if a.meeting %}{{ a.meeting.meeting_number }}{% else %}—{% endif %}</td>
+        <td>{{ a.assigned_to|default:"—" }}</td>
+        <td>{{ a.target_date|default:"—" }}</td>
+        <td>{{ a.get_priority_display }}</td>
+        <td>{{ a.get_status_display }}</td>
+        <td><a href="{% url 'dom_action_edit' a.pk %}" class="btn btn-sm btn-secondary">Update</a></td>
+    </tr>
+    {% empty %}<tr><td colspan="8">No action items.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Meeting Calendar — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='calendar' %}
+<div class="page-header"><h1>Meeting Calendar — {{ month }}/{{ year }}</h1></div>
+<form method="get" class="filter-bar" style="margin-bottom:16px;">
+    <input type="number" name="month" value="{{ month }}" min="1" max="12" style="width:70px;">
+    <input type="number" name="year" value="{{ year }}" min="2020" style="width:90px;">
+    <button type="submit" class="btn btn-primary btn-sm">Go</button>
+</form>
+<div class="ioms-table-wrap">
+<table class="ioms-table">
+    <thead><tr><th>Date</th><th>Meetings</th></tr></thead>
+    <tbody>
+    {% for d, meetings in calendar_rows %}
+    <tr>
+        <td>{{ d|date:"d-M-Y (D)" }}</td>
+        <td>{% for m in meetings %}<a href="{% url 'dom_meeting_detail' m.pk %}">{{ m.meeting_number }}</a> ({{ m.get_status_display }}){% if not forloop.last %}, {% endif %}{% endfor %}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="2">No meetings this month.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

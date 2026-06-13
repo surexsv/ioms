@@ -54,6 +54,15 @@ def _save_wcr_participants(request, wcr):
             'man_days': man_days,
             'from_schedule': request.POST.get(f'{prefix}from_schedule') == '1',
         })
+    # Deduplicate by employee — form may repeat the same person across rows
+    deduped = []
+    seen = set()
+    for p in participants:
+        eid = p['employee'].pk
+        if eid not in seen:
+            seen.add(eid)
+            deduped.append(p)
+    participants = deduped
     if participants:
         sync_wcr_participants(wcr, participants)
     elif wcr.schedule:
@@ -99,6 +108,8 @@ def create_wcr(request):
                 related_model='WorkCompletionReport',
                 related_object_id=wcr.pk,
             )
+            from case_intelligence.integrations import wcr_submitted
+            wcr_submitted(request.user, wcr)
             from productivity.field_constants import FA_WCR_SUBMITTED
             from productivity.gps_service import record_field_event
             record_field_event(
@@ -178,6 +189,9 @@ def approve_wcr(request, pk):
             recalculate_monthly_snapshot(part.employee)
         if wcr.wcr_type == WCR_TYPE_SURVEY:
             complete_survey_wcr(wcr, request.user)
+            from case_intelligence.integrations import survey_completed
+            if wcr.enquiry_id:
+                survey_completed(request.user, wcr.enquiry, remarks=wcr.wcr_number)
             messages.success(request, f'Survey WCR {wcr.wcr_number} approved. Enquiry updated.')
         elif wcr.order_id:
             messages.success(request, f'WCR for Order #{wcr.order.order_id} approved.')
@@ -202,7 +216,11 @@ def create_survey_wcr(request, schedule_pk):
         return access_denied_response(request, module_key='wcr')
     if survey_wcr_exists_for_schedule(schedule):
         messages.info(request, 'Survey WCR already exists for this enquiry.')
-        return redirect('enquiry_detail', pk=schedule.enquiry_id)
+        from accounts.navigation import redirect_target_after_schedule
+        target = redirect_target_after_schedule(request.user, schedule)
+        if len(target) == 2:
+            return redirect(target[0], pk=target[1])
+        return redirect(target[0])
 
     schedule_team = build_participants_from_schedule(schedule)
     if request.method == 'POST':
@@ -225,6 +243,8 @@ def create_survey_wcr(request, schedule_pk):
                 related_object_id=wcr.pk,
                 remarks='Survey WCR',
             )
+            from case_intelligence.integrations import wcr_submitted
+            wcr_submitted(request.user, wcr, remarks='Survey WCR')
             from productivity.field_constants import FA_WCR_SUBMITTED
             from productivity.gps_service import record_field_event
             record_field_event(
@@ -236,10 +256,15 @@ def create_survey_wcr(request, schedule_pk):
                 remarks=f'Survey WCR {wcr.wcr_number}',
             )
             messages.success(request, f'Survey WCR {wcr.wcr_number} submitted.')
-            return redirect('enquiry_detail', pk=schedule.enquiry_id)
+            from accounts.navigation import redirect_target_after_schedule
+            target = redirect_target_after_schedule(request.user, schedule)
+            if len(target) == 2:
+                return redirect(target[0], pk=target[1])
+            return redirect(target[0])
     else:
         form = SurveyWCRForm(user=request.user)
 
+    from accounts.navigation import wcr_back_navigation
     return render(request, 'wcr/survey_wcr_form.html', {
         'form': form,
         'schedule': schedule,
@@ -247,4 +272,5 @@ def create_survey_wcr(request, schedule_pk):
         'schedule_team': schedule_team,
         'can_edit_signatory': can_edit_document_signatory(request.user),
         'signatory_instance': form.instance,
+        'back_nav': wcr_back_navigation(request.user, schedule=schedule),
     })

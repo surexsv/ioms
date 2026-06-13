@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Edit Attendance — IOMS{% endblock %}
+{% block content %}
+<div class="card">
+    <p><strong>{{ attendance.employee }}</strong> — {{ meeting.meeting_number }}</p>
+    <form method="post">{% csrf_token %}{% for field in form %}<div class="form-group">{{ field.label_tag }}{{ field }}</div>{% endfor %}
+    <button type="submit" class="btn btn-primary">Save (Manual Override)</button>
+    <a href="{% url 'dom_meeting_detail' meeting.pk %}" class="btn btn-secondary">Cancel</a></form>
+</div>
+{% endblock %}

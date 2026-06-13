@@ -83,6 +83,9 @@ def ensure_survey_schedule(enquiry, created_by=None):
             related_model='Enquiry',
             related_object_id=enquiry.pk,
         )
+        from case_intelligence.integrations import survey_assigned, schedule_created
+        survey_assigned(created_by, enquiry, remarks=schedule.schedule_number)
+        schedule_created(created_by, schedule, remarks=f'Survey for {enquiry.enquiry_number}')
 
     return schedule, created
 
@@ -92,6 +95,9 @@ def _sync_team_from_enquiry(schedule, enquiry):
     if not engineer:
         return
     schedule.assigned_engineers.add(engineer)
+    # Avoid duplicating lead engineer in M2M team lists (causes WCR participant conflicts)
+    if schedule.lead_engineer_id == engineer.pk:
+        return
     if engineer.role == 'Technician':
         schedule.technicians.add(engineer)
     else:

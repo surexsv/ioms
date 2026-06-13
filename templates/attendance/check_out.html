@@ -1,13 +1,46 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Check Out — IOMS{% endblock %}
 {% block content %}
-<div class="card" style="max-width:480px;margin:0 auto;">
-    <h2>Check Out</h2>
-    <p>Checked in at: <strong>{{ record.check_in_time }}</strong></p>
-    <form method="post">
+<div class="card attendance-capture-card">
+    <h2><i class="bi bi-box-arrow-right"></i> Check Out</h2>
+    <p>Checked in at <strong>{{ record.check_in_time|time:"H:i" }}</strong>. Photo and GPS are required.</p>
+
+    <form method="post" enctype="multipart/form-data" id="attendanceCheckOutForm">
         {% csrf_token %}
-        <button type="submit" class="btn btn-warning" style="width:100%;">Confirm Check Out</button>
-        <a href="{% url 'my_attendance' %}" class="btn btn-secondary" style="width:100%;margin-top:10px;text-align:center;">Cancel</a>
+        <input type="hidden" name="latitude" id="id_latitude" value="">
+        <input type="hidden" name="longitude" id="id_longitude" value="">
+        <input type="hidden" name="location" id="id_location" value="">
+
+        <div class="attendance-capture-grid">
+            <div>
+                <h4>Photo Verification</h4>
+                <video id="attVideo" autoplay playsinline muted class="attendance-video"></video>
+                <canvas id="attCanvas" style="display:none;"></canvas>
+                <img id="attPreview" class="attendance-preview" alt="Captured photo" style="display:none;">
+                <p id="cameraStatus" class="attendance-status">Starting camera…</p>
+                <button type="button" id="capturePhotoBtn" class="btn btn-secondary btn-sm">Capture Photo</button>
+                <div class="form-group" style="margin-top:12px;">
+                    <label>Or upload from mobile camera</label>
+                    <input type="file" name="photo" id="id_photo" accept="image/*" capture="user" required>
+                </div>
+            </div>
+            <div>
+                <h4>GPS Location</h4>
+                <p id="gpsStatus" class="attendance-status">Acquiring GPS…</p>
+                <div class="form-group">
+                    <label>Remarks (optional)</label>
+                    {{ form.remarks }}
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-warning attendance-submit-btn">Confirm Check Out</button>
+        <a href="{% url 'my_attendance' %}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/attendance-capture.js' %}?v={{ ioms_version_label }}"></script>
+<script>IOMSAttendance.init('attendanceCheckOutForm');</script>
 {% endblock %}

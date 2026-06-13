@@ -103,6 +103,10 @@ class WorkSchedule(models.Model):
     vehicle_assigned = models.CharField(max_length=120, blank=True)
     resource_requirements = models.TextField(blank=True)
     work_instructions = models.TextField(blank=True)
+    field_work_remarks = models.TextField(
+        blank=True,
+        help_text='Field team work notes and completion remarks.',
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PLANNED)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

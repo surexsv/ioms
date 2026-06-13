@@ -14,7 +14,8 @@
 <table>
     <tr>
         <th>WCR #</th>
-        <th>Order</th>
+        <th>Type</th>
+        <th>Reference</th>
         <th>Client</th>
         <th>Submitted By</th>
         <th>Date</th>
@@ -24,8 +25,19 @@
     {% for wcr in wcrs %}
     <tr>
         <td>{{ wcr.wcr_number|default:"—" }}</td>
-        <td>{{ wcr.order.order_no|default:wcr.order.order_id }}</td>
-        <td>{{ wcr.order.client.name }}</td>
+        <td>{% if wcr.is_survey_wcr %}Survey{% else %}Execution{% endif %}</td>
+        <td>
+            {% if wcr.order %}
+            {{ wcr.order.order_no|default:wcr.order.order_id }}
+            {% elif wcr.enquiry %}
+            {{ wcr.enquiry.enquiry_number }}
+            {% else %}—{% endif %}
+        </td>
+        <td>
+            {% if wcr.order %}{{ wcr.order.client.name }}
+            {% elif wcr.enquiry %}{{ wcr.enquiry.client.name }}
+            {% else %}—{% endif %}
+        </td>
         <td>{{ wcr.submitted_by|default:"—" }}</td>
         <td>{{ wcr.submitted_date|date:"d M Y" }}</td>
         <td>{% if wcr.approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-pending">Pending</span>{% endif %}</td>
@@ -36,7 +48,7 @@
         </td>
     </tr>
     {% empty %}
-    <tr><td colspan="6" class="empty-state">No WCRs yet.</td></tr>
+    <tr><td colspan="8" class="empty-state">No WCRs yet.</td></tr>
     {% endfor %}
 </table>
 {% endblock %}

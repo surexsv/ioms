@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Team Attendance — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Team Attendance — {{ report_date|date:"d M Y" }}</h1>
+    <a href="{% url 'attendance_dashboard' %}" class="btn btn-secondary">Back</a>
+</div>
+{% if read_only %}<p class="attendance-capture-hint">Read-only view — you cannot modify attendance records.</p>{% endif %}
+<form method="get" class="filter-bar" style="margin-bottom:16px;">
+    <input type="date" name="date" value="{{ report_date|date:'Y-m-d' }}">
+    <button type="submit" class="btn btn-sm btn-primary">View</button>
+</form>
+<div class="ioms-table-wrap">
+<table class="ioms-table">
+    <thead><tr><th>Employee</th><th>Status</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Location</th><th></th></tr></thead>
+    <tbody>
+    {% for row in rows %}
+    <tr>
+        <td>{{ row.employee.get_full_name|default:row.employee.username }}</td>
+        {% if row.record %}
+        <td>{{ row.record.get_status_display }}</td>
+        <td>{{ row.record.check_in_time|default:"—" }}</td>
+        <td>{{ row.record.check_out_time|default:"—" }}</td>
+        <td>{{ row.record.working_hours|default:"—" }}</td>
+        <td>{{ row.record.location|truncatechars:30|default:"—" }}</td>
+        <td><a href="{% url 'attendance_detail' row.record.pk %}" class="btn btn-sm btn-secondary">Details</a></td>
+        {% else %}
+        <td colspan="6"><span class="badge badge-pending">Not Marked</span></td>
+        {% endif %}
+    </tr>
+    {% empty %}
+    <tr><td colspan="7">No team members found.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

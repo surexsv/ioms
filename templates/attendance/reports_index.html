@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Reports — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Attendance Reports</h1>
+    <a href="{% url 'attendance_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+</div>
+<div class="ioms-kpi-grid">
+    <a href="{% url 'attendance_report_daily' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-calendar-day"></i></div><div class="label">Daily Attendance</div></div></a>
+    <a href="{% url 'attendance_report_monthly' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-calendar-month"></i></div><div class="label">Monthly Attendance</div></div></a>
+    <a href="{% url 'attendance_report_employee' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-person"></i></div><div class="label">Employee Report</div></div></a>
+    <a href="{% url 'attendance_report_department' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-building"></i></div><div class="label">Department Report</div></div></a>
+    <a href="{% url 'attendance_report_absent' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-person-x"></i></div><div class="label">Absent Report</div></div></a>
+    <a href="{% url 'attendance_report_late' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-clock-history"></i></div><div class="label">Late Arrival</div></div></a>
+    <a href="{% url 'attendance_report_leave' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-calendar-x"></i></div><div class="label">Leave Report</div></div></a>
+    <a href="{% url 'attendance_report_location' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-geo-alt"></i></div><div class="label">Location-wise</div></div></a>
+    <a href="{% url 'attendance_report_photo' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-camera"></i></div><div class="label">Photo Verification</div></div></a>
+</div>
+{% endblock %}

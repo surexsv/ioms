@@ -1,35 +1,53 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Check In — IOMS{% endblock %}
 {% block content %}
-<div class="card" style="max-width:480px;margin:0 auto;">
-    <h2>Check In</h2>
-    <p style="color:#666;">Your location will be captured when available.</p>
-    <form method="post" id="checkInForm">
+<div class="card attendance-capture-card">
+    <h2><i class="bi bi-box-arrow-in-right"></i> Check In</h2>
+    <p class="attendance-capture-hint">Photo and GPS location are <strong>mandatory</strong> for attendance verification.</p>
+
+    <form method="post" enctype="multipart/form-data" id="attendanceCheckInForm">
         {% csrf_token %}
-        <div class="form-group">
-            <label>Location / Site</label>
-            {{ form.location }}
+        <input type="hidden" name="latitude" id="id_latitude" value="{{ form.latitude.value|default:'' }}">
+        <input type="hidden" name="longitude" id="id_longitude" value="{{ form.longitude.value|default:'' }}">
+        <input type="hidden" name="location" id="id_location" value="">
+
+        <div class="attendance-capture-grid">
+            <div>
+                <h4>Photo Verification</h4>
+                <video id="attVideo" autoplay playsinline muted class="attendance-video"></video>
+                <canvas id="attCanvas" style="display:none;"></canvas>
+                <img id="attPreview" class="attendance-preview" alt="Captured photo" style="display:none;">
+                <p id="cameraStatus" class="attendance-status">Starting camera…</p>
+                <button type="button" id="capturePhotoBtn" class="btn btn-secondary btn-sm">Capture Photo</button>
+                <div class="form-group" style="margin-top:12px;">
+                    <label>Or upload from mobile camera</label>
+                    <input type="file" name="photo" id="id_photo" accept="image/*" capture="user" required>
+                </div>
+            </div>
+            <div>
+                <h4>GPS Location</h4>
+                <p id="gpsStatus" class="attendance-status">Acquiring GPS…</p>
+                <div class="form-group">
+                    <label>Remarks (optional)</label>
+                    {{ form.remarks }}
+                </div>
+                {% if form.errors %}
+                <ul class="messages">
+                    {% for field, errors in form.errors.items %}
+                    {% for error in errors %}<li class="error">{{ field }}: {{ error }}</li>{% endfor %}
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
         </div>
-        {{ form.latitude }}
-        {{ form.longitude }}
-        <button type="submit" class="btn btn-success" style="width:100%;">Confirm Check In</button>
-        <a href="{% url 'my_attendance' %}" class="btn btn-secondary" style="width:100%;margin-top:10px;text-align:center;">Cancel</a>
+
+        <button type="submit" class="btn btn-success attendance-submit-btn">Confirm Check In</button>
+        <a href="{% url 'my_attendance' %}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
 {% endblock %}
 {% block extra_js %}
-<script>
-if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(pos) {
-        var lat = document.getElementById('id_latitude');
-        var lng = document.getElementById('id_longitude');
-        if (lat) lat.value = pos.coords.latitude.toFixed(7);
-        if (lng) lng.value = pos.coords.longitude.toFixed(7);
-        var loc = document.getElementById('id_location');
-        if (loc && !loc.value) {
-            loc.value = pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5);
-        }
-    });
-}
-</script>
+<script src="{% static 'js/attendance-capture.js' %}?v={{ ioms_version_label }}"></script>
+<script>IOMSAttendance.init('attendanceCheckInForm');</script>
 {% endblock %}

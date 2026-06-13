@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}Open Item Report — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='reports' %}
+<div class="page-header"><h1>Open Item Report</h1></div>
+<table class="ioms-table"><thead><tr><th>Code</th><th>Title</th><th>Status</th><th>Owner</th><th>Recurring</th></tr></thead>
+<tbody>{% for i in items %}<tr><td>{{ i.item_code }}</td><td>{{ i.title }}</td><td>{{ i.get_status_display }}</td><td>{{ i.owner|default:"—" }}</td><td>{% if i.is_recurring %}Yes{% else %}No{% endif %}</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

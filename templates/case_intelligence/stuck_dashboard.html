@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block title %}Case Intelligence Dashboard — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Case Intelligence Dashboard</h1>
+        <p class="case-dashboard-subtitle">Monitor stuck cases, pending actions, and case health across the enquiry-to-payment lifecycle.</p>
+    </div>
+    <div class="case-dashboard-actions">
+        <a href="{% url 'case_search' %}" class="btn btn-primary"><i class="bi bi-search"></i> Universal Search</a>
+        <a href="{% url 'case_tracker' %}" class="btn btn-secondary"><i class="bi bi-diagram-3"></i> Case Tracker</a>
+        <a href="{% url 'case_reports' %}" class="btn btn-secondary"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a>
+    </div>
+</div>
+
+<h3 class="ioms-section-title">Case Overview</h3>
+<div class="ioms-kpi-grid case-intel-kpi-grid">
+    <a href="{% url 'case_stuck_dashboard' %}?category=pending_enquiries" class="ioms-kpi ioms-kpi-link">
+        <i class="bi bi-chat-left-text case-kpi-icon" aria-hidden="true"></i>
+        <div class="value">{{ counts.pending_enquiries }}</div>
+        <div class="label">Pending Enquiries</div>
+    </a>
+    <a href="{% url 'case_stuck_dashboard' %}?category=delayed_surveys" class="ioms-kpi ioms-kpi-link ioms-kpi-warn">
+        <i class="bi bi-geo-alt case-kpi-icon" aria-hidden="true"></i>
+        <div class="value text-warning">{{ counts.delayed_surveys }}</div>
+        <div class="label">Delayed Surveys</div>
+    </a>
+    <a href="{% url 'case_stuck_dashboard' %}?category=quotation_followup" class="ioms-kpi ioms-kpi-link ioms-kpi-warn">
+        <i class="bi bi-file-earmark-ruled case-kpi-icon" aria-hidden="true"></i>
+        <div class="value text-warning">{{ counts.quotation_followup }}</div>
+        <div class="label">Quotation Follow-up Pending</div>
+    </a>
+    <a href="{% url 'case_stuck_dashboard' %}?category=delayed_orders" class="ioms-kpi ioms-kpi-link ioms-kpi-warn">
+        <i class="bi bi-clipboard-check case-kpi-icon" aria-hidden="true"></i>
+        <div class="value text-warning">{{ counts.delayed_orders }}</div>
+        <div class="label">Delayed Orders</div>
+    </a>
+    <a href="{% url 'case_stuck_dashboard' %}?category=pending_wcr" class="ioms-kpi ioms-kpi-link ioms-kpi-warn">
+        <i class="bi bi-file-earmark-text case-kpi-icon" aria-hidden="true"></i>
+        <div class="value text-warning">{{ counts.pending_wcr }}</div>
+        <div class="label">Pending WCR</div>
+    </a>
+    <a href="{% url 'case_stuck_dashboard' %}?category=invoice_approval" class="ioms-kpi ioms-kpi-link ioms-kpi-warn">
+        <i class="bi bi-receipt case-kpi-icon" aria-hidden="true"></i>
+        <div class="value text-warning">{{ counts.pending_invoice_approval }}</div>
+        <div class="label">Invoice Approval Pending</div>
+    </a>
+    <a href="{% url 'case_stuck_dashboard' %}?category=pending_payments" class="ioms-kpi ioms-kpi-link ioms-kpi-danger">
+        <i class="bi bi-currency-rupee case-kpi-icon" aria-hidden="true"></i>
+        <div class="value text-danger">{{ counts.pending_payments }}</div>
+        <div class="label">Pending Payments</div>
+    </a>
+    <a href="{% url 'case_stuck_dashboard' %}?category=stuck_total" class="ioms-kpi ioms-kpi-link ioms-kpi-danger">
+        <i class="bi bi-exclamation-triangle case-kpi-icon" aria-hidden="true"></i>
+        <div class="value text-danger">{{ counts.stuck_total }}</div>
+        <div class="label">Total Stuck Cases</div>
+    </a>
+</div>
+
+{% if category %}
+<h3 class="ioms-section-title">{{ category_title }}</h3>
+<div class="card case-stuck-list-card">
+    {% if case_list %}
+    <div class="ioms-table-wrap">
+        <table class="ioms-table case-stuck-list">
+            <thead>
+                <tr>
+                    <th>Document</th>
+                    <th>Client</th>
+                    <th>Assigned</th>
+                    <th>Status</th>
+                    <th>Days Pending</th>
+                    <th>Last Activity</th>
+                    <th>Next Action</th>
+                    <th>Health</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in case_list %}
+                <tr>
+                    <td>
+                        <strong>{{ row.document_number }}</strong>
+                        <div class="case-doc-type">{{ row.document_type }}</div>
+                    </td>
+                    <td>{{ row.client }}</td>
+                    <td>{{ row.assigned_to }}</td>
+                    <td>{{ row.status }}</td>
+                    <td><strong>{{ row.days_pending|default:"—" }}</strong></td>
+                    <td>
+                        {% if row.last_activity_at %}{{ row.last_activity_at|date:"d-M-Y" }}{% else %}—{% endif %}
+                        <div class="case-doc-type">{{ row.last_activity_label }}</div>
+                    </td>
+                    <td>{{ row.next_action }}</td>
+                    <td><span class="case-health-pill case-health-{{ row.health|lower }}">{{ row.health_label }}</span></td>
+                    <td class="case-row-actions">
+                        {% if row.url_pk %}
+                        <a href="{% url row.url_name row.url_pk %}" class="btn btn-secondary btn-sm">Open</a>
+                        {% endif %}
+                        <a href="{% url 'case_tracker' %}?doc={{ row.document_number }}" class="btn btn-secondary btn-sm">Track</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="case-empty-msg">No cases found in this category.</p>
+    {% endif %}
+</div>
+{% else %}
+<div class="card case-hint-card">
+    <p><i class="bi bi-info-circle"></i> Click any card above to view the detailed case list with assigned person, pending days, and next required action.</p>
+</div>
+{% endif %}
+{% endblock %}

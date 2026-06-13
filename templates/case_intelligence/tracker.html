@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Case Tracker — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Case Tracker</h1>
+    <a href="{% url 'case_search' %}" class="btn btn-secondary">Universal Search</a>
+</div>
+<form method="get" class="card" style="padding:16px;">
+    <label for="doc">Document Number</label>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+        <input type="search" name="doc" id="doc" value="{{ document_number }}" class="form-control" placeholder="ITSPLENQ26270015" style="flex:1;" autofocus>
+        <button type="submit" class="btn btn-primary">Track</button>
+    </div>
+</form>
+{% if tracker %}
+<div class="case-health-bar case-health-{{ tracker.health|lower }}">
+    <span class="case-health-dot"></span>
+    <strong>{{ tracker.health_label }}</strong>
+    {% if tracker.stuck_flag %}<span class="case-stuck-flag">{{ tracker.stuck_flag }}</span>{% endif %}
+</div>
+<div class="card">
+    <h3 style="margin-top:0;">{{ tracker.document_type }} — {{ tracker.document_number }}</h3>
+    <div class="case-summary-grid">
+        <div><label>Current Stage</label><p>{{ tracker.summary.current_stage }}</p></div>
+        <div><label>Status</label><p>{{ tracker.summary.current_status }}</p></div>
+        <div><label>Owner / Assigned</label><p>{{ tracker.summary.assigned_person|default:"—" }}</p></div>
+        <div><label>Pending Action</label><p>{{ tracker.summary.pending_action|default:"—" }}</p></div>
+        <div><label>Next Responsible</label><p>{{ tracker.summary.next_action|default:"—" }}</p></div>
+        <div><label>Last Updated</label><p>{% if tracker.summary.last_updated %}{{ tracker.summary.last_updated|date:"d-M-Y H:i" }}{% else %}—{% endif %}</p></div>
+        <div><label>Case Age</label><p>{% if tracker.summary.case_age_days is not None %}{{ tracker.summary.case_age_days }} Days{% else %}—{% endif %}</p></div>
+        <div><label>Days Since Activity</label><p>{% if tracker.summary.days_since_last_activity is not None %}{{ tracker.summary.days_since_last_activity }} Days{% else %}—{% endif %}</p></div>
+    </div>
+</div>
+{% include 'case_intelligence/_timeline.html' with case_timeline=tracker.timeline %}
+{% endif %}
+{% endblock %}

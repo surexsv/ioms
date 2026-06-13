@@ -1,30 +1,55 @@
 {% extends 'base.html' %}
-{% block title %}Supervisor Dashboard — Infomates Operations Management System{% endblock %}
+{% block title %}Team Management Dashboard — Infomates Operations Management System{% endblock %}
 {% block content %}
 <div class="ioms-page-header">
     <div>
-        <h1>Supervisor Dashboard</h1>
-        <p style="margin:6px 0 0;color:var(--ioms-text-muted);">Team overview &amp; WCR approvals</p>
+        <h1>Project Supervisor — Team Management</h1>
+        <p style="margin:6px 0 0;color:var(--ioms-text-muted);">Monitor team workload, schedules, WCR, and attendance</p>
+    </div>
+    <a href="{% url 'site_progress_create' %}" class="btn btn-sm btn-primary">+ Daily Site Update</a>
+</div>
+
+{% include 'attendance/_dashboard_widget.html' %}
+
+<div class="ioms-kpi-grid">
+    <div class="ioms-kpi"><div class="value">{{ active_team_count }}</div><div class="label">Active Team Members</div></div>
+    <div class="ioms-kpi"><div class="value">{{ assigned_projects }}</div><div class="label">Assigned Projects</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ open_schedules }}</div><div class="label">Open Schedules</div></div>
+    <div class="ioms-kpi"><div class="value text-success">{{ completed_schedules }}</div><div class="label">Completed Schedules</div></div>
+    <div class="ioms-kpi"><div class="value text-primary">{{ wcr_pending_count }}</div><div class="label">Pending WCR</div></div>
+    <div class="ioms-kpi"><div class="value">{{ team_attendance_pct }}%</div><div class="label">Team Attendance Today</div></div>
+</div>
+
+<div class="ioms-charts-row" style="margin-bottom:20px;">
+    <div class="ioms-chart-card">
+        <h3>Team Productivity (Assigned / In Progress / Completed)</h3>
+        <div class="ioms-chart-wrap"><canvas id="teamProdChart"></canvas></div>
+    </div>
+    <div class="ioms-chart-card">
+        <h3>Schedule Completion Rate</h3>
+        <div class="ioms-chart-wrap"><canvas id="completionChart"></canvas></div>
     </div>
 </div>
 
-<p class="ioms-action-row">
-    <a href="{% url 'site_progress_create' %}" class="btn btn-sm btn-primary">+ Daily Site Update</a>
-</p>
-<div class="ioms-kpi-grid">
-    <div class="ioms-kpi"><div class="value">{{ total_team_orders }}</div><div class="label">Assigned Sites</div></div>
-    <div class="ioms-kpi"><div class="value text-warning">{{ pending_work_count }}</div><div class="label">Pending Work</div></div>
-    <div class="ioms-kpi"><div class="value">{{ attendance_today_count }}</div><div class="label">Attendance Today</div></div>
-    <div class="ioms-kpi"><div class="value text-warning">{{ in_progress_count }}</div><div class="label">In Progress</div></div>
-    <div class="ioms-kpi"><div class="value text-primary">{{ wcr_pending_count }}</div><div class="label">WCR Pending</div></div>
-    <div class="ioms-kpi"><div class="value text-danger">{{ overdue_count }}</div><div class="label">Overdue</div></div>
-</div>
-{% if recent_site_updates %}
+{% if today_assignments %}
 <div class="card">
-    <h3>Recent Site Updates</h3>
-    <ul>{% for u in recent_site_updates %}
-    <li>{{ u.update_date }} — {{ u.work_description|truncatewords:12 }} ({{ u.progress_percent }}%)</li>
-    {% endfor %}</ul>
+    <h3>Today's Team Assignments</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Schedule</th><th>Reference</th><th>Client</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+                {% for schedule in today_assignments %}
+                <tr>
+                    <td>{{ schedule.schedule_number }}</td>
+                    <td>{{ schedule.reference_number }}</td>
+                    <td>{% if schedule.order %}{{ schedule.order.client.name }}{% elif schedule.enquiry %}{{ schedule.enquiry.client.name }}{% endif %}</td>
+                    <td>{{ schedule.get_status_display }}</td>
+                    <td><a href="{% url 'schedule_edit' schedule.pk %}" class="btn btn-sm btn-primary">Open</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endif %}
 
@@ -37,8 +62,8 @@
             <tbody>
                 {% for wcr in pending_wcrs %}
                 <tr>
-                    <td>#{{ wcr.order.order_id }}</td>
-                    <td>{{ wcr.order.client.name }}</td>
+                    <td>{% if wcr.order %}#{{ wcr.order.order_id }}{% else %}Survey{% endif %}</td>
+                    <td>{% if wcr.order %}{{ wcr.order.client.name }}{% elif wcr.enquiry %}{{ wcr.enquiry.client.name }}{% endif %}</td>
                     <td>{{ wcr.submitted_by|default:"—" }}</td>
                     <td>{{ wcr.submitted_date|date:"d M Y" }}</td>
                     <td><a href="{% url 'approve_wcr' wcr.pk %}" class="btn btn-sm btn-success">Approve</a></td>
@@ -54,41 +79,97 @@
     <h3>Field Team Workload</h3>
     <div class="ioms-table-wrap">
         <table class="ioms-table">
-            <thead><tr><th>Engineer</th><th>Assigned</th><th>In Progress</th></tr></thead>
+            <thead><tr><th>Team Member</th><th>Assigned</th><th>In Progress</th><th>Completed</th></tr></thead>
             <tbody>
                 {% for e in team_stats %}
                 <tr>
                     <td>{{ e.name }}</td>
                     <td>{{ e.assigned }}</td>
                     <td>{{ e.in_progress }}</td>
+                    <td>{{ e.completed }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="3">No field staff registered.</td></tr>
+                <tr><td colspan="4">No field staff registered.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
 
+{% if pending_activities %}
 <div class="card">
-    <h3>Recent Team Schedules</h3>
+    <h3>Pending Activities</h3>
     <div class="ioms-table-wrap">
         <table class="ioms-table">
-            <thead><tr><th>Schedule</th><th>Order</th><th>Client</th><th>Engineer(s)</th><th>Status</th><th>End Date</th><th></th></tr></thead>
+            <thead><tr><th>Schedule</th><th>Reference</th><th>End Date</th><th>Status</th><th></th></tr></thead>
             <tbody>
-                {% for schedule in recent_orders %}
+                {% for schedule in pending_activities %}
                 <tr>
                     <td>{{ schedule.schedule_number }}</td>
-                    <td>{{ schedule.order.order_no|default:schedule.order.order_id }}</td>
-                    <td>{{ schedule.order.client.name }}</td>
-                    <td>{{ schedule.engineer_names }}</td>
-                    <td>{{ schedule.get_status_display }}</td>
+                    <td>{{ schedule.reference_number }}</td>
                     <td>{{ schedule.scheduled_end_date }}</td>
-                    <td><a href="{% url 'order_detail' schedule.order.pk %}" class="btn btn-sm btn-primary">View</a></td>
+                    <td>{{ schedule.get_status_display }}</td>
+                    <td><a href="{% url 'schedule_edit' schedule.pk %}" class="btn btn-sm btn-primary">View</a></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+{% endif %}
+
+<div class="card">
+    <h3>Recent Team Schedules</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Schedule</th><th>Reference</th><th>Client</th><th>Status</th><th>End Date</th><th></th></tr></thead>
+            <tbody>
+                {% for schedule in recent_orders %}
+                <tr>
+                    <td>{{ schedule.schedule_number }}</td>
+                    <td>{{ schedule.reference_number }}</td>
+                    <td>{% if schedule.order %}{{ schedule.order.client.name }}{% elif schedule.enquiry %}{{ schedule.enquiry.client.name }}{% endif %}</td>
+                    <td>{{ schedule.get_status_display }}</td>
+                    <td>{{ schedule.scheduled_end_date }}</td>
+                    <td><a href="{% url 'schedule_edit' schedule.pk %}" class="btn btn-sm btn-primary">Open</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const teamLabels = [{% for e in team_stats %}'{{ e.name }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+const teamAssigned = [{% for e in team_stats %}{{ e.assigned }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const teamProgress = [{% for e in team_stats %}{{ e.in_progress }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const teamCompleted = [{% for e in team_stats %}{{ e.completed }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+new Chart(document.getElementById('teamProdChart'), {
+    type: 'bar',
+    data: {
+        labels: teamLabels,
+        datasets: [
+            { label: 'Assigned', data: teamAssigned, backgroundColor: '#6c757d' },
+            { label: 'In Progress', data: teamProgress, backgroundColor: '#fd7e14' },
+            { label: 'Completed', data: teamCompleted, backgroundColor: '#198754' },
+        ],
+    },
+    options: { responsive: true, maintainAspectRatio: false },
+});
+new Chart(document.getElementById('completionChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Completed', 'Open'],
+        datasets: [{
+            data: [{{ completed_schedules }}, {{ open_schedules }}],
+            backgroundColor: ['#198754', '#ffc107'],
+        }],
+    },
+    options: { responsive: true, maintainAspectRatio: false },
+});
+</script>
 {% endblock %}

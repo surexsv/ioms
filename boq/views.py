@@ -41,6 +41,8 @@ def create_boq(request):
                 related_model='BOQ',
                 related_object_id=boq.pk,
             )
+            from case_intelligence.integrations import boq_created
+            boq_created(request.user, boq)
             messages.success(request, f'BOQ {boq.boq_number} created.')
             return redirect('boq_detail', pk=boq.pk)
         messages.error(request, 'Could not save BOQ. Please correct the line item errors below.')

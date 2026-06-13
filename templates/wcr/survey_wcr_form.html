@@ -4,7 +4,13 @@
 {% block content %}
 <div class="page-header">
     <h1>Submit Survey WCR</h1>
-    <a href="{% url 'enquiry_detail' enquiry.pk %}" class="btn btn-secondary">Back</a>
+    {% if back_nav %}
+        {% if back_nav.pk %}
+        <a href="{% url back_nav.url_name back_nav.pk %}" class="btn btn-secondary">{{ back_nav.label }}</a>
+        {% else %}
+        <a href="{% url back_nav.url_name %}" class="btn btn-secondary">{{ back_nav.label }}</a>
+        {% endif %}
+    {% endif %}
 </div>
 <div class="card" style="max-width:900px;">
     <p><strong>Enquiry:</strong> {{ enquiry.enquiry_number }} — {{ enquiry.client.name }}</p>

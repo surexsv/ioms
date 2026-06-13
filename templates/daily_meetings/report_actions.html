@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}Action Item Report — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='reports' %}
+<div class="page-header"><h1>Action Item Report</h1></div>
+<table class="ioms-table"><thead><tr><th>#</th><th>Description</th><th>Assigned</th><th>Target</th><th>Status</th></tr></thead>
+<tbody>{% for a in actions %}<tr><td>{{ a.action_number }}</td><td>{{ a.description|truncatechars:60 }}</td><td>{{ a.assigned_to|default:"—" }}</td><td>{{ a.target_date|default:"—" }}</td><td>{{ a.get_status_display }}</td></tr>{% empty %}<tr><td colspan="5">No actions.</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

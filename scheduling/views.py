@@ -1,9 +1,11 @@
 from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from accounts.decorators import module_required
-from accounts.permissions import MODULE_SCHEDULING, MODULE_ORDERS
+from accounts.navigation import redirect_target_after_schedule, schedule_back_navigation
+from accounts.permissions import MODULE_ORDERS
 
 from orders.models import Order
 from orders.views import _can_access_order
@@ -12,25 +14,22 @@ from productivity.activity_logger import log_activity
 from productivity.constants import ACT_SCHEDULE_CREATED
 
 from scheduling.constants import REF_ORDER
-from scheduling.engine import category_from_order
-from .forms import WorkScheduleForm
+from scheduling.engine import category_from_order, survey_reference_context
+from .forms import FieldScheduleUpdateForm, WorkScheduleForm
 from .models import WorkSchedule
-from .permissions import can_manage_scheduling, can_view_schedule
+from .permissions import can_field_update_schedule, can_manage_scheduling, can_view_schedule
 
 
-def _redirect_after_schedule(schedule):
-    from scheduling.engine import resolve_detail_url
-    from django.shortcuts import redirect
-    from django.urls import reverse
-    target = resolve_detail_url(schedule)
-    if target:
+def _redirect_after_schedule(request, schedule):
+    target = redirect_target_after_schedule(request.user, schedule)
+    if len(target) == 2:
         return redirect(reverse(target[0], args=[target[1]]))
-    return redirect('schedule_list')
+    return redirect(target[0])
 
 
-@module_required(MODULE_SCHEDULING)
+@module_required('scheduling')
 def schedule_list(request):
-    from scheduling.engine import resolve_client_name, resolve_reference_display, schedules_for_user
+    from scheduling.engine import schedules_for_user
     qs = schedules_for_user(request.user).order_by('-scheduled_start_date')
     category = request.GET.get('category')
     if category:
@@ -41,15 +40,15 @@ def schedule_list(request):
     })
 
 
-@module_required(MODULE_SCHEDULING)
+@module_required('scheduling')
 def schedule_calendar(request):
     from scheduling.engine import schedules_for_user
     from collections import defaultdict
+    import json
     qs = schedules_for_user(request.user).order_by('scheduled_start_date')
     by_date = defaultdict(list)
     for s in qs:
         by_date[s.scheduled_start_date.isoformat()].append(s)
-    import json
     return render(request, 'scheduling/schedule_calendar.html', {
         'schedules': qs[:100],
         'by_date_json': json.dumps({k: len(v) for k, v in by_date.items()}),
@@ -94,6 +93,8 @@ def schedule_create(request, order_pk):
                 related_model='WorkSchedule',
                 related_object_id=schedule.pk,
             )
+            from case_intelligence.integrations import schedule_created
+            schedule_created(request.user, schedule)
             messages.success(request, f'Schedule {schedule.schedule_number} created.')
             return redirect('order_detail', pk=order.pk)
     else:
@@ -106,13 +107,16 @@ def schedule_create(request, order_pk):
         'form': form,
         'order': order,
         'title': 'Create Schedule',
+        'back_nav': schedule_back_navigation(request.user, None),
     })
 
 
-@module_required(MODULE_SCHEDULING)
+@module_required('scheduling')
 def schedule_edit(request, pk):
     schedule = get_object_or_404(
-        WorkSchedule.objects.select_related('order', 'order__client', 'enquiry', 'enquiry__client').prefetch_related(
+        WorkSchedule.objects.select_related(
+            'order', 'order__client', 'enquiry', 'enquiry__client',
+        ).prefetch_related(
             'assigned_engineers', 'supporting_engineers', 'technicians',
         ),
         pk=pk,
@@ -123,13 +127,22 @@ def schedule_edit(request, pk):
         return access_denied_response(request, reason=REASON_UNAUTHORIZED)
 
     can_edit = can_manage_scheduling(request.user)
+    can_field_edit = can_field_update_schedule(request.user, schedule)
+    back_nav = schedule_back_navigation(request.user, schedule)
+    survey_ref = survey_reference_context(schedule)
 
     if request.method == 'POST':
-        if not can_edit:
+        if can_edit:
+            form = WorkScheduleForm(request.POST, instance=schedule)
+            form_class = WorkScheduleForm
+        elif can_field_edit:
+            form = FieldScheduleUpdateForm(request.POST, instance=schedule)
+            form_class = FieldScheduleUpdateForm
+        else:
             from accounts.decorators import access_denied_response
             from accounts.access_control import REASON_ROLE
             return access_denied_response(request, reason=REASON_ROLE)
-        form = WorkScheduleForm(request.POST, instance=schedule)
+
         if form.is_valid():
             old_status = schedule.status
             form.save()
@@ -138,10 +151,14 @@ def schedule_edit(request, pk):
                 from productivity.gps_service import record_schedule_status_gps
                 record_schedule_status_gps(request.user, schedule, old_status, schedule.status, request)
             messages.success(request, 'Schedule updated.')
-            return _redirect_after_schedule(schedule)
+            return _redirect_after_schedule(request, schedule)
     else:
-        form = WorkScheduleForm(instance=schedule)
-        if not can_edit:
+        if can_edit:
+            form = WorkScheduleForm(instance=schedule)
+        elif can_field_edit:
+            form = FieldScheduleUpdateForm(instance=schedule)
+        else:
+            form = WorkScheduleForm(instance=schedule)
             for field in form.fields.values():
                 field.disabled = True
 
@@ -152,4 +169,7 @@ def schedule_edit(request, pk):
         'schedule': schedule,
         'title': f'Edit Schedule {schedule.schedule_number}',
         'can_edit': can_edit,
+        'can_field_edit': can_field_edit,
+        'back_nav': back_nav,
+        'survey_ref': survey_ref,
     })

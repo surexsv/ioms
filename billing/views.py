@@ -163,6 +163,19 @@ def invoice_detail(request, pk):
         start_review(invoice, request.user)
 
     is_locked = invoice.approval_status in LOCKED_STATUSES
+    from case_intelligence.constants import MOD_INVOICE
+    from case_intelligence.services import panel_context
+    case_ctx = panel_context(
+        invoice,
+        module=MOD_INVOICE,
+        document_number=invoice.invoice_number,
+        status=invoice.get_approval_status_display(),
+        stage=invoice.payment_status,
+        pending_action='Approval' if invoice.approval_status == 'SUBMITTED' else (
+            'Payment' if invoice.payment_status == 'PENDING' else '—'
+        ),
+        next_action='Accounts action',
+    )
     return render(request, 'billing/invoice_detail.html', {
         'invoice': invoice,
         'audit_logs': invoice.approval_audit_logs.select_related('performed_by'),
@@ -175,6 +188,7 @@ def invoice_detail(request, pk):
         'can_pdf': can_download_invoice_pdf(request.user, invoice)[0],
         'approve_form': InvoiceApproveForm(),
         'reject_form': InvoiceRejectForm(),
+        **case_ctx,
     })
 
 
@@ -197,6 +211,8 @@ def create_invoice(request):
                 related_model='Invoice',
                 related_object_id=invoice.pk,
             )
+            from case_intelligence.integrations import invoice_generated
+            invoice_generated(request.user, invoice)
             messages.success(
                 request,
                 f'Draft invoice {invoice.invoice_number} created. Submit for approval when ready.',
@@ -313,6 +329,19 @@ def submit_invoice_view(request, pk):
         related_model='Invoice',
         related_object_id=invoice.pk,
     )
+    from case_intelligence.logger import log_case_event
+    from case_intelligence.constants import MOD_INVOICE
+    log_case_event(
+        request.user,
+        module=MOD_INVOICE,
+        document_type='Invoice',
+        document_number=invoice.invoice_number,
+        description='Invoice Submitted For Approval',
+        previous_status='DRAFT',
+        new_status=invoice.approval_status,
+        client=invoice.order.client,
+        content_object=invoice,
+    )
     messages.success(request, f'Invoice {invoice.invoice_number} submitted for approval.')
     return redirect('invoice_detail', pk=pk)
 
@@ -335,6 +364,8 @@ def approve_invoice_view(request, pk):
             related_model='Invoice',
             related_object_id=invoice.pk,
         )
+        from case_intelligence.integrations import invoice_approved
+        invoice_approved(request.user, invoice)
         messages.success(request, f'Invoice {invoice.invoice_number} approved. PDF is now available.')
     else:
         messages.error(request, 'Could not approve invoice. Please try again.')
@@ -424,6 +455,8 @@ def mark_paid(request, pk):
     if request.method == 'POST':
         invoice.payment_status = 'RECEIVED'
         invoice.save()
+        from case_intelligence.integrations import payment_received
+        payment_received(request.user, invoice)
         messages.success(request, f'Payment recorded for {invoice.invoice_number}.')
         return redirect('invoice_list')
     return render(request, 'billing/mark_paid.html', {'invoice': invoice})

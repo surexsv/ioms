@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Meeting Attendance Report — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='reports' %}
+<div class="page-header"><h1>Attendance Report — {{ date|date:"d M Y" }}</h1></div>
+<form method="get"><input type="date" name="date" value="{{ date|date:'Y-m-d' }}"><button type="submit" class="btn btn-primary btn-sm">Go</button></form>
+{% if meeting %}
+<p>Meeting: {{ meeting.meeting_number }} — Present {{ att_stats.present_pct }}%, Late {{ att_stats.late_pct }}%</p>
+<table class="ioms-table"><thead><tr><th>Employee</th><th>Status</th><th>Join</th></tr></thead>
+<tbody>{% for a in attendees %}<tr><td>{{ a.employee }}</td><td>{{ a.get_status_display }}</td><td>{{ a.join_time|default:"—" }}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p>No meeting on this date.</p>{% endif %}
+{% endblock %}

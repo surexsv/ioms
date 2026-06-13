@@ -26,6 +26,17 @@ def create_client(request):
 
 
 @module_required(MODULE_CLIENTS)
+def client_detail(request, pk):
+    client = get_object_or_404(Client, pk=pk)
+    from case_intelligence.services import client_case_history
+    history = client_case_history(client)
+    return render(request, 'clients/client_detail.html', {
+        'client': client,
+        'history': history,
+    })
+
+
+@module_required(MODULE_CLIENTS)
 def edit_client(request, pk):
     client = get_object_or_404(Client, pk=pk)
     if request.method == 'POST':

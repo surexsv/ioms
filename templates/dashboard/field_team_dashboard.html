@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% block title %}Field Team Dashboard — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="ioms-page-header">
+    <div>
+        <h1>Field Team Dashboard</h1>
+        <p style="margin:6px 0 0;color:var(--ioms-text-muted);">Welcome, {{ user.get_full_name|default:user.username }}</p>
+    </div>
+    <div>
+        <a href="{% url 'schedule_list' %}" class="btn btn-sm btn-secondary">My Schedules</a>
+        <a href="{% url 'wcr_list' %}" class="btn btn-sm btn-secondary">My WCR</a>
+    </div>
+</div>
+
+<div class="ioms-kpi-grid">
+    <div class="ioms-kpi"><div class="value">{{ total_assigned }}</div><div class="label">Assigned Tasks</div></div>
+    <div class="ioms-kpi"><div class="value text-success">{{ completed_count }}</div><div class="label">Completed Jobs</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ pending_count }}</div><div class="label">Pending Activities</div></div>
+    <div class="ioms-kpi"><div class="value">{{ my_productivity.hours_worked|default:0 }}</div><div class="label">Hours Worked</div></div>
+    <div class="ioms-kpi"><div class="value">{{ my_productivity.man_days|default:0 }}</div><div class="label">Man-Days</div></div>
+    <div class="ioms-kpi"><div class="value text-primary">{% if my_productivity.attendance_pct %}{{ my_productivity.attendance_pct }}%{% else %}—{% endif %}</div><div class="label">Attendance %</div></div>
+</div>
+
+<div class="ioms-charts-row" style="margin-bottom:20px;">
+    <div class="ioms-chart-card">
+        <h3>My Productivity Trend</h3>
+        <div class="ioms-chart-wrap"><canvas id="myProdTrendChart"></canvas></div>
+    </div>
+    <div class="ioms-chart-card">
+        <h3>Job Completion Trend</h3>
+        <div class="ioms-chart-wrap"><canvas id="myCompletionChart"></canvas></div>
+    </div>
+</div>
+
+{% if today_assignments %}
+<div class="card">
+    <h3>Today's Assignments</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Schedule</th><th>Reference</th><th>Client</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+                {% for schedule in today_assignments %}
+                <tr>
+                    <td>{{ schedule.schedule_number }}</td>
+                    <td>{{ schedule.reference_number }}</td>
+                    <td>{% if schedule.order %}{{ schedule.order.client.name }}{% elif schedule.enquiry %}{{ schedule.enquiry.client.name }}{% endif %}</td>
+                    <td>{{ schedule.get_status_display }}</td>
+                    <td><a href="{% url 'schedule_edit' schedule.pk %}" class="btn btn-sm btn-primary">Open</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if survey_schedules %}
+<div class="card">
+    <h3>Assigned Survey Jobs</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Schedule</th><th>Enquiry</th><th>Client</th><th>Date</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+                {% for schedule in survey_schedules %}
+                <tr>
+                    <td>{{ schedule.schedule_number }}</td>
+                    <td>{{ schedule.reference_number }}</td>
+                    <td>{{ schedule.enquiry.client.name }}</td>
+                    <td>{{ schedule.scheduled_start_date }}</td>
+                    <td>{{ schedule.get_status_display }}</td>
+                    <td>
+                        <a href="{% url 'schedule_edit' schedule.pk %}" class="btn btn-sm btn-primary">Open Schedule</a>
+                        <a href="{% url 'create_survey_wcr' schedule.pk %}" class="btn btn-sm btn-success">Survey WCR</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if attendance_required %}
+{% include 'attendance/_dashboard_widget.html' %}
+{% endif %}
+
+{% if needs_wcr %}
+<div class="card">
+    <h3>My WCR — Submit Required</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Order</th><th>Client</th><th>Target</th><th></th></tr></thead>
+            <tbody>
+                {% for order in needs_wcr %}
+                <tr>
+                    <td>{{ order.order_no|default:order.order_id }}</td>
+                    <td>{{ order.client.name }}</td>
+                    <td>{{ order.expected_completion_date|default:"—" }}</td>
+                    <td>
+                        <a href="{% url 'create_wcr' %}" class="btn btn-sm btn-success">Submit WCR</a>
+                        <a href="{% url 'order_detail' order.pk %}" class="btn btn-sm btn-primary">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3>My Assigned Tasks</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Schedule</th><th>Reference</th><th>Client</th><th>Status</th><th>End Date</th><th></th></tr></thead>
+            <tbody>
+                {% for schedule in active_orders %}
+                <tr>
+                    <td>{{ schedule.schedule_number }}</td>
+                    <td>{% if schedule.order %}{{ schedule.order.order_no|default:schedule.order.order_id }}{% else %}{{ schedule.reference_number }}{% endif %}</td>
+                    <td>{% if schedule.order %}{{ schedule.order.client.name }}{% elif schedule.enquiry %}{{ schedule.enquiry.client.name }}{% endif %}</td>
+                    <td><span class="badge badge-progress">{{ schedule.get_status_display }}</span></td>
+                    <td>{{ schedule.scheduled_end_date }}</td>
+                    <td>
+                        <a href="{% url 'schedule_edit' schedule.pk %}" class="btn btn-sm btn-primary">Open</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="empty-state">No active tasks.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if upcoming_tasks %}
+<div class="card">
+    <h3>Upcoming Tasks</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Schedule</th><th>Reference</th><th>Start Date</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+                {% for schedule in upcoming_tasks %}
+                <tr>
+                    <td>{{ schedule.schedule_number }}</td>
+                    <td>{{ schedule.reference_number }}</td>
+                    <td>{{ schedule.scheduled_start_date }}</td>
+                    <td>{{ schedule.get_status_display }}</td>
+                    <td><a href="{% url 'schedule_edit' schedule.pk %}" class="btn btn-sm btn-primary">Open</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if completed_recent %}
+<div class="card">
+    <h3>Recently Completed</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Schedule</th><th>Reference</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+                {% for schedule in completed_recent %}
+                <tr>
+                    <td>{{ schedule.schedule_number }}</td>
+                    <td>{{ schedule.reference_number }}</td>
+                    <td>{{ schedule.get_status_display }}</td>
+                    <td><a href="{% url 'schedule_edit' schedule.pk %}" class="btn btn-sm btn-secondary">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if overdue_orders %}
+<div class="card">
+    <h3 style="color:var(--ioms-danger);">Overdue Tasks</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Schedule</th><th>Reference</th><th>Client</th><th>End Date</th><th></th></tr></thead>
+            <tbody>
+                {% for schedule in overdue_orders %}
+                <tr>
+                    <td>{{ schedule.schedule_number }}</td>
+                    <td>{% if schedule.order %}{{ schedule.order.order_no|default:schedule.order.order_id }}{% else %}{{ schedule.reference_number }}{% endif %}</td>
+                    <td>{% if schedule.order %}{{ schedule.order.client.name }}{% elif schedule.enquiry %}{{ schedule.enquiry.client.name }}{% endif %}</td>
+                    <td>{{ schedule.scheduled_end_date }}</td>
+                    <td><a href="{% url 'schedule_edit' schedule.pk %}" class="btn btn-sm btn-warning">Update</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const trendLabels = [{% for p in personal_trend %}'{{ p.month }}/{{ p.year }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+const trendManDays = [{% for p in personal_trend %}{{ p.man_days|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const trendHours = [{% for p in personal_trend %}{{ p.hours|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const trendJobs = [{% for p in personal_trend %}{{ p.jobs|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const trendCompleted = [{% for p in personal_trend %}{{ p.completed|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+new Chart(document.getElementById('myProdTrendChart'), {
+    type: 'line',
+    data: {
+        labels: trendLabels,
+        datasets: [
+            { label: 'Man-Days', data: trendManDays, borderColor: '#0d6efd', fill: false },
+            { label: 'Hours', data: trendHours, borderColor: '#198754', fill: false },
+        ],
+    },
+    options: { responsive: true, maintainAspectRatio: false },
+});
+new Chart(document.getElementById('myCompletionChart'), {
+    type: 'bar',
+    data: {
+        labels: trendLabels,
+        datasets: [
+            { label: 'Jobs Attended', data: trendJobs, backgroundColor: '#6c757d' },
+            { label: 'Completed', data: trendCompleted, backgroundColor: '#198754' },
+        ],
+    },
+    options: { responsive: true, maintainAspectRatio: false },
+});
+</script>
+{% endblock %}

@@ -4,6 +4,11 @@
 {% block content %}
 {% if dashboard_title %}<h2 class="ioms-section-title">{{ dashboard_title }}</h2>{% endif %}
 
+{% include 'attendance/_dashboard_widget.html' %}
+
+{% include 'case_intelligence/_case_monitoring.html' %}
+{% include 'daily_meetings/_dom_monitoring.html' %}
+
 <div class="ioms-kpi-grid">
     {% if show_nav_clients %}<div class="ioms-kpi"><div class="value">{{ total_clients }}</div><div class="label">Clients</div></div>{% endif %}
     {% if show_operations %}

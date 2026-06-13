@@ -1,0 +1,23 @@
+{% if case_summary %}
+<div class="case-health-bar case-health-{{ case_health|lower }}">
+    <span class="case-health-dot"></span>
+    <strong>{{ case_health_label|default:"On Track" }}</strong>
+    {% if case_stuck_flag %}<span class="case-stuck-flag">{{ case_stuck_flag }}</span>{% endif %}
+</div>
+<div class="card case-summary-card">
+    <h3 style="margin-top:0;">Case Summary</h3>
+    <div class="case-summary-grid">
+        <div><label>Current Status</label><p>{{ case_summary.current_status }}</p></div>
+        <div><label>Current Stage</label><p>{{ case_summary.current_stage }}</p></div>
+        <div><label>Assigned Person</label><p>{{ case_summary.assigned_person|default:"—" }}</p></div>
+        <div><label>Last Updated</label><p>{% if case_summary.last_updated %}{{ case_summary.last_updated|date:"d-M-Y H:i" }}{% else %}—{% endif %}</p></div>
+        <div><label>Pending Action</label><p>{{ case_summary.pending_action|default:"—" }}</p></div>
+        <div><label>Next Action Required</label><p>{{ case_summary.next_action|default:"—" }}</p></div>
+        <div><label>Case Age</label><p>{% if case_summary.case_age_days is not None %}{{ case_summary.case_age_days }} Days{% else %}—{% endif %}</p></div>
+        <div><label>Days Since Last Activity</label><p>{% if case_summary.days_since_last_activity is not None %}{{ case_summary.days_since_last_activity }} Days{% else %}—{% endif %}</p></div>
+    </div>
+    {% if show_case_tracker_link %}
+    <p style="margin:12px 0 0;"><a href="{% url 'case_tracker' %}?doc={{ case_summary.document_number }}" class="btn btn-secondary btn-sm">Open in Case Tracker</a></p>
+    {% endif %}
+</div>
+{% endif %}

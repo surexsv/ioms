@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}{{ meeting.meeting_number }} — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='meetings' %}
+<div class="page-header">
+    <h1>{{ meeting.meeting_number }}</h1>
+    <div>
+        <a href="{% url 'dom_mom_print' meeting.pk %}" class="btn btn-secondary">Print MOM</a>
+        <a href="{% url 'dom_mom_pdf' meeting.pk %}" class="btn btn-secondary" target="_blank">PDF MOM</a>
+        {% if can_edit %}<a href="{% url 'dom_meeting_edit' meeting.pk %}" class="btn btn-secondary">Edit</a>{% endif %}
+        {% if can_sync_attendance %}<a href="{% url 'dom_meeting_sync_attendance' meeting.pk %}" class="btn btn-warning btn-sm">Sync Attendance</a>{% endif %}
+        {% if can_edit and meeting.status != 'COMPLETED' %}
+        <a href="{% url 'dom_meeting_complete' meeting.pk %}" class="btn btn-success btn-sm">Complete Meeting</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>Date</label><p>{{ meeting.meeting_date|date:"d-M-Y" }} {{ meeting.meeting_time|time:"H:i" }}</p></div>
+        <div class="detail-item"><label>Type</label><p>{{ meeting.get_meeting_type_display }}</p></div>
+        <div class="detail-item"><label>Topic of the Day</label><p>{{ meeting.topic_of_day|default:"—" }}</p></div>
+        <div class="detail-item"><label>Conducted By</label><p>{{ meeting.conducted_by|default:"—" }}</p></div>
+        <div class="detail-item"><label>Department</label><p>{{ meeting.department }}</p></div>
+        <div class="detail-item"><label>Status</label><p><strong>{{ meeting.get_status_display }}</strong></p></div>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Attendance ({{ att_stats.present_pct }}% present, {{ att_stats.late_pct }}% late)</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Employee</th><th>Role</th><th>Status</th><th>Join Time</th><th>Remarks</th>{% if can_sync_attendance %}<th></th>{% endif %}</tr></thead>
+            <tbody>
+            {% for a in meeting.attendees.all %}
+            <tr>
+                <td>{{ a.employee.get_full_name|default:a.employee.username }}</td>
+                <td>{{ a.role_snapshot|default:a.employee.role }}</td>
+                <td>{{ a.get_status_display }}{% if a.is_manual_override %} <span class="badge">Manual</span>{% endif %}</td>
+                <td>{{ a.join_time|default:"—" }}</td>
+                <td>{{ a.remarks|truncatewords:8|default:"—" }}</td>
+                {% if can_sync_attendance %}
+                <td><a href="{% url 'dom_meeting_attendance_edit' meeting.pk a.pk %}" class="btn btn-sm btn-secondary">Edit</a></td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Agenda</h3>
+    <ol>{% for item in meeting.agenda_items.all %}<li>{{ item.title }}</li>{% endfor %}</ol>
+</div>
+
+<div class="card">
+    <div class="page-header" style="margin-bottom:8px;"><h3 style="margin:0;">Discussions</h3>{% if can_edit %}<a href="{% url 'dom_discussion_add' meeting.pk %}" class="btn btn-sm btn-primary">+ Add</a>{% endif %}</div>
+    {% for d in meeting.discussions.all %}
+    <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eee;">
+        <strong>{{ d.agenda_title }}</strong>
+        {% if d.discussion_notes %}<p>{{ d.discussion_notes }}</p>{% endif %}
+        {% if d.decisions_taken %}<p><em>Decisions:</em> {{ d.decisions_taken }}</p>{% endif %}
+        {% if d.key_learnings %}<p><em>Learnings:</em> {{ d.key_learnings }}</p>{% endif %}
+    </div>
+    {% empty %}<p class="dom-hint">No discussions recorded.</p>{% endfor %}
+</div>
+
+<div class="card">
+    <div class="page-header" style="margin-bottom:8px;"><h3 style="margin:0;">Action Items</h3>{% if can_edit %}<a href="{% url 'dom_action_add_meeting' meeting.pk %}" class="btn btn-sm btn-primary">+ Add</a>{% endif %}</div>
+    <table class="ioms-table">
+        <thead><tr><th>#</th><th>Description</th><th>Assigned</th><th>Target</th><th>Status</th></tr></thead>
+        <tbody>{% for a in meeting.action_items.all %}
+        <tr><td>{{ a.action_number }}</td><td>{{ a.description|truncatechars:50 }}</td><td>{{ a.assigned_to|default:"—" }}</td><td>{{ a.target_date|default:"—" }}</td><td>{{ a.get_status_display }}</td></tr>
+        {% empty %}<tr><td colspan="5">No actions.</td></tr>{% endfor %}</tbody>
+    </table>
+</div>
+
+<div class="card">
+    <div class="page-header" style="margin-bottom:8px;"><h3 style="margin:0;">Recurring Open Items</h3></div>
+    <ul>{% for snap in meeting.open_item_reviews.all %}
+        <li><strong>{{ snap.open_item.title }}</strong> — {{ snap.status_at_meeting }}{% if snap.notes %}: {{ snap.notes }}{% endif %}</li>
+    {% empty %}<li>None</li>{% endfor %}</ul>
+</div>
+
+<div class="card">
+    <div class="page-header" style="margin-bottom:8px;"><h3 style="margin:0;">Management Messages</h3>{% if can_edit %}<a href="{% url 'dom_message_add' meeting.pk %}" class="btn btn-sm btn-primary">+ Add</a>{% endif %}</div>
+    {% for m in meeting.management_messages.all %}
+    <p><span class="badge">{{ m.get_category_display }}</span> {{ m.message }}</p>
+    {% empty %}<p class="dom-hint">No messages.</p>{% endfor %}
+    {% if meeting.closing_message %}<p><strong>Closing:</strong> {{ meeting.closing_message }}</p>{% endif %}
+</div>
+{% endblock %}

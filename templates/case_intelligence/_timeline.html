@@ -1,0 +1,17 @@
+{% if case_timeline %}
+<div class="card case-timeline-card">
+    <h3 style="margin-top:0;">Activity Timeline</h3>
+    <div class="case-timeline">
+        {% for entry in case_timeline %}
+        <div class="case-timeline-item">
+            <div class="case-timeline-date">{{ entry.activity_at|date:"d-M-Y H:i" }}</div>
+            <div class="case-timeline-activity">{{ entry.description }}</div>
+            <div class="case-timeline-user">{{ entry.user.get_full_name|default:entry.user_role|default:"System" }}</div>
+            {% if entry.remarks %}<div class="case-timeline-remarks">{{ entry.remarks }}</div>{% endif %}
+        </div>
+        {% empty %}
+        <p class="text-muted">No activities recorded yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}

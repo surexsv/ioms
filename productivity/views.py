@@ -13,7 +13,11 @@ from productivity.constants import ACT_REPORT_GENERATED
 from accounts.permissions import MODULE_PRODUCTIVITY
 from productivity.permissions import (
     can_export_reports,
+    can_view_activity_log,
+    can_view_field_activity_log,
     can_view_full_productivity,
+    can_view_gps_dashboard,
+    can_view_management_productivity,
     can_view_productivity,
     can_view_team_productivity,
     productivity_scope_users,
@@ -22,6 +26,7 @@ from productivity.services import (
     activity_report,
     employee_productivity_detail,
     monthly_trend,
+    personal_monthly_trend,
     productivity_dashboard_kpis,
 )
 from productivity.gps_dashboard import (
@@ -45,7 +50,7 @@ def _parse_period(request):
 
 @module_required(MODULE_PRODUCTIVITY)
 def productivity_dashboard(request):
-    if not can_view_productivity(request.user):
+    if not can_view_management_productivity(request.user):
         return access_denied_response(request, module_key='productivity')
     year, month = _parse_period(request)
     kpis = productivity_dashboard_kpis(year, month)
@@ -58,6 +63,9 @@ def productivity_dashboard(request):
         'month': month,
         'can_full': can_view_full_productivity(request.user),
         'can_team': can_view_team_productivity(request.user),
+        'can_activity_log': can_view_activity_log(request.user),
+        'can_gps': can_view_gps_dashboard(request.user),
+        'can_field_log': can_view_field_activity_log(request.user),
         'employees': scope_users.order_by('first_name', 'username')[:100],
     })
 
@@ -83,7 +91,7 @@ def employee_productivity(request, pk):
 
 @module_required(MODULE_PRODUCTIVITY)
 def activity_list(request):
-    if not can_view_team_productivity(request.user):
+    if not can_view_activity_log(request.user):
         return access_denied_response(request, module_key='productivity')
     year, month = _parse_period(request)
     dept = request.GET.get('department', '')
@@ -164,7 +172,7 @@ def gps_dashboard(request):
 
 @module_required(MODULE_PRODUCTIVITY)
 def field_activity_list(request):
-    if not can_view_team_productivity(request.user):
+    if not can_view_field_activity_log(request.user):
         return access_denied_response(request, module_key='productivity')
     year, month = _parse_period(request)
     action = request.GET.get('action', '')
@@ -199,17 +207,19 @@ def site_check_in_view(request, schedule_pk):
             messages.success(request, msg)
         else:
             messages.warning(request, msg)
-        from scheduling.engine import resolve_detail_url
+        from accounts.navigation import redirect_target_after_schedule
         from django.urls import reverse
-        target = resolve_detail_url(schedule)
-        if target:
+        target = redirect_target_after_schedule(request.user, schedule)
+        if len(target) == 2:
             return redirect(reverse(target[0], args=[target[1]]))
-        return redirect('schedule_list')
+        return redirect(target[0])
+    from accounts.navigation import schedule_back_navigation
     return render(request, 'productivity/site_checkin.html', {
         'schedule': schedule,
         'order': schedule.order,
         'enquiry': schedule.enquiry,
         'mode': 'checkin',
+        'back_nav': schedule_back_navigation(request.user, schedule),
     })
 
 
@@ -230,17 +240,19 @@ def site_check_out_view(request, schedule_pk):
             messages.success(request, msg)
         else:
             messages.warning(request, msg)
-        from scheduling.engine import resolve_detail_url
+        from accounts.navigation import redirect_target_after_schedule
         from django.urls import reverse
-        target = resolve_detail_url(schedule)
-        if target:
+        target = redirect_target_after_schedule(request.user, schedule)
+        if len(target) == 2:
             return redirect(reverse(target[0], args=[target[1]]))
-        return redirect('schedule_list')
+        return redirect(target[0])
+    from accounts.navigation import schedule_back_navigation
     return render(request, 'productivity/site_checkin.html', {
         'schedule': schedule,
         'order': schedule.order,
         'enquiry': schedule.enquiry,
         'mode': 'checkout',
+        'back_nav': schedule_back_navigation(request.user, schedule),
     })
 
 

@@ -21,7 +21,7 @@
 <table>
     <tr>
         <th>Employee</th><th>Date</th><th>Status</th>
-        <th>Check In</th><th>Check Out</th><th>Hours</th><th>Location</th><th></th>
+        <th>Check In</th><th>Check Out</th><th>Hours</th><th>Location</th><th>Photos</th><th></th>
     </tr>
     {% for r in records %}
     <tr>
@@ -32,7 +32,11 @@
         <td>{{ r.check_out_time|default:"—" }}</td>
         <td>{{ r.working_hours|default:"—" }}</td>
         <td>{{ r.location|truncatechars:40|default:"—" }}</td>
-        <td><a href="{% url 'attendance_edit' r.pk %}" class="btn btn-sm btn-primary">Edit</a></td>
+        <td>{% if r.has_check_in_photo %}<span class="badge badge-approved">In</span>{% endif %}{% if r.has_check_out_photo %} <span class="badge badge-approved">Out</span>{% endif %}</td>
+        <td>
+            <a href="{% url 'attendance_detail' r.pk %}" class="btn btn-sm btn-secondary">View</a>
+            <a href="{% url 'attendance_edit' r.pk %}" class="btn btn-sm btn-primary">Edit</a>
+        </td>
     </tr>
     {% empty %}
     <tr><td colspan="8" class="empty-state">No records match your filters.</td></tr>

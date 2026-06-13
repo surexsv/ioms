@@ -1,0 +1,11 @@
+<nav class="dom-subnav" aria-label="Daily Meetings navigation">
+    <a href="{% url 'dom_dashboard' %}" class="{% if dom_nav == 'dashboard' %}active{% endif %}">Dashboard</a>
+    <a href="{% url 'dom_meeting_list' %}" class="{% if dom_nav == 'meetings' %}active{% endif %}">Daily Meetings</a>
+    <a href="{% url 'dom_calendar' %}" class="{% if dom_nav == 'calendar' %}active{% endif %}">Meeting Calendar</a>
+    <a href="{% url 'dom_action_tracker' %}" class="{% if dom_nav == 'actions' %}active{% endif %}">Action Tracker</a>
+    <a href="{% url 'dom_open_items' %}" class="{% if dom_nav == 'open_items' %}active{% endif %}">Open Items Register</a>
+    <a href="{% url 'dom_reports' %}" class="{% if dom_nav == 'reports' %}active{% endif %}">Meeting Reports</a>
+    {% if is_superuser %}
+    <a href="{% url 'dom_agenda_template' %}" class="{% if dom_nav == 'agenda' %}active{% endif %}">Agenda Template</a>
+    {% endif %}
+</nav>

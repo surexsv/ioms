@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Leave Report — IOMS{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Leave Report — {{ month }}/{{ year }}</h1><a href="{% url 'attendance_reports' %}" class="btn btn-secondary">Back</a></div>
+<form method="get" class="filter-bar" style="margin-bottom:16px;">
+    <input type="number" name="month" value="{{ month }}" min="1" max="12" style="width:70px;">
+    <input type="number" name="year" value="{{ year }}" min="2020" style="width:90px;">
+    <button type="submit" class="btn btn-sm btn-primary">Go</button>
+</form>
+<table class="ioms-table"><thead><tr><th>Date</th><th>Employee</th><th>Notes</th></tr></thead>
+<tbody>{% for r in records %}<tr><td>{{ r.attendance_date|date:"d-M-Y" }}</td><td>{{ r.employee.get_full_name|default:r.employee.username }}</td><td>{{ r.notes|default:"—" }}</td></tr>{% empty %}<tr><td colspan="3">No leave records.</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

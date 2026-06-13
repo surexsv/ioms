@@ -172,6 +172,8 @@ def quotation_create(request):
                 related_model='Quotation',
                 related_object_id=q.pk,
             )
+            from case_intelligence.integrations import quotation_created
+            quotation_created(request.user, q)
             messages.success(request, f'Quotation {q.quotation_number} created.')
             return redirect('quotation_detail', pk=q.pk)
     else:
@@ -208,6 +210,17 @@ def quotation_detail(request, pk):
     )
     doc = quotation_document_sections(quotation)
     cl = covering_letter_context(quotation)
+    from case_intelligence.constants import MOD_QUOTATION
+    from case_intelligence.services import panel_context
+    case_ctx = panel_context(
+        quotation,
+        module=MOD_QUOTATION,
+        document_number=quotation.quotation_number,
+        status=quotation.get_status_display(),
+        stage=quotation.get_status_display(),
+        pending_action='Client approval' if quotation.status in ('SENT', 'UNDER_REVIEW') else '—',
+        next_action='Convert to order' if quotation.status in ('APPROVED', 'ACCEPTED') else '—',
+    )
     return render(request, 'quotations/quotation_detail.html', {
         'quotation': quotation,
         'can_edit': can_edit_quotations(request.user) and quotation.is_editable,
@@ -216,6 +229,7 @@ def quotation_detail(request, pk):
         'service_lines': quotation.service_lines.select_related('service_item'),
         'doc': doc,
         'cl': cl,
+        **case_ctx,
     })
 
 
@@ -479,10 +493,29 @@ def _workflow_action(request, pk, new_status, label):
         if not quotation.can_transition_to(new_status):
             messages.error(request, f'Cannot change status from {quotation.get_status_display()} to {label}.')
             return redirect('quotation_detail', pk=pk)
+        old_status = quotation.status
         quotation.status = new_status
         if new_status == 'APPROVED':
             quotation.approved_by = request.user
         quotation.save()
+        from case_intelligence.integrations import quotation_approved, quotation_submitted
+        from case_intelligence.logger import log_case_event
+        from case_intelligence.constants import MOD_QUOTATION
+        if new_status == 'SENT':
+            quotation_submitted(request.user, quotation)
+        elif new_status == 'APPROVED':
+            quotation_approved(request.user, quotation)
+        else:
+            log_case_event(
+                request.user,
+                module=MOD_QUOTATION,
+                document_type='Quotation',
+                document_number=quotation.quotation_number,
+                description=f'Quotation {label}',
+                new_status=new_status,
+                client=quotation.client,
+                content_object=quotation,
+            )
         messages.success(request, f'Quotation marked as {label}.')
         return redirect('quotation_detail', pk=pk)
     return render(request, 'quotations/quotation_action.html', {
@@ -528,6 +561,8 @@ def quotation_create_from_enquiry(request, enquiry_pk):
             from estimate_boq.models import EstimateBOQ
             estimate_boq = get_object_or_404(EstimateBOQ, pk=estimate_id, enquiry=enquiry)
         q = services.create_quotation_from_enquiry(enquiry, request.user, estimate_boq=estimate_boq)
+        from case_intelligence.integrations import quotation_created
+        quotation_created(request.user, q)
         messages.success(request, f'Quotation {q.quotation_number} created from enquiry.')
         return redirect('quotation_edit', pk=q.pk)
     return render(request, 'quotations/quotation_from_enquiry.html', {
@@ -546,6 +581,11 @@ def quotation_convert_order(request, pk):
     if request.method == 'POST':
         try:
             order = services.convert_quotation_to_order(quotation, request.user)
+            from case_intelligence.integrations import order_created, order_converted_from_enquiry
+            if quotation.enquiry_id:
+                order_converted_from_enquiry(request.user, order, quotation.enquiry)
+            else:
+                order_created(request.user, order, remarks=quotation.quotation_number)
             messages.success(
                 request,
                 f'Order {order.order_no} created from {quotation.quotation_number}.',

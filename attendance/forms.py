@@ -1,5 +1,7 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.utils import timezone
+
 from accounts.models import User
 from .models import Attendance
 from .services import active_employees
@@ -11,16 +13,17 @@ class AttendanceForm(forms.ModelForm):
         fields = [
             'employee', 'attendance_date', 'status',
             'check_in_time', 'check_out_time',
-            'location', 'latitude', 'longitude', 'notes',
+            'location', 'latitude', 'longitude',
+            'check_out_location', 'check_out_latitude', 'check_out_longitude',
+            'notes', 'check_in_remarks', 'check_out_remarks',
         ]
         widgets = {
             'attendance_date': forms.DateInput(attrs={'type': 'date'}),
             'check_in_time': forms.TimeInput(attrs={'type': 'time'}),
             'check_out_time': forms.TimeInput(attrs={'type': 'time'}),
             'notes': forms.Textarea(attrs={'rows': 2}),
-            'location': forms.TextInput(attrs={'placeholder': 'Work location / site'}),
-            'latitude': forms.HiddenInput(),
-            'longitude': forms.HiddenInput(),
+            'check_in_remarks': forms.Textarea(attrs={'rows': 2}),
+            'check_out_remarks': forms.Textarea(attrs={'rows': 2}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -47,9 +50,35 @@ class AttendanceFilterForm(forms.Form):
 
 
 class CheckInForm(forms.Form):
-    location = forms.CharField(max_length=500, required=False)
-    latitude = forms.DecimalField(required=False, max_digits=10, decimal_places=7)
-    longitude = forms.DecimalField(required=False, max_digits=10, decimal_places=7)
+    latitude = forms.DecimalField(required=True, max_digits=10, decimal_places=7)
+    longitude = forms.DecimalField(required=True, max_digits=10, decimal_places=7)
+    location = forms.CharField(max_length=500, required=False, widget=forms.HiddenInput())
+    photo = forms.ImageField(required=True)
+    remarks = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+
+    def clean_photo(self):
+        photo = self.cleaned_data.get('photo')
+        if not photo:
+            raise ValidationError('Photo is required for check-in.')
+        if photo.size > 8 * 1024 * 1024:
+            raise ValidationError('Photo must be under 8 MB.')
+        return photo
+
+
+class CheckOutForm(forms.Form):
+    latitude = forms.DecimalField(required=True, max_digits=10, decimal_places=7)
+    longitude = forms.DecimalField(required=True, max_digits=10, decimal_places=7)
+    location = forms.CharField(max_length=500, required=False, widget=forms.HiddenInput())
+    photo = forms.ImageField(required=True)
+    remarks = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+
+    def clean_photo(self):
+        photo = self.cleaned_data.get('photo')
+        if not photo:
+            raise ValidationError('Photo is required for check-out.')
+        if photo.size > 8 * 1024 * 1024:
+            raise ValidationError('Photo must be under 8 MB.')
+        return photo
 
 
 class ReportMonthForm(forms.Form):

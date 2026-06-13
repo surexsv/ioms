@@ -11,7 +11,7 @@ class User(AbstractUser):
         ('DIRECTOR', 'Director'),
         ('OPERATIONS', 'Operations Manager'),
         ('PROJECT_MANAGER', 'Project Manager'),
-        ('SUPERVISOR', 'Supervisor'),
+        ('SUPERVISOR', 'Project Supervisor'),
         ('ACCOUNTS', 'Accounts Manager'),
         ('ACCOUNTS_EXECUTIVE', 'Accounts Executive'),
         ('BACK_OFFICE', 'Back Office Staff'),
@@ -54,6 +54,11 @@ class User(AbstractUser):
     )
     phone = models.CharField(max_length=15, blank=True)
     is_active_employee = models.BooleanField(default=True)
+    attendance_required = models.BooleanField(
+        default=True,
+        help_text='When Yes, employee must mark daily attendance and sees the Attendance menu. '
+                  'Directors and Admins should be set to No. Editable by Super User only.',
+    )
 
     employee_id = models.CharField(max_length=50, blank=True)
     department = models.CharField(max_length=100, blank=True)
@@ -131,3 +136,13 @@ class UserApprovalAuditLog(models.Model):
 
     def __str__(self):
         return f'{self.user.username} — {self.action}'
+
+
+# RBAC models (imported for Django app registry)
+from accounts.rbac_models import (  # noqa: E402, F401
+    ActionPermission,
+    MenuItem,
+    RolePermission,
+    SystemPermission,
+    SystemRole,
+)

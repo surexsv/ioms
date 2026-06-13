@@ -9,10 +9,23 @@
 </div>
 
 <div class="ioms-kpi-grid">
-    <div class="ioms-kpi"><div class="value">{{ total_assigned }}</div><div class="label">Total Assigned</div></div>
-    <div class="ioms-kpi"><div class="value text-warning">{{ active_count }}</div><div class="label">Active Jobs</div></div>
-    <div class="ioms-kpi"><div class="value text-success">{{ completed_count }}</div><div class="label">Completed</div></div>
-    <div class="ioms-kpi"><div class="value text-danger">{{ overdue_count }}</div><div class="label">Overdue</div></div>
+    <div class="ioms-kpi"><div class="value">{{ total_assigned }}</div><div class="label">Assigned Jobs</div></div>
+    <div class="ioms-kpi"><div class="value text-success">{{ completed_count }}</div><div class="label">Completed Jobs</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ pending_count }}</div><div class="label">Pending Jobs</div></div>
+    <div class="ioms-kpi"><div class="value">{{ my_productivity.hours_worked|default:0 }}</div><div class="label">Hours Worked</div></div>
+    <div class="ioms-kpi"><div class="value">{{ my_productivity.man_days|default:0 }}</div><div class="label">Man-Days</div></div>
+    <div class="ioms-kpi"><div class="value text-primary">{% if my_productivity.attendance_pct %}{{ my_productivity.attendance_pct }}%{% else %}—{% endif %}</div><div class="label">Attendance %</div></div>
+</div>
+
+<div class="ioms-charts-row" style="margin-bottom:20px;">
+    <div class="ioms-chart-card">
+        <h3>Monthly Productivity Trend</h3>
+        <div class="ioms-chart-wrap"><canvas id="myProdTrendChart"></canvas></div>
+    </div>
+    <div class="ioms-chart-card">
+        <h3>Job Completion Trend</h3>
+        <div class="ioms-chart-wrap"><canvas id="myCompletionChart"></canvas></div>
+    </div>
 </div>
 
 <div class="card">
@@ -54,8 +67,6 @@
         </table>
     </div>
 </div>
-{% endif %}
-
 {% endif %}
 
 {% if survey_schedules %}
@@ -123,10 +134,16 @@
                 {% for schedule in overdue_orders %}
                 <tr>
                     <td>{{ schedule.schedule_number }}</td>
-                    <td>{{ schedule.order.order_no|default:schedule.order.order_id }}</td>
-                    <td>{{ schedule.order.client.name }}</td>
+                    <td>{% if schedule.order %}{{ schedule.order.order_no|default:schedule.order.order_id }}{% else %}{{ schedule.reference_number }}{% endif %}</td>
+                    <td>{% if schedule.order %}{{ schedule.order.client.name }}{% elif schedule.enquiry %}{{ schedule.enquiry.client.name }}{% endif %}</td>
                     <td>{{ schedule.scheduled_end_date }}</td>
-                    <td><a href="{% url 'order_detail' schedule.order.pk %}" class="btn btn-sm btn-warning">Update</a></td>
+                    <td>
+                        {% if schedule.order_id %}
+                        <a href="{% url 'order_detail' schedule.order.pk %}" class="btn btn-sm btn-warning">Update</a>
+                        {% elif schedule.enquiry_id %}
+                        <a href="{% url 'enquiry_detail' schedule.enquiry_id %}" class="btn btn-sm btn-warning">Update</a>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -134,4 +151,38 @@
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const trendLabels = [{% for p in personal_trend %}'{{ p.month }}/{{ p.year }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+const trendManDays = [{% for p in personal_trend %}{{ p.man_days|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const trendHours = [{% for p in personal_trend %}{{ p.hours|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const trendJobs = [{% for p in personal_trend %}{{ p.jobs|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+const trendCompleted = [{% for p in personal_trend %}{{ p.completed|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+new Chart(document.getElementById('myProdTrendChart'), {
+    type: 'line',
+    data: {
+        labels: trendLabels,
+        datasets: [
+            { label: 'Man-Days', data: trendManDays, borderColor: '#0d6efd', fill: false },
+            { label: 'Hours', data: trendHours, borderColor: '#198754', fill: false },
+        ],
+    },
+    options: { responsive: true, maintainAspectRatio: false },
+});
+new Chart(document.getElementById('myCompletionChart'), {
+    type: 'bar',
+    data: {
+        labels: trendLabels,
+        datasets: [
+            { label: 'Jobs Attended', data: trendJobs, backgroundColor: '#6c757d' },
+            { label: 'Completed', data: trendCompleted, backgroundColor: '#198754' },
+        ],
+    },
+    options: { responsive: true, maintainAspectRatio: false },
+});
+</script>
 {% endblock %}

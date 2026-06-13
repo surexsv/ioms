@@ -44,9 +44,14 @@ MODULE_DOCUMENT_GENERATOR = 'document_generator'
 MODULE_COMPANY_SETTINGS = 'company_settings'
 MODULE_SCHEDULING = 'scheduling'
 MODULE_SCHEDULING_MANAGE = 'scheduling_manage'
+MODULE_SCHEDULING_FIELD_UPDATE = 'scheduling_field_update'
 MODULE_USER_APPROVAL = 'user_approval'
+MODULE_USER_MANAGEMENT = 'user_management'
 MODULE_SITE_PROGRESS = 'site_progress'
 MODULE_PRODUCTIVITY = 'productivity'
+MODULE_CASE_INTELLIGENCE = 'case_intelligence'
+MODULE_DAILY_MEETINGS = 'daily_meetings'
+MODULE_DAILY_MEETINGS_MANAGE = 'daily_meetings_manage'
 
 # Role → allowed modules
 _ACCESS = {
@@ -60,6 +65,8 @@ _ACCESS = {
         MODULE_DOCUMENT_GENERATOR, MODULE_COMPANY_SETTINGS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
         MODULE_USER_APPROVAL, MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
+        MODULE_CASE_INTELLIGENCE,
+        MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MANAGE,
     },
     ROLE_OPERATIONS: {
         MODULE_DASHBOARD_OPERATIONS,
@@ -71,6 +78,8 @@ _ACCESS = {
         MODULE_QUOTATIONS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
         MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
+        MODULE_CASE_INTELLIGENCE,
+        MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MANAGE,
     },
     ROLE_PROJECT_MANAGER: {
         MODULE_DASHBOARD_PROJECT_MANAGER,
@@ -82,6 +91,8 @@ _ACCESS = {
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
         MODULE_ATTENDANCE_MANAGE, MODULE_ATTENDANCE_SELF,
         MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
+        MODULE_CASE_INTELLIGENCE,
+        MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MANAGE,
     },
     ROLE_SUPERVISOR: {
         MODULE_DASHBOARD_SUPERVISOR,
@@ -93,6 +104,7 @@ _ACCESS = {
         MODULE_QUOTATIONS,
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
         MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
+        MODULE_CASE_INTELLIGENCE,
     },
     ROLE_ACCOUNTS: {
         MODULE_DASHBOARD_ACCOUNTS,
@@ -100,28 +112,38 @@ _ACCESS = {
         MODULE_ATTENDANCE_SELF,
         MODULE_QUOTATION_RATES, MODULE_FINANCIAL,
         MODULE_SCHEDULING, MODULE_PRODUCTIVITY,
+        MODULE_CASE_INTELLIGENCE,
+        MODULE_DAILY_MEETINGS,
     },
     ROLE_ENGINEER: {
         MODULE_DASHBOARD_ENGINEER,
         MODULE_ORDERS, MODULE_WCR, MODULE_ATTENDANCE_SELF,
-        MODULE_SCHEDULING, MODULE_PRODUCTIVITY,
+        MODULE_SCHEDULING, MODULE_SCHEDULING_FIELD_UPDATE, MODULE_PRODUCTIVITY,
+        MODULE_CASE_INTELLIGENCE,
+        MODULE_DAILY_MEETINGS,
     },
     ROLE_TECHNICIAN: {
         MODULE_DASHBOARD_ENGINEER,
         MODULE_ORDERS, MODULE_WCR, MODULE_ATTENDANCE_SELF,
-        MODULE_SCHEDULING, MODULE_PRODUCTIVITY,
+        MODULE_SCHEDULING, MODULE_SCHEDULING_FIELD_UPDATE, MODULE_PRODUCTIVITY,
+        MODULE_CASE_INTELLIGENCE,
+        MODULE_DAILY_MEETINGS,
     },
     ROLE_ACCOUNTS_EXECUTIVE: {
         MODULE_DASHBOARD_ACCOUNTS,
         MODULE_BILLING,
         MODULE_ATTENDANCE_SELF,
         MODULE_PRODUCTIVITY,
+        MODULE_CASE_INTELLIGENCE,
+        MODULE_DAILY_MEETINGS,
     },
     ROLE_BACK_OFFICE: {
         MODULE_DASHBOARD_OPERATIONS,
         MODULE_ENQUIRIES,
         MODULE_ATTENDANCE_SELF,
         MODULE_PRODUCTIVITY,
+        MODULE_CASE_INTELLIGENCE,
+        MODULE_DAILY_MEETINGS,
     },
 }
 
@@ -139,7 +161,15 @@ def can_access(user, module_key):
         return True
     if not getattr(user, 'is_profile_approved', True):
         return False
+    # Attendance self-service: driven by attendance_required, not role alone.
+    if module_key == MODULE_ATTENDANCE_SELF:
+        from attendance.permissions import user_requires_attendance
+        if user_requires_attendance(user):
+            return True
+    from accounts.rbac_service import permissions_for_role
     role = user_role(user)
+    if module_key in permissions_for_role(role):
+        return True
     return module_key in _ACCESS.get(role, set())
 
 
@@ -210,6 +240,9 @@ def can_manage_attendance(user):
 
 
 def can_view_own_attendance(user):
+    from attendance.permissions import user_requires_attendance
+    if user_requires_attendance(user):
+        return True
     return can_access(user, MODULE_ATTENDANCE_SELF)
 
 
@@ -235,6 +268,11 @@ def can_manage_user_approvals(user):
     )
 
 
+def can_manage_users(user):
+    """Full user CRUD — Admin / Super User only."""
+    return user.is_authenticated and user.is_superuser
+
+
 def can_manage_site_progress(user):
     return can_access(user, MODULE_SITE_PROGRESS)
 
@@ -245,6 +283,9 @@ def can_view_productivity(user):
 
 
 def attendance_nav_url(user):
+    from attendance.permissions import user_requires_attendance
+    if user_requires_attendance(user):
+        return 'my_attendance'
     if can_manage_attendance(user):
         return 'attendance_dashboard'
     return 'my_attendance'
@@ -282,12 +323,24 @@ def resolve_path_module(path):
         return MODULE_SCHEDULING
     if path.startswith('/productivity/'):
         return MODULE_PRODUCTIVITY
+    if path.startswith('/case-intelligence/'):
+        return MODULE_CASE_INTELLIGENCE
+    if path.startswith('/daily-meetings/'):
+        manage_paths = (
+            '/daily-meetings/meetings/create/',
+            '/daily-meetings/meetings/today/',
+            '/daily-meetings/agenda-template/',
+            '/daily-meetings/open-items/create/',
+        )
+        if any(path.startswith(p) for p in manage_paths) or '/edit/' in path:
+            return MODULE_DAILY_MEETINGS_MANAGE
+        return MODULE_DAILY_MEETINGS
     if path.startswith('/user-approvals/'):
         return MODULE_USER_APPROVAL
     if path.startswith('/dashboard/'):
         if path.startswith('/dashboard/project-manager'):
             return MODULE_DASHBOARD_PROJECT_MANAGER
-        if path.startswith('/dashboard/engineer'):
+        if path.startswith('/dashboard/engineer') or path.startswith('/dashboard/field-team'):
             return MODULE_DASHBOARD_ENGINEER
         if path.startswith('/dashboard/supervisor'):
             return MODULE_DASHBOARD_SUPERVISOR
@@ -302,14 +355,15 @@ def resolve_path_module(path):
 def allowed_dashboard_url_name(user):
     if has_full_access(user) or user_role(user) == ROLE_DIRECTOR:
         return 'director_dashboard'
-    if user_role(user) == ROLE_OPERATIONS:
+    role = user_role(user)
+    if role == ROLE_OPERATIONS or role == ROLE_BACK_OFFICE:
         return 'operations_dashboard'
-    if user_role(user) == ROLE_ACCOUNTS:
+    if role in (ROLE_ACCOUNTS, ROLE_ACCOUNTS_EXECUTIVE):
         return 'accounts_dashboard'
-    if user_role(user) == ROLE_PROJECT_MANAGER:
+    if role == ROLE_PROJECT_MANAGER:
         return 'project_manager_dashboard'
-    if user_role(user) in (ROLE_ENGINEER, ROLE_TECHNICIAN):
-        return 'engineer_dashboard'
-    if user_role(user) == ROLE_SUPERVISOR:
+    if role in (ROLE_ENGINEER, ROLE_TECHNICIAN):
+        return 'field_team_dashboard'
+    if role == ROLE_SUPERVISOR:
         return 'supervisor_dashboard'
     return 'login'

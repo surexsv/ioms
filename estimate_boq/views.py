@@ -46,6 +46,8 @@ def create_estimate_boq(request):
                 related_model='EstimateBOQ',
                 related_object_id=eboq.pk,
             )
+            from case_intelligence.integrations import estimate_boq_created
+            estimate_boq_created(request.user, eboq)
             messages.success(request, f'Estimate BOQ {eboq.estimate_boq_number} created.')
             return redirect('estimate_boq_detail', pk=eboq.pk)
         messages.error(request, 'Could not save Estimate BOQ. Please correct the line item errors below.')

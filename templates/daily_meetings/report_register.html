@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Meeting Register — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='reports' %}
+<div class="page-header"><h1>Meeting Register — {{ month }}/{{ year }}</h1></div>
+<form method="get">{{ form.month }} {{ form.year }} <button type="submit" class="btn btn-primary btn-sm">Go</button></form>
+<table class="ioms-table" style="margin-top:16px;">
+    <thead><tr><th>Number</th><th>Date</th><th>Type</th><th>Status</th><th>Conducted By</th></tr></thead>
+    <tbody>{% for m in meetings %}<tr><td><a href="{% url 'dom_meeting_detail' m.pk %}">{{ m.meeting_number }}</a></td><td>{{ m.meeting_date|date:"d-M-Y" }}</td><td>{{ m.get_meeting_type_display }}</td><td>{{ m.get_status_display }}</td><td>{{ m.conducted_by|default:"—" }}</td></tr>{% empty %}<tr><td colspan="5">No meetings.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

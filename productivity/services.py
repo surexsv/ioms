@@ -158,6 +158,40 @@ def monthly_trend(year=None, months=6):
     return points
 
 
+def personal_monthly_trend(employee, months=6):
+    """Personal productivity trend for a single employee."""
+    today = timezone.localdate()
+    points = []
+    m = today.month
+    y = today.year
+    for _ in range(months):
+        parts = WCRTeamParticipant.objects.filter(
+            employee=employee,
+            attended=True,
+            wcr__submitted_date__year=y,
+            wcr__submitted_date__month=m,
+        )
+        man_days = parts.aggregate(t=Sum('man_days'))['t'] or 0
+        hours = parts.aggregate(t=Sum('hours_worked'))['t'] or 0
+        jobs = parts.values('wcr').distinct().count()
+        completed = parts.filter(
+            wcr__completion_status='COMPLETED',
+        ).values('wcr').distinct().count()
+        points.insert(0, {
+            'year': y,
+            'month': m,
+            'man_days': man_days,
+            'hours': hours,
+            'jobs': jobs,
+            'completed': completed,
+        })
+        m -= 1
+        if m < 1:
+            m = 12
+            y -= 1
+    return points
+
+
 def activity_report(department=None, year=None, month=None, employee=None):
     year, month = _month_bounds(year, month)
     qs = EmployeeActivityLog.objects.filter(

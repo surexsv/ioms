@@ -4,9 +4,15 @@
 <div class="page-header">
     <h1>Employee Productivity</h1>
     <div>
+        {% if can_activity_log %}
         <a href="{% url 'productivity_activities' %}" class="btn btn-secondary btn-sm">Activity Log</a>
+        {% endif %}
+        {% if can_gps %}
         <a href="{% url 'gps_dashboard' %}" class="btn btn-secondary btn-sm">GPS Dashboard</a>
+        {% endif %}
+        {% if can_field_log %}
         <a href="{% url 'field_activity_list' %}" class="btn btn-secondary btn-sm">Field Log</a>
+        {% endif %}
         {% if can_full %}
         <a href="{% url 'productivity_export_csv' %}?year={{ year }}&month={{ month }}" class="btn btn-secondary btn-sm">Export CSV</a>
         <a href="{% url 'productivity_export_pdf' %}?year={{ year }}&month={{ month }}" class="btn btn-secondary btn-sm" target="_blank">Print Report</a>

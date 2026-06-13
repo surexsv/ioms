@@ -24,7 +24,7 @@
     <tbody>
     {% for client in clients %}
     <tr>
-        <td><strong>{{ client.name }}</strong></td>
+        <td><a href="{% url 'client_detail' client.pk %}">{{ client.name }}</a></td>
         <td>{{ client.get_company_type_display }}</td>
         <td>{{ client.contact_person }}</td>
         <td>{{ client.phone }}</td>
@@ -33,7 +33,10 @@
         <td>{{ client.gst_number|default:"—" }}</td>
         <td>{{ client.pan_number|default:"—" }}</td>
         <td>{{ client.resolved_gst_type_label }}</td>
-        <td><a href="{% url 'edit_client' client.pk %}" class="btn btn-sm btn-secondary">Edit</a></td>
+        <td>
+            <a href="{% url 'client_detail' client.pk %}" class="btn btn-sm btn-primary">View</a>
+            <a href="{% url 'edit_client' client.pk %}" class="btn btn-sm btn-secondary">Edit</a>
+        </td>
     </tr>
     {% empty %}
     <tr><td colspan="10" class="empty-state">No clients yet. <a href="{% url 'create_client' %}">Add one</a>.</td></tr>

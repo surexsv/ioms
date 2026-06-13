@@ -3,25 +3,66 @@
 {% block content %}
 <div class="page-header">
     <h1>{{ title }}</h1>
-    <a href="{% url 'order_detail' order.pk %}" class="btn btn-secondary">Back to Order</a>
+    {% if back_nav %}
+        {% if back_nav.pk %}
+        <a href="{% url back_nav.url_name back_nav.pk %}" class="btn btn-secondary">{{ back_nav.label }}</a>
+        {% else %}
+        <a href="{% url back_nav.url_name %}" class="btn btn-secondary">{{ back_nav.label }}</a>
+        {% endif %}
+    {% endif %}
 </div>
+
+{% if survey_ref %}
+<div class="card" style="max-width:860px;margin-bottom:16px;">
+    <h3>Survey Reference Information</h3>
+    <div class="ioms-detail-grid">
+        <div class="detail-item"><label>Enquiry Number</label><p>{{ survey_ref.enquiry_number }}</p></div>
+        <div class="detail-item"><label>Client Name</label><p>{{ survey_ref.client_name }}</p></div>
+        <div class="detail-item"><label>Contact Person</label><p>{{ survey_ref.contact_person }}</p></div>
+        <div class="detail-item"><label>Mobile</label><p>{{ survey_ref.mobile }}</p></div>
+        <div class="detail-item"><label>Email</label><p>{{ survey_ref.email|default:"—" }}</p></div>
+        <div class="detail-item"><label>Site Address</label><p>{{ survey_ref.site_address }}</p></div>
+        <div class="detail-item" style="grid-column:1/-1;"><label>Description</label><p>{{ survey_ref.description }}</p></div>
+        <div class="detail-item"><label>Survey Required</label><p>{% if survey_ref.survey_required %}Yes{% else %}No{% endif %}</p></div>
+        <div class="detail-item" style="grid-column:1/-1;"><label>Survey Requirements / Remarks</label><p>{{ survey_ref.survey_remarks|default:survey_ref.remarks|default:"—" }}</p></div>
+    </div>
+</div>
+{% endif %}
 
 <div class="card" style="max-width:860px;">
     <p style="color:#6c757d;margin-top:0;">
         {% if order %}
         Order: <strong>{{ order.order_no|default:order.order_id }}</strong> — {{ order.client.name }} — {{ order.display_site_name }}
-        {% elif enquiry %}
+        {% elif enquiry and not survey_ref %}
         Enquiry: <strong>{{ enquiry.enquiry_number }}</strong> — {{ enquiry.client.name }}
         | Category: <strong>{{ schedule.get_schedule_category_display }}</strong>
         | Ref: <strong>{{ schedule.reference_number }}</strong>
         {% endif %}
     </p>
-    {% if schedule %}<p><strong>Schedule #:</strong> {{ schedule.schedule_number }}</p>{% endif %}
+    {% if schedule %}
+    <p><strong>Schedule #:</strong> {{ schedule.schedule_number }}
+        | <strong>Category:</strong> {{ schedule.get_schedule_category_display }}
+        | <strong>Status:</strong> {{ schedule.get_status_display }}</p>
+    <p class="ioms-action-row">
+        {% if schedule.enquiry_id %}
+        <a href="{% url 'create_survey_wcr' schedule.pk %}" class="btn btn-sm btn-success">Submit Survey WCR</a>
+        {% endif %}
+        <a href="{% url 'site_check_in' schedule.pk %}" class="btn btn-sm btn-primary">Site Check-In</a>
+        <a href="{% url 'site_check_out' schedule.pk %}" class="btn btn-sm btn-secondary">Site Check-Out</a>
+    </p>
+    {% endif %}
 
     <form method="post" data-gps-capture>
         {% csrf_token %}
         <input type="hidden" name="latitude" value="">
         <input type="hidden" name="longitude" value="">
+
+        {% if can_field_edit and not can_edit %}
+        <h3 style="margin-top:20px;">Update Work Status</h3>
+        <div class="form-group">{{ form.status.label_tag }}{{ form.status }}</div>
+        <div class="form-group">{{ form.field_work_remarks.label_tag }}{{ form.field_work_remarks }}</div>
+        <button type="submit" class="btn btn-primary">Save Progress</button>
+        {% else %}
         <h3 style="margin-top:20px;">Team Assignment</h3>
         <div class="form-row">
             <div class="form-group">{{ form.project_manager.label_tag }}{{ form.project_manager }}</div>
@@ -51,8 +92,9 @@
         <div class="form-group">{{ form.resource_requirements.label_tag }}{{ form.resource_requirements }}</div>
         <div class="form-group">{{ form.work_instructions.label_tag }}{{ form.work_instructions }}</div>
         <div class="form-group">{{ form.status.label_tag }}{{ form.status }}</div>
-        {% if can_edit != False %}
+        {% if can_edit %}
         <button type="submit" class="btn btn-primary">Save Schedule</button>
+        {% endif %}
         {% endif %}
     </form>
 </div>

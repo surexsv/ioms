@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MOM — {{ meeting.meeting_number }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 24px; color: #222; }
+        h1 { text-align: center; font-size: 1.4rem; }
+        h2 { font-size: 1.1rem; margin-top: 20px; border-bottom: 1px solid #ccc; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
+        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+        th { background: #f0f0f0; }
+        .meta { margin: 12px 0; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <p class="no-print"><button onclick="window.print()">Print</button> <a href="{% url 'dom_mom_pdf' meeting.pk %}">Download PDF</a></p>
+    <h1>Minutes of Meeting</h1>
+    <p style="text-align:center;">Infomates Techno Solutions — Daily Operations Meeting</p>
+    <div class="meta">
+        <p><strong>Meeting:</strong> {{ meeting.meeting_number }} &nbsp; <strong>Date:</strong> {{ meeting.meeting_date|date:"d M Y" }} &nbsp; <strong>Time:</strong> {{ meeting.meeting_time|time:"H:i" }}</p>
+        <p><strong>Type:</strong> {{ meeting.get_meeting_type_display }} &nbsp; <strong>Conducted By:</strong> {{ meeting.conducted_by|default:"—" }}</p>
+        {% if meeting.topic_of_day %}<p><strong>Topic of the Day:</strong> {{ meeting.topic_of_day }}</p>{% endif %}
+        <p><strong>Attendance:</strong> Present {{ attendance_stats.present }} | Late {{ attendance_stats.late }} | Absent {{ attendance_stats.absent }} ({{ attendance_stats.present_pct }}% present)</p>
+    </div>
+
+    <h2>Attendance Register</h2>
+    <table><thead><tr><th>Employee</th><th>Role</th><th>Status</th><th>Join Time</th></tr></thead>
+    <tbody>{% for a in attendees %}<tr><td>{{ a.employee.get_full_name|default:a.employee.username }}</td><td>{{ a.role_snapshot }}</td><td>{{ a.get_status_display }}</td><td>{{ a.join_time|default:"—" }}</td></tr>{% endfor %}</tbody></table>
+
+    <h2>Agenda</h2>
+    <ol>{% for item in agenda %}<li>{{ item.title }}</li>{% endfor %}</ol>
+
+    {% if discussions %}
+    <h2>Discussions & Decisions</h2>
+    {% for d in discussions %}
+    <p><strong>{{ d.agenda_title }}</strong></p>
+    {% if d.discussion_notes %}<p>{{ d.discussion_notes }}</p>{% endif %}
+    {% if d.decisions_taken %}<p><em>Decisions:</em> {{ d.decisions_taken }}</p>{% endif %}
+    {% if d.key_learnings %}<p><em>Learnings:</em> {{ d.key_learnings }}</p>{% endif %}
+    {% if d.challenges %}<p><em>Challenges:</em> {{ d.challenges }}</p>{% endif %}
+    {% endfor %}
+    {% endif %}
+
+    {% if actions %}
+    <h2>Action Items</h2>
+    <table><thead><tr><th>#</th><th>Description</th><th>Assigned</th><th>Target</th><th>Status</th></tr></thead>
+    <tbody>{% for a in actions %}<tr><td>{{ a.action_number }}</td><td>{{ a.description }}</td><td>{{ a.assigned_to|default:"—" }}</td><td>{{ a.target_date|default:"—" }}</td><td>{{ a.get_status_display }}</td></tr>{% endfor %}</tbody></table>
+    {% endif %}
+
+    {% if open_items %}
+    <h2>Recurring Open Items Reviewed</h2>
+    <ul>{% for s in open_items %}<li>{{ s.open_item.title }} — {{ s.status_at_meeting }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    {% if messages %}
+    <h2>Management Messages</h2>
+    {% for m in messages %}<p><strong>{{ m.get_category_display }}:</strong> {{ m.message }}</p>{% endfor %}
+    {% endif %}
+
+    {% if meeting.closing_message %}
+    <h2>Closing Message</h2>
+    <p>{{ meeting.closing_message }}</p>
+    {% endif %}
+
+    <p style="margin-top:24px;font-size:0.85rem;color:#666;">Generated: {{ generated_at|date:"d-M-Y H:i" }}</p>
+</body>
+</html>

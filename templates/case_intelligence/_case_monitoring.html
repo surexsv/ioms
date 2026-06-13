@@ -1,0 +1,20 @@
+{% if case_monitoring %}
+<div class="card case-monitoring-panel">
+    <div class="case-monitoring-header">
+        <h3 class="ioms-section-title" style="margin:0;">{{ case_monitoring.title }}</h3>
+        {% if show_nav_case_intelligence %}
+        <a href="{% url 'case_stuck_dashboard' %}" class="btn btn-sm btn-primary">
+            <i class="bi bi-diagram-3"></i> Full Dashboard
+        </a>
+        {% endif %}
+    </div>
+    <div class="ioms-kpi-grid" style="margin-top:14px;margin-bottom:0;">
+        {% for card in case_monitoring.cards %}
+        <a href="{{ card.url }}" class="ioms-kpi ioms-kpi-link{% if card.warn %} ioms-kpi-warn{% endif %}{% if card.danger %} ioms-kpi-danger{% endif %}">
+            <div class="value{% if card.danger %} text-danger{% elif card.warn %} text-warning{% endif %}">{{ card.value }}</div>
+            <div class="label">{{ card.label }}</div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}

@@ -76,4 +76,6 @@
 <ul>{% for q in quotations %}<li><a href="{% url 'quotation_detail' q.pk %}">{{ q.quotation_number }}</a> — {{ q.get_status_display }}</li>{% endfor %}</ul>
 </div>
 {% endif %}
+{% include 'case_intelligence/_case_summary.html' %}
+{% include 'case_intelligence/_timeline.html' %}
 {% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Daily Meetings — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='meetings' %}
+<div class="page-header">
+    <h1>Daily Meetings</h1>
+    {% if can_create %}<a href="{% url 'dom_meeting_create' %}" class="btn btn-primary">+ New Meeting</a>{% endif %}
+</div>
+<div class="card" style="margin-bottom:16px;">
+    <form method="get" class="form-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end;">
+        <div><label>From</label>{{ filter_form.date_from }}</div>
+        <div><label>To</label>{{ filter_form.date_to }}</div>
+        <div>{{ filter_form.status.label_tag }}{{ filter_form.status }}</div>
+        <div>{{ filter_form.meeting_type.label_tag }}{{ filter_form.meeting_type }}</div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+    </form>
+</div>
+<div class="ioms-table-wrap">
+<table class="ioms-table">
+    <thead><tr><th>Number</th><th>Date</th><th>Time</th><th>Type</th><th>Topic</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for m in meetings %}
+    <tr>
+        <td>{{ m.meeting_number }}</td>
+        <td>{{ m.meeting_date|date:"d-M-Y" }}</td>
+        <td>{{ m.meeting_time|time:"H:i" }}</td>
+        <td>{{ m.get_meeting_type_display }}</td>
+        <td>{{ m.topic_of_day|truncatechars:40|default:"—" }}</td>
+        <td>{{ m.get_status_display }}</td>
+        <td><a href="{% url 'dom_meeting_detail' m.pk %}" class="btn btn-sm btn-secondary">View</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7">No meetings found.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

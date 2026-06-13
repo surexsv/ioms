@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Meeting Effectiveness — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='reports' %}
+<div class="page-header"><h1>Meeting Effectiveness — {{ year }}</h1></div>
+<form method="get"><input type="number" name="year" value="{{ year }}"><button type="submit" class="btn btn-primary btn-sm">Go</button></form>
+<div class="ioms-kpi-grid" style="margin-top:16px;">
+    <div class="ioms-kpi"><div class="value">{{ meetings_held }}</div><div class="label">Meetings Completed</div></div>
+    <div class="ioms-kpi"><div class="value">{{ meetings_total }}</div><div class="label">Meetings Total</div></div>
+    <div class="ioms-kpi"><div class="value">{{ actions_raised }}</div><div class="label">Actions Raised</div></div>
+    <div class="ioms-kpi"><div class="value text-success">{{ actions_completed }}</div><div class="label">Actions Completed</div></div>
+    <div class="ioms-kpi"><div class="value text-primary">{{ completion_rate }}%</div><div class="label">Completion Rate</div></div>
+</div>
+{% endblock %}

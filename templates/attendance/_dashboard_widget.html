@@ -1,0 +1,39 @@
+{% if attendance_required and attendance_widget %}
+<div class="card attendance-widget-card">
+    <h3 class="ioms-section-title" style="margin-top:0;">Today's Attendance</h3>
+    <div class="ioms-kpi-grid">
+        <div class="ioms-kpi">
+            <div class="value">{% if today_attendance and today_attendance.check_in_time %}{{ today_attendance.check_in_time|time:"H:i" }}{% else %}—{% endif %}</div>
+            <div class="label">Check-In Time</div>
+        </div>
+        <div class="ioms-kpi">
+            <div class="value">{% if today_attendance and today_attendance.check_out_time %}{{ today_attendance.check_out_time|time:"H:i" }}{% else %}—{% endif %}</div>
+            <div class="label">Check-Out Time</div>
+        </div>
+        <div class="ioms-kpi">
+            <div class="value">{% if today_attendance and today_attendance.working_hours %}{{ today_attendance.working_hours }}h{% else %}—{% endif %}</div>
+            <div class="label">Working Hours</div>
+        </div>
+        <div class="ioms-kpi">
+            <div class="value">{% if today_attendance %}{{ today_attendance.get_status_display }}{% else %}Not Marked{% endif %}</div>
+            <div class="label">Status</div>
+        </div>
+        <div class="ioms-kpi">
+            <div class="value text-primary">{{ attendance_month.attendance_percentage }}%</div>
+            <div class="label">Monthly Attendance %</div>
+        </div>
+    </div>
+    <div class="action-btns" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+        <a href="{% url 'my_attendance' %}" class="btn btn-primary btn-sm">View Attendance</a>
+        {% if attendance_widget.can_check_in %}
+        <a href="{% url 'attendance_check_in' %}" class="btn btn-success btn-sm"><i class="bi bi-camera"></i> Check In</a>
+        {% endif %}
+        {% if attendance_widget.can_check_out %}
+        <a href="{% url 'attendance_check_out' %}" class="btn btn-warning btn-sm"><i class="bi bi-camera"></i> Check Out</a>
+        {% endif %}
+        {% if is_management_attendance %}
+        <a href="{% url 'attendance_dashboard' %}" class="btn btn-secondary btn-sm">Team Dashboard</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

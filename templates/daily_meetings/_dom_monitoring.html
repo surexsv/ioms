@@ -1,0 +1,25 @@
+{% if dom_summary %}
+<div class="card dom-monitoring-panel" style="margin-bottom:20px;border-left:4px solid #198754;">
+    <div class="case-monitoring-header">
+        <div>
+            <h3 style="margin:0;">Daily Operations Meeting</h3>
+            <p class="case-dashboard-subtitle">Today's meeting control — attendance, actions, and open items.</p>
+        </div>
+        <div class="case-dashboard-actions">
+            <a href="{% url 'dom_dashboard' %}" class="btn btn-primary btn-sm">Open DOM</a>
+            {% if dom_summary.today_meeting %}
+            <a href="{% url 'dom_meeting_detail' dom_summary.today_meeting.pk %}" class="btn btn-secondary btn-sm">Today's Meeting</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="ioms-kpi-grid" style="margin-top:12px;">
+        <div class="ioms-kpi"><div class="value">{% if dom_summary.today_meeting %}{{ dom_summary.today_meeting.meeting_number }}{% else %}—{% endif %}</div><div class="label">Today's Meeting</div></div>
+        <div class="ioms-kpi"><div class="value text-success">{{ dom_summary.attendance.present_pct|default:0 }}%</div><div class="label">Attendance %</div></div>
+        <div class="ioms-kpi"><div class="value text-warning">{{ dom_summary.attendance.late_pct|default:0 }}%</div><div class="label">Late %</div></div>
+        <div class="ioms-kpi"><div class="value">{{ dom_summary.open_actions }}</div><div class="label">Open Actions</div></div>
+        <div class="ioms-kpi"><div class="value text-danger">{{ dom_summary.overdue_actions }}</div><div class="label">Overdue Actions</div></div>
+        <div class="ioms-kpi"><div class="value text-success">{{ dom_summary.completed_actions }}</div><div class="label">Completed Actions</div></div>
+        <div class="ioms-kpi"><div class="value">{{ dom_summary.recurring_open_items }}</div><div class="label">Recurring Open Items</div></div>
+    </div>
+</div>
+{% endif %}

@@ -561,3 +561,9 @@ def build_project_manager_context(user):
     }
 
 
+def merge_attendance_widget(context, user):
+    from dashboard.attendance_widget import personal_attendance_context
+    context.update(personal_attendance_context(user))
+    return context
+
+

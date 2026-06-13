@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Photo Verification Report — IOMS{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Photo Verification — {{ date|date:"d M Y" }}</h1><a href="{% url 'attendance_reports' %}" class="btn btn-secondary">Back</a></div>
+<form method="get" class="filter-bar" style="margin-bottom:16px;"><input type="date" name="date" value="{{ date|date:'Y-m-d' }}"><button type="submit" class="btn btn-sm btn-primary">Go</button></form>
+<table class="ioms-table"><thead><tr><th>Employee</th><th>Status</th><th>Check-In Photo</th><th>Check-Out Photo</th><th>Verified</th><th></th></tr></thead>
+<tbody>{% for row in rows %}<tr>
+<td>{{ row.record.employee.get_full_name|default:row.record.employee.username }}</td>
+<td>{{ row.record.get_status_display }}</td>
+<td>{% if row.has_in_photo %}<span class="badge badge-approved">Yes</span>{% else %}<span class="badge badge-pending">No</span>{% endif %}</td>
+<td>{% if row.has_out_photo %}<span class="badge badge-approved">Yes</span>{% elif row.record.check_out_time %}<span class="badge badge-pending">No</span>{% else %}—{% endif %}</td>
+<td>{% if row.verified %}<span class="badge badge-approved">Verified</span>{% else %}<span class="badge badge-pending">Incomplete</span>{% endif %}</td>
+<td><a href="{% url 'attendance_detail' row.record.pk %}" class="btn btn-sm btn-secondary">Details</a></td>
+</tr>{% empty %}<tr><td colspan="6">No records.</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

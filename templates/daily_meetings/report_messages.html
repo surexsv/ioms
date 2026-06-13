@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}Management Messages — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='reports' %}
+<div class="page-header"><h1>Management Message History</h1></div>
+<table class="ioms-table"><thead><tr><th>Date</th><th>Category</th><th>Message</th><th>Meeting</th></tr></thead>
+<tbody>{% for m in messages %}<tr><td>{{ m.message_date|date:"d-M-Y" }}</td><td>{{ m.get_category_display }}</td><td>{{ m.message|truncatechars:80 }}</td><td>{{ m.meeting.meeting_number|default:"—" }}</td></tr>{% empty %}<tr><td colspan="4">No messages.</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

@@ -4,11 +4,27 @@
 {% block content %}
 <div class="page-header">
     <h1>{% if mode == 'checkout' %}Site Check-Out{% else %}Site Check-In{% endif %}</h1>
+    {% if back_nav %}
+        {% if back_nav.pk %}
+        <a href="{% url back_nav.url_name back_nav.pk %}" class="btn btn-secondary">{{ back_nav.label }}</a>
+        {% else %}
+        <a href="{% url back_nav.url_name %}" class="btn btn-secondary">{{ back_nav.label }}</a>
+        {% endif %}
+    {% elif order %}
     <a href="{% url 'order_detail' order.pk %}" class="btn btn-secondary">Back to Order</a>
+    {% elif enquiry %}
+    <a href="{% url 'enquiry_detail' enquiry.pk %}" class="btn btn-secondary">Back to Enquiry</a>
+    {% else %}
+    <a href="{% url 'schedule_list' %}" class="btn btn-secondary">Back to Schedules</a>
+    {% endif %}
 </div>
 
 <div class="card" style="max-width:560px;">
+    {% if order %}
     <p><strong>Order:</strong> {{ order.order_no|default:order.order_id }} — {{ order.display_site_name }}</p>
+    {% elif enquiry %}
+    <p><strong>Enquiry:</strong> {{ enquiry.enquiry_number }} — {{ enquiry.client.name }}</p>
+    {% endif %}
     <p><strong>Schedule:</strong> {{ schedule.schedule_number }}</p>
     <p style="color:#6c757d;">GPS location will be captured automatically from your browser.</p>
 

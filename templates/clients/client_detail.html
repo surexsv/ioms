@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}{{ client.name }} — Client History{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ client.name }}</h1>
+    <div>
+        <a href="{% url 'edit_client' client.pk %}" class="btn btn-secondary">Edit</a>
+        <a href="{% url 'client_list' %}" class="btn btn-secondary">Back</a>
+    </div>
+</div>
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>Contact</label><p>{{ client.contact_person|default:"—" }}</p></div>
+        <div class="detail-item"><label>Mobile</label><p>{{ client.phone|default:"—" }}</p></div>
+        <div class="detail-item"><label>Email</label><p>{{ client.email|default:"—" }}</p></div>
+        <div class="detail-item"><label>Address</label><p>{{ client.address|default:"—" }}</p></div>
+    </div>
+</div>
+<div class="case-dashboard-grid">
+    <div class="case-dash-card"><span class="case-dash-value">{{ history.total_enquiries }}</span><span class="case-dash-label">Enquiries</span></div>
+    <div class="case-dash-card"><span class="case-dash-value">{{ history.total_quotations }}</span><span class="case-dash-label">Quotations</span></div>
+    <div class="case-dash-card"><span class="case-dash-value">{{ history.total_orders }}</span><span class="case-dash-label">Orders</span></div>
+    <div class="case-dash-card"><span class="case-dash-value">{{ history.total_invoices }}</span><span class="case-dash-label">Invoices</span></div>
+    <div class="case-dash-card"><span class="case-dash-value">{{ history.total_payments }}</span><span class="case-dash-label">Payments</span></div>
+    <div class="case-dash-card case-dash-warn"><span class="case-dash-value">₹{{ history.outstanding_amount|floatformat:2 }}</span><span class="case-dash-label">Outstanding</span></div>
+</div>
+<div class="card">
+    <h3 style="margin-top:0;">Recent Activities</h3>
+    <table class="ioms-table">
+        <thead><tr><th>When</th><th>Document</th><th>Activity</th><th>User</th></tr></thead>
+        <tbody>
+            {% for a in history.recent_activities %}
+            <tr>
+                <td>{{ a.activity_at|date:"d-M-Y H:i" }}</td>
+                <td>{{ a.document_number }}</td>
+                <td>{{ a.description }}</td>
+                <td>{{ a.user|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">No activities recorded for this client yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include 'case_intelligence/_timeline.html' with case_timeline=history.recent_activities %}
+{% endblock %}

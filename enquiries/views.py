@@ -84,6 +84,8 @@ def create_enquiry(request):
                 related_model='Enquiry',
                 related_object_id=enquiry.pk,
             )
+            from case_intelligence.integrations import enquiry_created
+            enquiry_created(request.user, enquiry)
             messages.success(request, f'Enquiry {enquiry.enquiry_number} created.')
             return redirect('enquiry_detail', pk=enquiry.pk)
     else:
@@ -118,6 +120,19 @@ def enquiry_detail(request, pk):
             schedule=survey_schedule, employee=request.user,
         ).first()
 
+    from case_intelligence.constants import MOD_ENQUIRY
+    from case_intelligence.services import panel_context, _pending_for_enquiry, _next_for_enquiry
+    case_ctx = panel_context(
+        enquiry,
+        module=MOD_ENQUIRY,
+        document_number=enquiry.enquiry_number,
+        status=enquiry.get_status_display(),
+        stage=enquiry.get_status_display(),
+        assigned_to=str(enquiry.survey_engineer or enquiry.assigned_project_manager or '—'),
+        pending_action=_pending_for_enquiry(enquiry),
+        next_action=_next_for_enquiry(enquiry),
+    )
+
     return render(request, 'enquiries/enquiry_detail.html', {
         'enquiry': enquiry,
         'estimate_boqs': estimate_boqs,
@@ -130,6 +145,7 @@ def enquiry_detail(request, pk):
         'can_convert': enquiry.can_convert_to_order and can_manage_enquiries(request.user),
         'can_create_estimate': can_manage_enquiries(request.user),
         'can_create_quotation': can_manage_enquiries(request.user),
+        **case_ctx,
     })
 
 
@@ -146,6 +162,8 @@ def edit_enquiry(request, pk):
             if enquiry.status != old_status:
                 from productivity.gps_service import record_survey_status_gps
                 record_survey_status_gps(request.user, enquiry, old_status, enquiry.status, request)
+                from case_intelligence.integrations import enquiry_status_changed
+                enquiry_status_changed(request.user, enquiry, old_status)
             from company_settings.field_ops import is_auto_survey_schedule_enabled
             if is_auto_survey_schedule_enabled() and enquiry.survey_engineer_id:
                 from scheduling.survey_schedule import ensure_survey_schedule
@@ -169,6 +187,8 @@ def convert_enquiry_order(request, pk):
     if request.method == 'POST':
         try:
             order = convert_enquiry_to_order(enquiry, request.user)
+            from case_intelligence.integrations import order_converted_from_enquiry
+            order_converted_from_enquiry(request.user, order, enquiry)
             messages.success(request, f'Order {order.order_no} created from enquiry.')
             return redirect('order_detail', pk=order.pk)
         except ValueError as exc:

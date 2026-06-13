@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Case Search — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Universal Case Search</h1>
+    <a href="{% url 'case_stuck_dashboard' %}" class="btn btn-secondary">Stuck Cases Dashboard</a>
+</div>
+<form method="get" class="card" style="padding:16px;">
+    <label for="q">Search enquiries, quotations, orders, schedules, WCR, invoices, clients, contacts, locations</label>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+        <input type="search" name="q" id="q" value="{{ query }}" class="form-control" placeholder="ITSPLENQ…, client name, mobile, location" style="flex:1;" autofocus>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+</form>
+{% if query %}
+<div class="card">
+    <h3 style="margin-top:0;">Results for “{{ query }}”</h3>
+    <table class="ioms-table">
+        <thead>
+            <tr>
+                <th>Document</th>
+                <th>Type</th>
+                <th>Client</th>
+                <th>Status</th>
+                <th>Stage</th>
+                <th>Last Activity</th>
+                <th>Assigned</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in results %}
+            <tr>
+                <td>{{ r.document_number }}</td>
+                <td>{{ r.document_type }}</td>
+                <td>{{ r.client }}</td>
+                <td>{{ r.status }}</td>
+                <td>{{ r.stage }}</td>
+                <td>{{ r.last_activity }}</td>
+                <td>{{ r.assigned|default:"—" }}</td>
+                <td>
+                    {% if r.url_pk %}
+                    <a href="{% url r.url_name r.url_pk %}" class="btn btn-secondary btn-sm">Open</a>
+                    {% elif r.url_name %}
+                    <a href="{% url r.url_name %}" class="btn btn-secondary btn-sm">Open</a>
+                    {% endif %}
+                    <a href="{% url 'case_tracker' %}?doc={{ r.document_number }}" class="btn btn-secondary btn-sm">Tracker</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8">No matching cases found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

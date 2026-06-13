@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Detail — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Attendance Detail</h1>
+    <div>
+        {% if can_edit_attendance %}
+        <a href="{% url 'attendance_edit' record.pk %}" class="btn btn-secondary">Edit</a>
+        {% endif %}
+        <a href="{% url 'attendance_list' %}" class="btn btn-secondary">Back</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>Employee</label><p>{{ record.employee.get_full_name|default:record.employee.username }}</p></div>
+        <div class="detail-item"><label>Date</label><p>{{ record.attendance_date|date:"d-M-Y" }}</p></div>
+        <div class="detail-item"><label>Status</label><p><strong>{{ record.get_status_display }}</strong></p></div>
+        <div class="detail-item"><label>Working Hours</label><p>{{ record.working_hours|default:"—" }}</p></div>
+        <div class="detail-item"><label>Check-In</label><p>{{ record.check_in_time|default:"—" }}{% if record.check_in_at %} ({{ record.check_in_at|date:"d-M-Y H:i" }}){% endif %}</p></div>
+        <div class="detail-item"><label>Check-Out</label><p>{{ record.check_out_time|default:"—" }}{% if record.check_out_at %} ({{ record.check_out_at|date:"d-M-Y H:i" }}){% endif %}</p></div>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Check-In Location</h3>
+    <p>{{ record.location|default:"—" }}</p>
+    {% if record.latitude and record.longitude %}
+    <p><small>GPS: {{ record.latitude }}, {{ record.longitude }}</small></p>
+    {% endif %}
+    {% if record.check_in_maps_link %}
+    <p><a href="{{ record.check_in_maps_link }}" target="_blank" rel="noopener">View on Google Maps</a></p>
+    {% endif %}
+    {% if record.ip_address_in %}<p><small>IP: {{ record.ip_address_in }}</small></p>{% endif %}
+    {% if record.device_info_in %}<p><small>Device: {{ record.device_info_in|truncatewords:12 }}</small></p>{% endif %}
+    {% if record.check_in_remarks %}<p>Remarks: {{ record.check_in_remarks }}</p>{% endif %}
+</div>
+
+{% if record.check_out_time %}
+<div class="card">
+    <h3 style="margin-top:0;">Check-Out Location</h3>
+    <p>{{ record.check_out_location|default:"—" }}</p>
+    {% if record.check_out_latitude and record.check_out_longitude %}
+    <p><small>GPS: {{ record.check_out_latitude }}, {{ record.check_out_longitude }}</small></p>
+    {% endif %}
+    {% if record.check_out_maps_link %}
+    <p><a href="{{ record.check_out_maps_link }}" target="_blank" rel="noopener">View on Google Maps</a></p>
+    {% endif %}
+    {% if record.check_out_remarks %}<p>Remarks: {{ record.check_out_remarks }}</p>{% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <h3 style="margin-top:0;">Photo Verification</h3>
+    <div class="attendance-photo-grid">
+        {% for photo in record.photos.all %}
+        <div>
+            <p><strong>{{ photo.get_photo_type_display }}</strong> — {{ photo.captured_at|date:"d-M-Y H:i" }}</p>
+            <a href="{{ photo.image.url }}" target="_blank" rel="noopener">
+                <img src="{{ photo.image.url }}" alt="{{ photo.get_photo_type_display }}" class="attendance-detail-photo">
+            </a>
+        </div>
+        {% empty %}
+        <p>No photos on record.</p>
+        {% endfor %}
+    </div>
+</div>
+
+{% if record.audit_logs.exists %}
+<div class="card">
+    <h3 style="margin-top:0;">Audit Trail</h3>
+    <table class="ioms-table">
+        <thead><tr><th>When</th><th>Action</th><th>By</th><th>IP</th><th>Remarks</th></tr></thead>
+        <tbody>
+        {% for log in record.audit_logs.all %}
+        <tr>
+            <td>{{ log.created_at|date:"d-M-Y H:i" }}</td>
+            <td>{{ log.action }}</td>
+            <td>{{ log.performed_by|default:"—" }}</td>
+            <td>{{ log.ip_address|default:"—" }}</td>
+            <td>{{ log.remarks|truncatewords:10 }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

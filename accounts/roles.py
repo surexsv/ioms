@@ -15,7 +15,7 @@ LEGACY_SUPERVISOR = 'Supervisor'
 
 FIELD_ROLES = (ROLE_ENGINEER, ROLE_TECHNICIAN)
 
-# Director → Operations → Project Manager → Supervisor → Engineer/Technician
+# Director → Operations → Project Manager → Supervisor → Field Team → Accounts → Back Office
 ROLE_HIERARCHY = (
     ROLE_DIRECTOR,
     ROLE_OPERATIONS,

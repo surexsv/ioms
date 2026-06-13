@@ -371,6 +371,36 @@ body.ioms-app.ioms-guest {
 .ioms-kpi .value.text-warning { color: #c79100; }
 .ioms-kpi .value.text-danger { color: var(--ioms-danger); }
 
+/* Clickable KPI cards (Case Intelligence, dashboards) */
+a.ioms-kpi-link {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+a.ioms-kpi-link:hover,
+a.ioms-kpi-link:focus {
+    text-decoration: none;
+    color: inherit;
+    box-shadow: var(--ioms-shadow-lg);
+    transform: translateY(-1px);
+}
+.ioms-kpi-link.ioms-kpi-warn {
+    border-left: 4px solid #f0ad4e;
+    background: linear-gradient(135deg, #fffdf5 0%, #fff 100%);
+}
+.ioms-kpi-link.ioms-kpi-danger {
+    border-left: 4px solid var(--ioms-danger);
+    background: linear-gradient(135deg, #fff8f8 0%, #fff 100%);
+}
+.ioms-kpi-link .case-kpi-icon {
+    font-size: 1.35rem;
+    color: var(--ioms-blue);
+    margin-bottom: 6px;
+    opacity: 0.85;
+}
+.ioms-kpi-link.ioms-kpi-warn .case-kpi-icon { color: #c79100; }
+.ioms-kpi-link.ioms-kpi-danger .case-kpi-icon { color: var(--ioms-danger); }
+
 /* —— Charts —— */
 .ioms-charts-row {
     display: grid;
@@ -682,3 +712,194 @@ table:not(.ioms-table) tbody tr:hover td {
     }
     .ioms-kpi .value { font-size: 1.35rem; }
 }
+
+/* Case Intelligence */
+.ioms-global-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    max-width: 360px;
+    flex: 1;
+}
+.ioms-global-search input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+.case-health-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+}
+.case-health-green { background: #d4edda; color: #155724; }
+.case-health-yellow { background: #fff3cd; color: #856404; }
+.case-health-red { background: #f8d7da; color: #721c24; }
+.case-health-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: currentColor;
+}
+.case-stuck-flag {
+    margin-left: auto;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.case-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px 20px;
+}
+.case-summary-grid label {
+    display: block;
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+}
+.case-timeline { border-left: 2px solid #dee2e6; margin-left: 8px; padding-left: 16px; }
+.case-timeline-item { margin-bottom: 16px; position: relative; }
+.case-timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -23px;
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #0d6efd;
+    border: 2px solid #fff;
+}
+.case-timeline-date { font-size: 0.85rem; color: #6c757d; }
+.case-timeline-activity { font-weight: 600; margin: 2px 0; }
+.case-timeline-user { font-size: 0.9rem; }
+.case-timeline-remarks { font-size: 0.85rem; color: #495057; margin-top: 4px; }
+.case-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.case-dash-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 12px;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.15s;
+}
+.case-dash-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-decoration: none; }
+.case-dash-warn { border-color: #ffe08a; background: #fffdf5; }
+.case-dash-danger { border-color: #f5c6cb; background: #fff8f8; }
+.case-dash-value { font-size: 1.75rem; font-weight: 700; line-height: 1.2; }
+.case-dash-label { font-size: 0.8rem; color: #6c757d; text-align: center; margin-top: 4px; }
+.case-health-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.case-health-pill.case-health-green { background: #d4edda; color: #155724; }
+.case-health-pill.case-health-yellow { background: #fff3cd; color: #856404; }
+.case-health-pill.case-health-red { background: #f8d7da; color: #721c24; }
+.case-monitoring-panel { border-left: 4px solid #0d6efd; margin-bottom: 20px; }
+.case-monitoring-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.case-dashboard-subtitle {
+    margin: 6px 0 0;
+    color: var(--ioms-text-muted);
+    font-size: 0.9rem;
+    max-width: 520px;
+}
+.case-dashboard-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.case-intel-kpi-grid { margin-bottom: 28px; }
+.case-stuck-list-card { margin-top: 8px; }
+.case-doc-type { font-size: 0.75rem; color: var(--ioms-text-muted); margin-top: 2px; }
+.case-row-actions { white-space: nowrap; }
+.case-row-actions .btn { margin: 2px 0; }
+.case-empty-msg, .case-hint-card p { margin: 0; color: var(--ioms-text-muted); }
+.case-hint-card { background: #f8f9fa; border: 1px dashed #dee2e6; }
+
+/* Attendance capture (photo + GPS) */
+.attendance-capture-card { max-width: 900px; }
+.attendance-capture-hint { color: var(--ioms-text-muted); margin-bottom: 16px; }
+.attendance-capture-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+.attendance-video {
+    width: 100%;
+    max-width: 360px;
+    border-radius: 8px;
+    background: #111;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+}
+.attendance-preview {
+    width: 100%;
+    max-width: 200px;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+.attendance-status { font-size: 0.9rem; color: var(--ioms-text-muted); margin: 8px 0; }
+.attendance-submit-btn { margin-right: 8px; }
+.attendance-widget-card { margin-bottom: 20px; }
+.attendance-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+.attendance-detail-photo {
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+/* Daily Operations Meeting sub-navigation */
+.dom-subnav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--ioms-border, #dee2e6);
+}
+.dom-subnav a {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    color: var(--ioms-text-muted, #666);
+    background: #f8f9fa;
+}
+.dom-subnav a.active,
+.dom-subnav a:hover {
+    background: var(--ioms-primary, #0d6efd);
+    color: #fff;
+}
+.dom-hint { color: var(--ioms-text-muted); margin: 0; }

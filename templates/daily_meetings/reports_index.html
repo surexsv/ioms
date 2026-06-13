@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Meeting Reports — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='reports' %}
+<div class="page-header"><h1>Meeting Reports</h1></div>
+<div class="ioms-kpi-grid">
+    <a href="{% url 'dom_report_register' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-journal-text"></i></div><div class="label">Meeting Register</div></div></a>
+    <a href="{% url 'dom_report_attendance' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-people"></i></div><div class="label">Attendance Report</div></div></a>
+    <a href="{% url 'dom_report_late' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-clock"></i></div><div class="label">Late Attendance</div></div></a>
+    <a href="{% url 'dom_report_actions' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-check2-square"></i></div><div class="label">Action Items</div></div></a>
+    <a href="{% url 'dom_report_open_items' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-list-task"></i></div><div class="label">Open Items</div></div></a>
+    <a href="{% url 'dom_report_effectiveness' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-bar-chart"></i></div><div class="label">Effectiveness</div></div></a>
+    <a href="{% url 'dom_report_messages' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-chat-quote"></i></div><div class="label">Management Messages</div></div></a>
+</div>
+{% endblock %}

@@ -1,14 +1,5 @@
 {% extends 'base.html' %}
 {% block title %}My Attendance — IOMS{% endblock %}
-{% block extra_css %}
-<style>
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 14px; margin-bottom: 24px; }
-    .kpi { background: #fff; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-    .kpi .value { font-size: 1.5rem; font-weight: 700; }
-    .action-btns { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
-    @media (max-width: 500px) { .action-btns .btn { flex: 1 1 100%; } }
-</style>
-{% endblock %}
 {% block content %}
 <div class="page-header">
     <h1>My Attendance</h1>
@@ -17,56 +8,73 @@
     {% endif %}
 </div>
 
-{% if is_field %}
-<div class="card" style="margin-bottom:20px;">
-    <h3 style="margin-top:0;">Today — {{ today_record.attendance_date|default:"Not marked" }}</h3>
-    {% if today_record %}
-    <p>
-        Status: <strong>{{ today_record.get_status_display }}</strong><br>
-        Check In: {{ today_record.check_in_time|default:"—" }}<br>
-        Check Out: {{ today_record.check_out_time|default:"—" }}<br>
-        Working Hours: {{ today_record.working_hours|default:"—" }}<br>
-        Location: {{ today_record.location|default:"—" }}
-    </p>
-    {% else %}
-    <p>No attendance marked for today.</p>
-    {% endif %}
-    <div class="action-btns">
-        {% if not today_record or not today_record.check_in_time %}
-        <a href="{% url 'attendance_check_in' %}" class="btn btn-success">Check In</a>
+{% if attendance_required %}
+<div class="card attendance-widget-card">
+    <h3 class="ioms-section-title" style="margin-top:0;">Today's Attendance</h3>
+    <div class="ioms-kpi-grid">
+        <div class="ioms-kpi">
+            <div class="value">{% if today_record and today_record.check_in_time %}{{ today_record.check_in_time|time:"H:i" }}{% else %}—{% endif %}</div>
+            <div class="label">Check-In Time</div>
+        </div>
+        <div class="ioms-kpi">
+            <div class="value">{% if today_record and today_record.check_out_time %}{{ today_record.check_out_time|time:"H:i" }}{% else %}—{% endif %}</div>
+            <div class="label">Check-Out Time</div>
+        </div>
+        <div class="ioms-kpi">
+            <div class="value">{% if today_record and today_record.working_hours %}{{ today_record.working_hours }}h{% else %}—{% endif %}</div>
+            <div class="label">Working Hours</div>
+        </div>
+        <div class="ioms-kpi">
+            <div class="value">{% if today_record %}{{ today_record.get_status_display }}{% else %}Not Marked{% endif %}</div>
+            <div class="label">Status</div>
+        </div>
+        <div class="ioms-kpi">
+            <div class="value text-primary">{{ month_stats.attendance_percentage }}%</div>
+            <div class="label">Monthly Attendance %</div>
+        </div>
+    </div>
+    <div class="action-btns" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+        {% if widget.can_check_in %}
+        <a href="{% url 'attendance_check_in' %}" class="btn btn-success"><i class="bi bi-camera"></i> Check In</a>
         {% endif %}
-        {% if today_record and today_record.check_in_time and not today_record.check_out_time %}
-        <a href="{% url 'attendance_check_out' %}" class="btn btn-warning">Check Out</a>
+        {% if widget.can_check_out %}
+        <a href="{% url 'attendance_check_out' %}" class="btn btn-warning"><i class="bi bi-camera"></i> Check Out</a>
+        {% endif %}
+        {% if today_record %}
+        <a href="{% url 'attendance_detail' today_record.pk %}" class="btn btn-secondary btn-sm">View Details</a>
         {% endif %}
     </div>
 </div>
 {% endif %}
 
-<h3>Monthly Summary ({{ month_stats.month }}/{{ month_stats.year }})</h3>
-<div class="kpi-grid">
-    <div class="kpi"><div class="value" style="color:#28a745;">{{ month_stats.present }}</div><div class="label" style="color:#888;font-size:0.85rem;">Present</div></div>
-    <div class="kpi"><div class="value" style="color:#dc3545;">{{ month_stats.absent }}</div><div class="label" style="color:#888;font-size:0.85rem;">Absent</div></div>
-    <div class="kpi"><div class="value" style="color:#ffc107;">{{ month_stats.half_day }}</div><div class="label" style="color:#888;font-size:0.85rem;">Half Day</div></div>
-    <div class="kpi"><div class="value" style="color:#007bff;">{{ month_stats.attendance_percentage }}%</div><div class="label" style="color:#888;font-size:0.85rem;">Monthly %</div></div>
+<h3 class="ioms-section-title">Monthly Summary ({{ month_stats.month }}/{{ month_stats.year }})</h3>
+<div class="ioms-kpi-grid">
+    <div class="ioms-kpi"><div class="value text-success">{{ month_stats.present }}</div><div class="label">Present</div></div>
+    <div class="ioms-kpi"><div class="value text-danger">{{ month_stats.absent }}</div><div class="label">Absent</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ month_stats.half_day }}</div><div class="label">Half Day</div></div>
+    <div class="ioms-kpi"><div class="value text-primary">{{ month_stats.leave }}</div><div class="label">Leave</div></div>
 </div>
 
 <div class="card">
     <h3 style="margin-top:0;">Recent History</h3>
-    <div style="overflow-x:auto;">
-    <table>
-        <tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Hours</th></tr>
-        {% for r in history %}
-        <tr>
-            <td>{{ r.attendance_date }}</td>
-            <td>{{ r.get_status_display }}</td>
-            <td>{{ r.check_in_time|default:"—" }}</td>
-            <td>{{ r.check_out_time|default:"—" }}</td>
-            <td>{{ r.working_hours|default:"—" }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5">No history.</td></tr>
-        {% endfor %}
-    </table>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Hours</th><th></th></tr></thead>
+            <tbody>
+            {% for r in history %}
+            <tr>
+                <td>{{ r.attendance_date|date:"d-M-Y" }}</td>
+                <td>{{ r.get_status_display }}</td>
+                <td>{{ r.check_in_time|default:"—" }}</td>
+                <td>{{ r.check_out_time|default:"—" }}</td>
+                <td>{{ r.working_hours|default:"—" }}</td>
+                <td><a href="{% url 'attendance_detail' r.pk %}" class="btn btn-secondary btn-sm">Details</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No history.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

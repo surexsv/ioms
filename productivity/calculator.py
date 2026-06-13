@@ -65,10 +65,14 @@ def sync_wcr_participants(wcr, participants_data):
     """
     WCRTeamParticipant.objects.filter(wcr=wcr).delete()
     created = []
+    seen_employee_ids = set()
     for row in participants_data:
         if not row.get('attended', True):
             continue
         emp = row['employee']
+        if emp.pk in seen_employee_ids:
+            continue
+        seen_employee_ids.add(emp.pk)
         hours = row.get('hours_worked') or Decimal('0')
         man_days = row.get('man_days')
         if man_days is None and hours:
@@ -104,17 +108,20 @@ def build_participants_from_schedule(schedule, wcr=None):
         man_days = compute_man_days_from_schedule(schedule, 1)
 
     rows = []
+    seen_employee_ids = set()
 
     def add(user, role):
-        if user:
-            rows.append({
-                'employee': user,
-                'participant_role': role,
-                'attended': True,
-                'hours_worked': hours,
-                'man_days': man_days,
-                'from_schedule': True,
-            })
+        if not user or user.pk in seen_employee_ids:
+            return
+        seen_employee_ids.add(user.pk)
+        rows.append({
+            'employee': user,
+            'participant_role': role,
+            'attended': True,
+            'hours_worked': hours,
+            'man_days': man_days,
+            'from_schedule': True,
+        })
 
     add(schedule.project_manager, PARTICIPANT_PM)
     add(schedule.supervisor, PARTICIPANT_SUPERVISOR)
@@ -123,7 +130,7 @@ def build_participants_from_schedule(schedule, wcr=None):
         add(eng, PARTICIPANT_SUPPORTING_ENGINEER)
     for tech in schedule.technicians.all():
         add(tech, PARTICIPANT_TECHNICIAN)
-    # Legacy: assigned_engineers → supporting if no new fields set
+    # Legacy: assigned_engineers when no structured team fields populated
     if not rows:
         for eng in schedule.assigned_engineers.all():
             role = PARTICIPANT_TECHNICIAN if user_role(eng) == ROLE_TECHNICIAN else PARTICIPANT_SUPPORTING_ENGINEER

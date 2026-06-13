@@ -130,6 +130,8 @@ def create_order(request):
                 related_model='Order',
                 related_object_id=order.pk,
             )
+            from case_intelligence.integrations import order_created
+            order_created(request.user, order)
             messages.success(request, f'Order {order.order_no} created.')
             return redirect('order_detail', pk=order.pk)
     else:
@@ -176,6 +178,23 @@ def order_detail(request, pk):
         if order.update_status(new_status):
             from productivity.gps_service import record_order_status_gps
             record_order_status_gps(request.user, order, old_status, new_status, request)
+            from case_intelligence.logger import log_case_event
+            from case_intelligence.constants import MOD_ORDER
+            if new_status == 'IN_PROGRESS' and schedule:
+                from case_intelligence.integrations import work_started
+                work_started(request.user, schedule, remarks=order.order_no)
+            else:
+                log_case_event(
+                    request.user,
+                    module=MOD_ORDER,
+                    document_type='Order',
+                    document_number=order.order_no or str(order.order_id),
+                    description=f'Order {STATUS_LABELS.get(new_status, new_status)}',
+                    previous_status=old_status,
+                    new_status=new_status,
+                    client=order.client,
+                    content_object=order,
+                )
             messages.success(request, f'Status updated to {STATUS_LABELS.get(new_status, new_status)}.')
         else:
             messages.error(request, 'Invalid status transition.')
@@ -194,6 +213,17 @@ def order_detail(request, pk):
             schedule=schedule, employee=request.user,
         ).first()
 
+    from case_intelligence.constants import MOD_ORDER
+    from case_intelligence.services import panel_context
+    case_ctx = panel_context(
+        order,
+        module=MOD_ORDER,
+        document_number=order.order_no or str(order.order_id),
+        status=order.get_status_display(),
+        stage=order.get_status_display(),
+        assigned_to=str(order.assigned_to or '—'),
+    )
+
     return render(request, 'orders/order_detail.html', {
         'order': order,
         'schedule': schedule,
@@ -205,4 +235,5 @@ def order_detail(request, pk):
         'can_manage_schedule': can_manage_scheduling(request.user),
         'site_attendance': site_attendance,
         'can_site_attendance': can_site_attendance,
+        **case_ctx,
     })

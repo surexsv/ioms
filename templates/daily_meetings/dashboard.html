@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Daily Meetings — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='dashboard' %}
+<div class="page-header">
+    <h1>Daily Operations Meeting</h1>
+    <div>
+        {% if can_create_meeting %}
+        <a href="{% url 'dom_meeting_today' %}" class="btn btn-success">Today's Meeting</a>
+        <a href="{% url 'dom_meeting_create' %}" class="btn btn-primary">+ New Meeting</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="ioms-kpi-grid">
+    <div class="ioms-kpi">
+        <div class="value">{% if summary.today_meeting %}{{ summary.today_meeting.meeting_number }}{% else %}—{% endif %}</div>
+        <div class="label">Today's Meeting</div>
+    </div>
+    <div class="ioms-kpi">
+        <div class="value text-success">{{ summary.attendance.present_pct|default:0 }}%</div>
+        <div class="label">Attendance %</div>
+    </div>
+    <div class="ioms-kpi">
+        <div class="value text-warning">{{ summary.attendance.late_pct|default:0 }}%</div>
+        <div class="label">Late %</div>
+    </div>
+    <div class="ioms-kpi">
+        <div class="value">{{ summary.open_actions }}</div>
+        <div class="label">Open Actions</div>
+    </div>
+    <div class="ioms-kpi">
+        <div class="value text-danger">{{ summary.overdue_actions }}</div>
+        <div class="label">Overdue Actions</div>
+    </div>
+    <div class="ioms-kpi">
+        <div class="value text-success">{{ summary.completed_actions }}</div>
+        <div class="label">Completed Actions</div>
+    </div>
+    <div class="ioms-kpi">
+        <div class="value">{{ summary.recurring_open_items }}</div>
+        <div class="label">Recurring Open Items</div>
+    </div>
+</div>
+
+{% if summary.today_meeting %}
+<div class="card" style="margin-top:16px;">
+    <h3 style="margin-top:0;">Today's Meeting — {{ summary.today_meeting.meeting_date|date:"d M Y" }}</h3>
+    <p><strong>Topic:</strong> {{ summary.today_meeting.topic_of_day|default:"—" }} &nbsp;|&nbsp;
+       <strong>Status:</strong> {{ summary.today_meeting.get_status_display }}</p>
+    <a href="{% url 'dom_meeting_detail' summary.today_meeting.pk %}" class="btn btn-primary btn-sm">Open Meeting</a>
+    <a href="{% url 'dom_mom_print' summary.today_meeting.pk %}" class="btn btn-secondary btn-sm">MOM Print</a>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3 style="margin-top:0;">Recent Meetings</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Number</th><th>Date</th><th>Type</th><th>Status</th><th>Conducted By</th><th></th></tr></thead>
+            <tbody>
+            {% for m in recent_meetings %}
+            <tr>
+                <td>{{ m.meeting_number }}</td>
+                <td>{{ m.meeting_date|date:"d-M-Y" }}</td>
+                <td>{{ m.get_meeting_type_display }}</td>
+                <td>{{ m.get_status_display }}</td>
+                <td>{{ m.conducted_by|default:"—" }}</td>
+                <td><a href="{% url 'dom_meeting_detail' m.pk %}" class="btn btn-sm btn-secondary">View</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">No meetings yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

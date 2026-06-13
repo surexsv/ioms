@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Case Reports — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Case Intelligence Reports</h1>
+    <a href="{% url 'case_stuck_dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+<div class="card">
+    <h3 style="margin-top:0;">Available Reports</h3>
+    <ul>
+        <li><a href="?report=stuck">Stuck Case Report</a></li>
+        <li><a href="?report=aging">Case Aging Report</a></li>
+        <li><a href="?report=enquiry_conversion">Enquiry Conversion Report</a></li>
+        <li><a href="?report=quotation_conversion">Quotation Conversion Report</a></li>
+        <li><a href="?report=delay">Order Delay Report</a></li>
+        <li><a href="?report=invoice">Invoice Approval Report</a></li>
+        <li><a href="?report=payment">Payment Follow-up Report</a></li>
+    </ul>
+    {% if can_export %}
+    <p style="margin-top:16px;">
+        <a href="{% url 'case_export_stuck_csv' %}" class="btn btn-secondary btn-sm">Export Stuck Cases (Excel/CSV)</a>
+        <a href="{% url 'case_export_aging_csv' %}" class="btn btn-secondary btn-sm">Export Case Aging (Excel/CSV)</a>
+    </p>
+    {% endif %}
+</div>
+{% if report == 'stuck' and stuck_cases %}
+<div class="card">
+    <h3>Stuck Case Report</h3>
+    <table class="ioms-table">
+        <thead><tr><th>Document</th><th>Type</th><th>Client</th><th>Flag</th><th>Detail</th></tr></thead>
+        <tbody>
+            {% for row in stuck_cases %}
+            <tr>
+                <td>{{ row.document_number }}</td>
+                <td>{{ row.document_type }}</td>
+                <td>{{ row.client }}</td>
+                <td>{{ row.flag }}</td>
+                <td>{{ row.detail }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% if conversion_rows %}
+<div class="card">
+    <h3>Conversion Report</h3>
+    <table class="ioms-table">
+        <thead><tr><th>Pipeline</th><th>Total</th><th>Converted</th><th>Rate</th></tr></thead>
+        <tbody>
+            {% for row in conversion_rows %}
+            <tr>
+                <td>{{ row.label }}</td>
+                <td>{{ row.total }}</td>
+                <td>{{ row.converted }}</td>
+                <td>{% if row.total %}{% widthratio row.converted row.total 100 %}%{% else %}—{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% if report == 'delay' or report == 'invoice' or report == 'payment' %}
+{% if stuck_cases %}
+<div class="card">
+    <h3>{{ report|title }} Report</h3>
+    <table class="ioms-table">
+        <thead><tr><th>Document</th><th>Type</th><th>Client</th><th>Flag</th><th>Detail</th></tr></thead>
+        <tbody>
+            {% for row in stuck_cases %}
+            {% if report == 'delay' and row.flag == 'EXECUTION_DELAYED' %}
+            <tr><td>{{ row.document_number }}</td><td>{{ row.document_type }}</td><td>{{ row.client }}</td><td>{{ row.flag }}</td><td>{{ row.detail }}</td></tr>
+            {% elif report == 'invoice' and row.flag == 'INVOICE_APPROVAL_PENDING' %}
+            <tr><td>{{ row.document_number }}</td><td>{{ row.document_type }}</td><td>{{ row.client }}</td><td>{{ row.flag }}</td><td>{{ row.detail }}</td></tr>
+            {% elif report == 'payment' and row.flag == 'PAYMENT_FOLLOWUP' %}
+            <tr><td>{{ row.document_number }}</td><td>{{ row.document_type }}</td><td>{{ row.client }}</td><td>{{ row.flag }}</td><td>{{ row.detail }}</td></tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

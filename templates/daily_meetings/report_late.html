@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Late Attendance — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='reports' %}
+<div class="page-header"><h1>Late Attendance — {{ date|date:"d M Y" }}</h1></div>
+<form method="get"><input type="date" name="date" value="{{ date|date:'Y-m-d' }}"><button type="submit" class="btn btn-primary btn-sm">Go</button></form>
+<table class="ioms-table" style="margin-top:16px;"><thead><tr><th>Employee</th><th>Join Time</th><th>Remarks</th></tr></thead>
+<tbody>{% for a in late_attendees %}<tr><td>{{ a.employee }}</td><td>{{ a.join_time }}</td><td>{{ a.remarks|default:"—" }}</td></tr>{% empty %}<tr><td colspan="3">No late arrivals.</td></tr>{% endfor %}</tbody></table>
+{% endblock %}

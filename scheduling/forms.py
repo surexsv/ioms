@@ -6,6 +6,38 @@ from accounts.roles import ROLE_ENGINEER, ROLE_PROJECT_MANAGER, ROLE_SUPERVISOR,
 from .models import WorkSchedule
 
 
+FIELD_STATUS_CHOICES = (
+    (WorkSchedule.STATUS_ASSIGNED, 'Assigned'),
+    (WorkSchedule.STATUS_IN_PROGRESS, 'In Progress'),
+    (WorkSchedule.STATUS_COMPLETED, 'Completed'),
+)
+
+
+class FieldScheduleUpdateForm(forms.ModelForm):
+    """Limited schedule update for assigned field team members."""
+
+    class Meta:
+        model = WorkSchedule
+        fields = ['status', 'field_work_remarks']
+        widgets = {
+            'field_work_remarks': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Work notes, findings, completion remarks…'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        current = self.instance.status if self.instance else WorkSchedule.STATUS_ASSIGNED
+        allowed = {current}
+        if current == WorkSchedule.STATUS_ASSIGNED:
+            allowed.add(WorkSchedule.STATUS_IN_PROGRESS)
+        elif current == WorkSchedule.STATUS_IN_PROGRESS:
+            allowed.add(WorkSchedule.STATUS_COMPLETED)
+        elif current == WorkSchedule.STATUS_PLANNED:
+            allowed.add(WorkSchedule.STATUS_ASSIGNED)
+        self.fields['status'].choices = [
+            c for c in FIELD_STATUS_CHOICES if c[0] in allowed
+        ]
+
+
 class WorkScheduleForm(forms.ModelForm):
     assigned_engineers = forms.ModelMultipleChoiceField(
         queryset=User.objects.filter(role__in=['ENGINEER', 'Technician'], is_active_employee=True),

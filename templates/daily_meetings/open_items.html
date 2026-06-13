@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Open Items Register — IOMS{% endblock %}
+{% block content %}
+{% include 'daily_meetings/_subnav.html' with dom_nav='open_items' %}
+<div class="page-header">
+    <h1>Open Items Register</h1>
+    {% if can_manage %}<a href="{% url 'dom_open_item_create' %}" class="btn btn-primary">+ Add Item</a>{% endif %}
+</div>
+<table class="ioms-table">
+    <thead><tr><th>Code</th><th>Title</th><th>Category</th><th>Status</th><th>Owner</th><th>Target</th><th></th></tr></thead>
+    <tbody>{% for i in items %}
+    <tr>
+        <td>{{ i.item_code }}</td>
+        <td>{{ i.title }}</td>
+        <td>{{ i.category|default:"—" }}</td>
+        <td>{{ i.get_status_display }}</td>
+        <td>{{ i.owner|default:"—" }}</td>
+        <td>{{ i.target_date|default:"—" }}</td>
+        <td>{% if can_manage %}<a href="{% url 'dom_open_item_edit' i.pk %}" class="btn btn-sm btn-secondary">Edit</a>{% endif %}</td>
+    </tr>
+    {% empty %}<tr><td colspan="7">No open items.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

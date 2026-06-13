@@ -78,6 +78,27 @@ def resolve_detail_url(schedule):
     return None
 
 
+def survey_reference_context(schedule):
+    """Read-only enquiry/survey info for schedule detail — no enquiry module required."""
+    if not schedule or not schedule.enquiry_id:
+        return None
+    enquiry = schedule.enquiry
+    if not enquiry:
+        return None
+    return {
+        'enquiry_number': enquiry.enquiry_number,
+        'client_name': enquiry.client.name if enquiry.client_id else '—',
+        'site_address': enquiry.location,
+        'contact_person': enquiry.contact_person,
+        'mobile': enquiry.mobile,
+        'email': enquiry.email,
+        'description': enquiry.description,
+        'survey_required': enquiry.survey_required,
+        'survey_remarks': enquiry.survey_remarks,
+        'remarks': enquiry.remarks,
+    }
+
+
 def category_from_order(order):
     from scheduling.constants import ORDER_TYPE_TO_CATEGORY, CAT_PROJECT
     return ORDER_TYPE_TO_CATEGORY.get(order.order_type, CAT_PROJECT)
