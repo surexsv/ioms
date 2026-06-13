@@ -8,7 +8,13 @@
 
 <div class="card" style="max-width:860px;">
     <p style="color:#6c757d;margin-top:0;">
+        {% if order %}
         Order: <strong>{{ order.order_no|default:order.order_id }}</strong> — {{ order.client.name }} — {{ order.display_site_name }}
+        {% elif enquiry %}
+        Enquiry: <strong>{{ enquiry.enquiry_number }}</strong> — {{ enquiry.client.name }}
+        | Category: <strong>{{ schedule.get_schedule_category_display }}</strong>
+        | Ref: <strong>{{ schedule.reference_number }}</strong>
+        {% endif %}
     </p>
     {% if schedule %}<p><strong>Schedule #:</strong> {{ schedule.schedule_number }}</p>{% endif %}
 

@@ -16,6 +16,9 @@ def get_or_create_attendance(schedule, employee):
 
 
 def site_check_in(schedule, employee, request=None, site_photo=None):
+    from company_settings.field_ops import is_checkin_enabled, is_site_photos_enabled
+    if not is_checkin_enabled():
+        return None, False, 'Site check-in is disabled in field operations settings.'
     from productivity.models import ScheduleSiteAttendance
 
     att = get_or_create_attendance(schedule, employee)
@@ -35,6 +38,8 @@ def site_check_in(schedule, employee, request=None, site_photo=None):
     att.check_in_latitude = lat
     att.check_in_longitude = lng
     att.check_in_address = address
+    if site_photo and not is_site_photos_enabled():
+        site_photo = None
     if site_photo:
         att.site_photo = site_photo
     att.save()
@@ -44,8 +49,9 @@ def site_check_in(schedule, employee, request=None, site_photo=None):
         request=request,
         latitude=lat,
         longitude=lng,
-        order=schedule.order,
+        order=schedule.order if schedule.order_id else None,
         schedule=schedule,
+        enquiry=schedule.enquiry if schedule.enquiry_id else None,
         remarks=f'Check-in: {schedule.schedule_number}',
         site_photo=site_photo,
     )
@@ -81,8 +87,9 @@ def site_check_out(schedule, employee, request=None, work_photo=None):
         request=request,
         latitude=lat,
         longitude=lng,
-        order=schedule.order,
+        order=schedule.order if schedule.order_id else None,
         schedule=schedule,
+        enquiry=schedule.enquiry if schedule.enquiry_id else None,
         remarks=f'Check-out: {schedule.schedule_number}',
         work_photo=work_photo,
     )

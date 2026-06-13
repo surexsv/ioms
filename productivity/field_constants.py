@@ -22,6 +22,7 @@ FA_WCR_SUBMITTED = 'WCR_SUBMITTED'
 FA_WCR_APPROVED = 'WCR_APPROVED'
 
 # Site attendance
+FA_SURVEY_ASSIGNED = 'SURVEY_ASSIGNED'
 FA_SITE_CHECK_IN = 'SITE_CHECK_IN'
 FA_SITE_CHECK_OUT = 'SITE_CHECK_OUT'
 
@@ -39,6 +40,7 @@ FIELD_ACTION_CHOICES = (
     (FA_WCR_DRAFT, 'WCR Draft Saved'),
     (FA_WCR_SUBMITTED, 'WCR Submitted'),
     (FA_WCR_APPROVED, 'WCR Approved'),
+    (FA_SURVEY_ASSIGNED, 'Survey Assigned'),
     (FA_SITE_CHECK_IN, 'Site Check-In'),
     (FA_SITE_CHECK_OUT, 'Site Check-Out'),
 )

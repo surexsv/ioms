@@ -79,6 +79,37 @@ WCRParticipantFormSet = forms.inlineformset_factory(
 )
 
 
+class SurveyWCRForm(AuthorizedSignatoryFormMixin, forms.ModelForm):
+    work_start_time = forms.DateTimeField(
+        required=False,
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        label='Work Start Time',
+    )
+    work_end_time = forms.DateTimeField(
+        required=False,
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        label='Work End Time',
+    )
+
+    class Meta:
+        model = WorkCompletionReport
+        fields = [
+            'work_description', 'site_findings', 'feasibility_remarks', 'photo',
+            'work_start_time', 'work_end_time', 'completion_status',
+            *SIGNATORY_FIELD_NAMES,
+        ]
+        widgets = {
+            'work_description': forms.Textarea(attrs={'rows': 3}),
+            'site_findings': forms.Textarea(attrs={'rows': 4}),
+            'feasibility_remarks': forms.Textarea(attrs={'rows': 3}),
+            'completion_status': forms.Select(),
+        }
+        labels = {
+            'work_description': 'Work Summary',
+            'photo': 'Survey Photo',
+        }
+
+
 class WCRApproveForm(forms.ModelForm):
     class Meta:
         model = WorkCompletionReport

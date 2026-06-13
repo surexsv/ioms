@@ -1,4 +1,3 @@
-
 from django.db import models
 from orders.models import Order
 from django.conf import settings
@@ -6,10 +5,25 @@ from django.conf import settings
 from company_settings.mixins import AuthorizedSignatoryMixin
 from productivity.constants import COMPLETION_STATUS_CHOICES, COMPLETION_COMPLETED
 
+WCR_TYPE_EXECUTION = 'EXECUTION'
+WCR_TYPE_SURVEY = 'SURVEY'
+WCR_TYPE_CHOICES = (
+    (WCR_TYPE_EXECUTION, 'Execution WCR'),
+    (WCR_TYPE_SURVEY, 'Survey WCR'),
+)
+
 
 class WorkCompletionReport(AuthorizedSignatoryMixin, models.Model):
 
-    order = models.OneToOneField(Order, on_delete=models.CASCADE)
+    wcr_type = models.CharField(max_length=12, choices=WCR_TYPE_CHOICES, default=WCR_TYPE_EXECUTION)
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, null=True, blank=True)
+    enquiry = models.OneToOneField(
+        'enquiries.Enquiry',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='survey_wcr',
+    )
     schedule = models.ForeignKey(
         'scheduling.WorkSchedule',
         on_delete=models.SET_NULL,
@@ -32,9 +46,17 @@ class WorkCompletionReport(AuthorizedSignatoryMixin, models.Model):
         choices=COMPLETION_STATUS_CHOICES,
         default=COMPLETION_COMPLETED,
     )
+    site_findings = models.TextField(blank=True, verbose_name='Site Findings')
+    feasibility_remarks = models.TextField(blank=True, verbose_name='Feasibility Remarks')
 
     def __str__(self):
+        if self.wcr_type == WCR_TYPE_SURVEY and self.enquiry_id:
+            return self.wcr_number or f'Survey WCR for {self.enquiry.enquiry_number}'
         return self.wcr_number or f"WCR for Order {self.order.order_id}"
+
+    @property
+    def is_survey_wcr(self):
+        return self.wcr_type == WCR_TYPE_SURVEY
 
     def save(self, *args, **kwargs):
         if not self.wcr_number:
@@ -45,6 +67,8 @@ class WorkCompletionReport(AuthorizedSignatoryMixin, models.Model):
             from productivity.calculator import compute_hours_from_times
             self.total_hours = compute_hours_from_times(self.work_start_time, self.work_end_time)
         super().save(*args, **kwargs)
+        if self.wcr_type == WCR_TYPE_SURVEY or not self.order_id:
+            return
         if self.approved:
             self.order.status = 'APPROVED'
         else:

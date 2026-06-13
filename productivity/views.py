@@ -185,7 +185,7 @@ def field_activity_list(request):
 @module_required(MODULE_PRODUCTIVITY)
 def site_check_in_view(request, schedule_pk):
     schedule = get_object_or_404(
-        WorkSchedule.objects.select_related('order'),
+        WorkSchedule.objects.select_related('order', 'enquiry'),
         pk=schedule_pk,
     )
     if request.method == 'POST':
@@ -199,10 +199,16 @@ def site_check_in_view(request, schedule_pk):
             messages.success(request, msg)
         else:
             messages.warning(request, msg)
-        return redirect('order_detail', pk=schedule.order_id)
+        from scheduling.engine import resolve_detail_url
+        from django.urls import reverse
+        target = resolve_detail_url(schedule)
+        if target:
+            return redirect(reverse(target[0], args=[target[1]]))
+        return redirect('schedule_list')
     return render(request, 'productivity/site_checkin.html', {
         'schedule': schedule,
         'order': schedule.order,
+        'enquiry': schedule.enquiry,
         'mode': 'checkin',
     })
 
@@ -210,7 +216,7 @@ def site_check_in_view(request, schedule_pk):
 @module_required(MODULE_PRODUCTIVITY)
 def site_check_out_view(request, schedule_pk):
     schedule = get_object_or_404(
-        WorkSchedule.objects.select_related('order'),
+        WorkSchedule.objects.select_related('order', 'enquiry'),
         pk=schedule_pk,
     )
     if request.method == 'POST':
@@ -224,10 +230,16 @@ def site_check_out_view(request, schedule_pk):
             messages.success(request, msg)
         else:
             messages.warning(request, msg)
-        return redirect('order_detail', pk=schedule.order_id)
+        from scheduling.engine import resolve_detail_url
+        from django.urls import reverse
+        target = resolve_detail_url(schedule)
+        if target:
+            return redirect(reverse(target[0], args=[target[1]]))
+        return redirect('schedule_list')
     return render(request, 'productivity/site_checkin.html', {
         'schedule': schedule,
         'order': schedule.order,
+        'enquiry': schedule.enquiry,
         'mode': 'checkout',
     })
 

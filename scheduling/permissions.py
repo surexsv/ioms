@@ -12,8 +12,9 @@ def can_manage_scheduling(user):
 def can_view_schedule(user, schedule):
     if not can_view_scheduling(user):
         return False
-    if user.is_superuser or user.role in ('DIRECTOR', 'OPERATIONS', 'Supervisor', 'ACCOUNTS'):
+    if user.is_superuser or user.role in ('DIRECTOR', 'OPERATIONS', 'Supervisor', 'ACCOUNTS', 'PROJECT_MANAGER'):
         return True
-    if user.role in ('ENGINEER', 'Technician'):
-        return schedule.assigned_engineers.filter(pk=user.pk).exists()
+    from scheduling.engine import user_on_schedule_team
+    if user_on_schedule_team(schedule, user):
+        return True
     return can_manage_scheduling(user)

@@ -1,6 +1,9 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+
+from scheduling.constants import REF_ENQUIRY, REF_ORDER, SCHEDULE_CATEGORY_CHOICES
 
 
 class WorkSchedule(models.Model):
@@ -19,9 +22,26 @@ class WorkSchedule(models.Model):
     )
 
     schedule_number = models.CharField(max_length=30, unique=True, blank=True)
+    schedule_category = models.CharField(
+        max_length=20, choices=SCHEDULE_CATEGORY_CHOICES, default='INSTALLATION', db_index=True,
+    )
+    reference_type = models.CharField(
+        max_length=10, choices=((REF_ENQUIRY, 'Enquiry'), (REF_ORDER, 'Order')),
+        blank=True, db_index=True,
+    )
+    reference_number = models.CharField(max_length=30, blank=True, db_index=True)
+    enquiry = models.OneToOneField(
+        'enquiries.Enquiry',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='field_schedule',
+    )
     order = models.OneToOneField(
         'orders.Order',
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name='work_schedule',
     )
     scheduled_start_date = models.DateField()
@@ -98,16 +118,42 @@ class WorkSchedule(models.Model):
         ordering = ['-scheduled_start_date', '-id']
 
     def __str__(self):
-        return self.schedule_number or f'Schedule for Order #{self.order_id}'
+        ref = self.reference_number or self.schedule_number
+        return f'{self.schedule_number or "Schedule"} — {ref}'
+
+    def clean(self):
+        if bool(self.order_id) == bool(self.enquiry_id):
+            raise ValidationError('Schedule must be linked to exactly one enquiry or order.')
+
+    @property
+    def is_survey_schedule(self):
+        from scheduling.constants import CAT_SURVEY
+        return self.schedule_category == CAT_SURVEY or bool(self.enquiry_id)
 
     def save(self, *args, **kwargs):
+        if self.enquiry_id and not self.order_id:
+            self.reference_type = REF_ENQUIRY
+            if not self.reference_number:
+                self.reference_number = self.enquiry.enquiry_number
+            if not self.schedule_category:
+                from scheduling.engine import category_from_enquiry
+                self.schedule_category = category_from_enquiry(self.enquiry)
+        elif self.order_id and not self.enquiry_id:
+            self.reference_type = REF_ORDER
+            if not self.reference_number:
+                self.reference_number = self.order.order_no or str(self.order.order_id)
+            if self.schedule_category == 'INSTALLATION' and self.order_id:
+                from scheduling.engine import category_from_order
+                self.schedule_category = category_from_order(self.order)
+
         if not self.schedule_number:
             from document_generator.services import generate_document_number
             from document_generator.constants import DOC_SCHEDULE
             self.schedule_number = generate_document_number(DOC_SCHEDULE)
         super().save(*args, **kwargs)
-        from .services import sync_order_from_schedule
-        sync_order_from_schedule(self)
+        if self.order_id:
+            from .services import sync_order_from_schedule
+            sync_order_from_schedule(self)
 
     @property
     def primary_engineer(self):

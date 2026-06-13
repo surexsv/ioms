@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Survey WCR — {{ enquiry.enquiry_number }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Submit Survey WCR</h1>
+    <a href="{% url 'enquiry_detail' enquiry.pk %}" class="btn btn-secondary">Back</a>
+</div>
+<div class="card" style="max-width:900px;">
+    <p><strong>Enquiry:</strong> {{ enquiry.enquiry_number }} — {{ enquiry.client.name }}</p>
+    <p><strong>Schedule:</strong> {{ schedule.schedule_number }} ({{ schedule.get_schedule_category_display }})</p>
+
+    <form method="post" enctype="multipart/form-data" data-gps-capture>
+        {% csrf_token %}
+        <input type="hidden" name="latitude" value="">
+        <input type="hidden" name="longitude" value="">
+        {% for field in form %}
+        {% if field.name not in 'authorized_signatory_name authorized_signatory_designation signature_image' %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<span style="color:#dc3545;">{{ field.errors.0 }}</span>{% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+        {% include 'company_settings/_signatory_form_fields.html' %}
+
+        <h3>Team Participation</h3>
+        <table class="ioms-table">
+            <thead><tr><th>Name</th><th>Role</th></tr></thead>
+            <tbody>
+                {% for row in schedule_team %}
+                <tr>
+                    <td>{{ row.employee.get_full_name|default:row.employee.username }}</td>
+                    <td>{{ row.participant_role }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-primary" style="margin-top:16px;">Submit Survey WCR</button>
+    </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/ioms-gps.js' %}"></script>
+{% endblock %}

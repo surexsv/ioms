@@ -4,6 +4,9 @@
 def sync_order_from_schedule(schedule):
     from .models import WorkSchedule
 
+    if not schedule.order_id:
+        return
+
     order = schedule.order
     update_fields = []
 

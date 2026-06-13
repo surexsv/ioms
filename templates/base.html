@@ -83,6 +83,11 @@
                     {% if pending_approval_count %}<span class="badge">{{ pending_approval_count }}</span>{% endif %}
                 </a>
                 {% endif %}
+                {% if show_nav_schedules %}
+                <a href="{% url 'schedule_list' %}" class="{% if nav_active == 'schedules' %}active{% endif %}">
+                    <i class="bi bi-calendar-event" aria-hidden="true"></i> Schedules
+                </a>
+                {% endif %}
                 {% if show_nav_productivity %}
                 <a href="{% url 'productivity_dashboard' %}" class="{% if nav_active == 'productivity' %}active{% endif %}">
                     <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Productivity

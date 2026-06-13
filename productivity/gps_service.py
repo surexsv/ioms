@@ -78,6 +78,12 @@ def record_field_event(
     site_photo=None,
     work_photo=None,
 ):
+    from company_settings.field_ops import is_gps_enabled, is_site_photos_enabled
+    if not is_gps_enabled() and latitude is None and longitude is None:
+        latitude = longitude = None
+    if not is_site_photos_enabled():
+        site_photo = work_photo = None
+
     from productivity.models import FieldActivityLog, GPSLocationRecord
 
     if request and (latitude is None or longitude is None):

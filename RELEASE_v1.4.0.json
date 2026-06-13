@@ -1,0 +1,14 @@
+{
+  "product": "Infomates Operations Management System",
+  "version": "1.4.0",
+  "rollback_tag": "v1.3.0",
+  "features": [
+    "Unified schedule engine with category and enquiry/order references",
+    "Auto survey schedule on engineer assignment",
+    "Survey WCR workflow",
+    "Engineer dashboard shows survey schedules",
+    "Schedule list and calendar views",
+    "Field operations admin settings"
+  ],
+  "git_tag": "v1.4.0"
+}

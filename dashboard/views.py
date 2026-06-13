@@ -102,13 +102,9 @@ def engineer_dashboard(request):
 
     today = date.today()
 
-    my_schedules = WorkSchedule.objects.filter(
+    from scheduling.engine import resolve_client_name, resolve_detail_url, schedules_for_user
 
-        assigned_engineers=user,
-
-    ).exclude(status=WorkSchedule.STATUS_CANCELLED).select_related('order', 'order__client')
-
-
+    my_schedules = schedules_for_user(user)
 
     active = my_schedules.exclude(
 
@@ -124,13 +120,27 @@ def engineer_dashboard(request):
 
     my_orders = Order.objects.filter(
 
-        Q(work_schedule__assigned_engineers=user) | Q(assigned_to=user),
+        Q(work_schedule__lead_engineer=user)
+        | Q(work_schedule__assigned_engineers=user)
+        | Q(work_schedule__supporting_engineers=user)
+        | Q(work_schedule__technicians=user)
+        | Q(assigned_to=user),
 
     ).distinct()
 
     needs_wcr = my_orders.filter(status='COMPLETED').filter(workcompletionreport__isnull=True)
 
+    survey_schedules = my_schedules.filter(enquiry__isnull=False).exclude(
+        status=WorkSchedule.STATUS_COMPLETED,
+    )[:10]
 
+    pending_survey_wcr = my_schedules.filter(
+        enquiry__isnull=False,
+        status=WorkSchedule.STATUS_IN_PROGRESS,
+    ) | my_schedules.filter(
+        enquiry__isnull=False,
+        status=WorkSchedule.STATUS_ASSIGNED,
+    )
 
     from attendance.services import employee_month_stats
 
@@ -157,6 +167,10 @@ def engineer_dashboard(request):
         'overdue_orders': overdue.order_by('scheduled_end_date')[:10],
 
         'needs_wcr': needs_wcr[:5],
+
+        'survey_schedules': survey_schedules,
+
+        'pending_survey_wcr': pending_survey_wcr.distinct()[:5],
 
         'attendance_month': att_month,
 

@@ -72,6 +72,10 @@ def create_enquiry(request):
             if enquiry.status == Enquiry.STATUS_NEW and enquiry.assigned_project_manager:
                 enquiry.status = Enquiry.STATUS_ASSIGNED
             enquiry.save()
+            from company_settings.field_ops import is_auto_survey_schedule_enabled
+            if is_auto_survey_schedule_enabled() and enquiry.survey_engineer_id:
+                from scheduling.survey_schedule import ensure_survey_schedule
+                ensure_survey_schedule(enquiry, created_by=request.user)
             from productivity.activity_logger import log_activity
             from productivity.constants import ACT_ENQUIRY_PROCESSED
             log_activity(
@@ -105,12 +109,23 @@ def enquiry_detail(request, pk):
     estimate_boqs = enquiry.estimate_boqs.all().order_by('-created_at')
     quotations = enquiry.quotations.all().order_by('-created_at')
     site_updates = enquiry.site_updates.all()[:10]
+    survey_schedule = getattr(enquiry, 'field_schedule', None)
+    survey_wcr = getattr(enquiry, 'survey_wcr', None)
+    site_attendance = None
+    if survey_schedule:
+        from productivity.models import ScheduleSiteAttendance
+        site_attendance = ScheduleSiteAttendance.objects.filter(
+            schedule=survey_schedule, employee=request.user,
+        ).first()
 
     return render(request, 'enquiries/enquiry_detail.html', {
         'enquiry': enquiry,
         'estimate_boqs': estimate_boqs,
         'quotations': quotations,
         'site_updates': site_updates,
+        'survey_schedule': survey_schedule,
+        'survey_wcr': survey_wcr,
+        'site_attendance': site_attendance,
         'can_manage': can_manage_enquiries(request.user),
         'can_convert': enquiry.can_convert_to_order and can_manage_enquiries(request.user),
         'can_create_estimate': can_manage_enquiries(request.user),
@@ -131,6 +146,12 @@ def edit_enquiry(request, pk):
             if enquiry.status != old_status:
                 from productivity.gps_service import record_survey_status_gps
                 record_survey_status_gps(request.user, enquiry, old_status, enquiry.status, request)
+            from company_settings.field_ops import is_auto_survey_schedule_enabled
+            if is_auto_survey_schedule_enabled() and enquiry.survey_engineer_id:
+                from scheduling.survey_schedule import ensure_survey_schedule
+                schedule, _ = ensure_survey_schedule(enquiry, created_by=request.user)
+                if schedule:
+                    messages.info(request, f'Survey schedule {schedule.schedule_number} updated.')
             messages.success(request, 'Enquiry updated.')
             return redirect('enquiry_detail', pk=pk)
     else:

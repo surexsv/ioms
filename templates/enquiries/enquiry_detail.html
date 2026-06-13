@@ -33,6 +33,32 @@
     <div class="detail-item"><label>Survey</label><p>{{ enquiry.survey_date|date:"d M Y"|default:"Not scheduled" }} — {{ enquiry.survey_engineer|default:"Unassigned" }}</p>
     {% if enquiry.survey_remarks %}<p>{{ enquiry.survey_remarks }}</p>{% endif %}</div>
     {% endif %}
+    {% if survey_schedule %}
+    <div class="card">
+        <h3 style="margin-top:0;">Survey Schedule — {{ survey_schedule.schedule_number }}</h3>
+        <p><strong>Category:</strong> {{ survey_schedule.get_schedule_category_display }}
+        | <strong>Reference:</strong> {{ survey_schedule.reference_number }}
+        | <strong>Status:</strong> {{ survey_schedule.get_status_display }}</p>
+        <p><strong>Team:</strong> {{ survey_schedule.team_member_names }}</p>
+        <p style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+            <a href="{% url 'schedule_edit' survey_schedule.pk %}" class="btn btn-secondary btn-sm">View Schedule</a>
+            {% if not survey_wcr %}
+            <a href="{% url 'create_survey_wcr' survey_schedule.pk %}" class="btn btn-success btn-sm">Submit Survey WCR</a>
+            {% endif %}
+            <a href="{% url 'site_check_in' survey_schedule.pk %}" class="btn btn-success btn-sm">Site Check-In</a>
+            {% if site_attendance and site_attendance.check_in_at and not site_attendance.check_out_at %}
+            <a href="{% url 'site_check_out' survey_schedule.pk %}" class="btn btn-warning btn-sm">Site Check-Out</a>
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+    {% if survey_wcr %}
+    <div class="card">
+        <h3>Survey WCR — {{ survey_wcr.wcr_number }}</h3>
+        <p>{{ survey_wcr.site_findings|default:survey_wcr.work_description|truncatewords:40 }}</p>
+        <p><strong>Approved:</strong> {% if survey_wcr.approved %}Yes{% else %}Pending{% endif %}</p>
+    </div>
+    {% endif %}
     {% if enquiry.feasibility_required %}
     <div class="detail-item"><label>Feasibility</label><p>{{ enquiry.get_feasibility_status_display }}{% if enquiry.feasibility_remarks %} — {{ enquiry.feasibility_remarks }}{% endif %}</p></div>
     {% endif %}

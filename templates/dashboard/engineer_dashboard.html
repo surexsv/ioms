@@ -56,6 +56,34 @@
 </div>
 {% endif %}
 
+{% endif %}
+
+{% if survey_schedules %}
+<div class="card">
+    <h3>Assigned Survey Jobs</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Schedule</th><th>Enquiry</th><th>Client</th><th>Date</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+                {% for schedule in survey_schedules %}
+                <tr>
+                    <td>{{ schedule.schedule_number }}</td>
+                    <td>{{ schedule.reference_number }}</td>
+                    <td>{{ schedule.enquiry.client.name }}</td>
+                    <td>{{ schedule.scheduled_start_date }}</td>
+                    <td>{{ schedule.get_status_display }}</td>
+                    <td>
+                        <a href="{% url 'enquiry_detail' schedule.enquiry_id %}" class="btn btn-sm btn-primary">Open</a>
+                        <a href="{% url 'create_survey_wcr' schedule.pk %}" class="btn btn-sm btn-success">Survey WCR</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 <div class="card">
     <h3>Active Jobs</h3>
     <div class="ioms-table-wrap">
@@ -65,11 +93,17 @@
                 {% for schedule in active_orders %}
                 <tr>
                     <td>{{ schedule.schedule_number }}</td>
-                    <td>{{ schedule.order.order_no|default:schedule.order.order_id }}</td>
-                    <td>{{ schedule.order.client.name }}</td>
+                    <td>{% if schedule.order %}{{ schedule.order.order_no|default:schedule.order.order_id }}{% else %}{{ schedule.reference_number }}{% endif %}</td>
+                    <td>{% if schedule.order %}{{ schedule.order.client.name }}{% elif schedule.enquiry %}{{ schedule.enquiry.client.name }}{% endif %}</td>
                     <td><span class="badge badge-progress">{{ schedule.get_status_display }}</span></td>
                     <td>{{ schedule.scheduled_end_date }}</td>
-                    <td><a href="{% url 'order_detail' schedule.order.pk %}" class="btn btn-sm btn-primary">Open</a></td>
+                    <td>
+                        {% if schedule.order_id %}
+                        <a href="{% url 'order_detail' schedule.order.pk %}" class="btn btn-sm btn-primary">Open</a>
+                        {% elif schedule.enquiry_id %}
+                        <a href="{% url 'enquiry_detail' schedule.enquiry_id %}" class="btn btn-sm btn-primary">Open</a>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="6" class="empty-state">No active jobs.</td></tr>

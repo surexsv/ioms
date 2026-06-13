@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Schedules — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Field Schedules</h1>
+    <a href="{% url 'schedule_calendar' %}" class="btn btn-secondary">Calendar View</a>
+</div>
+
+<form method="get" class="card" style="padding:12px;margin-bottom:16px;">
+    <label>Category</label>
+    <select name="category" onchange="this.form.submit()">
+        <option value="">All</option>
+        <option value="SURVEY" {% if category_filter == 'SURVEY' %}selected{% endif %}>Survey</option>
+        <option value="INSTALLATION" {% if category_filter == 'INSTALLATION' %}selected{% endif %}>Installation</option>
+        <option value="MAINTENANCE" {% if category_filter == 'MAINTENANCE' %}selected{% endif %}>Maintenance</option>
+        <option value="COMPLAINT" {% if category_filter == 'COMPLAINT' %}selected{% endif %}>Complaint</option>
+    </select>
+</form>
+
+<div class="card">
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead>
+                <tr>
+                    <th>Schedule #</th><th>Category</th><th>Reference</th><th>Client</th>
+                    <th>Start</th><th>End</th><th>Team</th><th>Status</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in schedules %}
+                <tr>
+                    <td>{{ s.schedule_number }}</td>
+                    <td>{{ s.get_schedule_category_display }}</td>
+                    <td>{{ s.reference_number }} ({{ s.get_reference_type_display }})</td>
+                    <td>{% if s.order %}{{ s.order.client.name }}{% elif s.enquiry %}{{ s.enquiry.client.name }}{% endif %}</td>
+                    <td>{{ s.scheduled_start_date }}</td>
+                    <td>{{ s.scheduled_end_date }}</td>
+                    <td>{{ s.team_member_names|truncatewords:6 }}</td>
+                    <td>{{ s.get_status_display }}</td>
+                    <td><a href="{% url 'schedule_edit' s.pk %}" class="btn btn-sm btn-primary">Open</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="9">No schedules found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

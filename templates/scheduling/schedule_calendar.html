@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Schedule Calendar — IOMS{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Schedule Calendar</h1>
+    <a href="{% url 'schedule_list' %}" class="btn btn-secondary">List View</a>
+</div>
+<div class="card">
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Date</th><th>Schedule</th><th>Category</th><th>Reference</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for s in schedules %}
+                <tr>
+                    <td>{{ s.scheduled_start_date }}</td>
+                    <td><a href="{% url 'schedule_edit' s.pk %}">{{ s.schedule_number }}</a></td>
+                    <td>{{ s.get_schedule_category_display }}</td>
+                    <td>{{ s.reference_number }}</td>
+                    <td>{{ s.get_status_display }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">No upcoming schedules.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

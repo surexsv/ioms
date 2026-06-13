@@ -3,8 +3,8 @@
 {% block content %}
 {% with t='div' %}
 <{{ t }} class="card" style="max-width:600px;">
-    <h2>Approve WCR — Order #{{ wcr.order.order_id }}</h2>
-    <p><strong>Client:</strong> {{ wcr.order.client.name }}</p>
+    <h2>Approve WCR — {% if wcr.enquiry %}{{ wcr.enquiry.enquiry_number }}{% else %}Order #{{ wcr.order.order_id }}{% endif %}</h2>
+    <p><strong>Client:</strong> {% if wcr.enquiry %}{{ wcr.enquiry.client.name }}{% else %}{{ wcr.order.client.name }}{% endif %}</p>
     <p><strong>Work:</strong> {{ wcr.work_description }}</p>
     {% if wcr.material_used %}<p><strong>Materials:</strong> {{ wcr.material_used }}</p>{% endif %}
     <form method="post" style="margin-top:20px;" data-gps-capture>

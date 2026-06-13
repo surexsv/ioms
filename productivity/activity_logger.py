@@ -19,6 +19,9 @@ def log_activity(
 ):
     if not user or not getattr(user, 'is_authenticated', False):
         return None
+    from company_settings.field_ops import is_productivity_enabled
+    if not is_productivity_enabled():
+        return None
     dept = department or ACTIVITY_DEPARTMENT.get(activity_type, 'OPERATIONS')
     return EmployeeActivityLog.objects.create(
         activity_date=activity_date or timezone.localdate(),

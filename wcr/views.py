@@ -16,8 +16,9 @@ from productivity.calculator import (
 from productivity.constants import ACT_WCR_SUBMITTED, ACT_WCR_VERIFIED
 from orders.models import Order
 
-from .models import WorkCompletionReport
-from .forms import WCRForm, WCRParticipantFormSet
+from .models import WorkCompletionReport, WCR_TYPE_SURVEY
+from .forms import WCRForm, WCRParticipantFormSet, SurveyWCRForm
+from .survey_services import complete_survey_wcr, survey_wcr_exists_for_schedule
 
 
 def _save_wcr_participants(request, wcr):
@@ -64,7 +65,7 @@ def _save_wcr_participants(request, wcr):
 @module_required(MODULE_WCR)
 def wcr_list(request):
     wcrs = WorkCompletionReport.objects.select_related(
-        'order', 'order__client', 'submitted_by', 'schedule',
+        'order', 'order__client', 'enquiry', 'enquiry__client', 'submitted_by', 'schedule',
     ).prefetch_related('team_participants').order_by('-submitted_date')
     if request.user.role in ('ENGINEER', 'Technician'):
         wcrs = wcrs.filter(submitted_by=request.user)
@@ -175,6 +176,75 @@ def approve_wcr(request, pk):
         )
         for part in wcr.team_participants.filter(attended=True):
             recalculate_monthly_snapshot(part.employee)
-        messages.success(request, f'WCR for Order #{wcr.order.order_id} approved.')
+        if wcr.wcr_type == WCR_TYPE_SURVEY:
+            complete_survey_wcr(wcr, request.user)
+            messages.success(request, f'Survey WCR {wcr.wcr_number} approved. Enquiry updated.')
+        elif wcr.order_id:
+            messages.success(request, f'WCR for Order #{wcr.order.order_id} approved.')
+        else:
+            messages.success(request, f'WCR {wcr.wcr_number} approved.')
         return redirect('wcr_list')
     return render(request, 'wcr/wcr_approve.html', {'wcr': wcr})
+
+
+@module_required(MODULE_WCR)
+def create_survey_wcr(request, schedule_pk):
+    from scheduling.models import WorkSchedule
+    from scheduling.engine import user_on_schedule_team
+    schedule = get_object_or_404(
+        WorkSchedule.objects.select_related('enquiry', 'enquiry__client'),
+        pk=schedule_pk,
+    )
+    if not schedule.enquiry_id:
+        messages.error(request, 'This schedule is not a survey enquiry schedule.')
+        return redirect('schedule_list')
+    if not user_on_schedule_team(schedule, request.user) and not can_access(request.user, MODULE_WCR_APPROVE):
+        return access_denied_response(request, module_key='wcr')
+    if survey_wcr_exists_for_schedule(schedule):
+        messages.info(request, 'Survey WCR already exists for this enquiry.')
+        return redirect('enquiry_detail', pk=schedule.enquiry_id)
+
+    schedule_team = build_participants_from_schedule(schedule)
+    if request.method == 'POST':
+        form = SurveyWCRForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            with transaction.atomic():
+                wcr = form.save(commit=False)
+                wcr.wcr_type = WCR_TYPE_SURVEY
+                wcr.enquiry = schedule.enquiry
+                wcr.schedule = schedule
+                wcr.submitted_by = request.user
+                wcr.save()
+                _save_wcr_participants(request, wcr)
+                schedule.status = WorkSchedule.STATUS_IN_PROGRESS
+                schedule.save(update_fields=['status', 'updated_at'])
+            log_activity(
+                request.user, ACT_WCR_SUBMITTED,
+                related_document=wcr.wcr_number,
+                related_model='WorkCompletionReport',
+                related_object_id=wcr.pk,
+                remarks='Survey WCR',
+            )
+            from productivity.field_constants import FA_WCR_SUBMITTED
+            from productivity.gps_service import record_field_event
+            record_field_event(
+                request.user, FA_WCR_SUBMITTED,
+                request=request,
+                enquiry=schedule.enquiry,
+                schedule=schedule,
+                wcr=wcr,
+                remarks=f'Survey WCR {wcr.wcr_number}',
+            )
+            messages.success(request, f'Survey WCR {wcr.wcr_number} submitted.')
+            return redirect('enquiry_detail', pk=schedule.enquiry_id)
+    else:
+        form = SurveyWCRForm(user=request.user)
+
+    return render(request, 'wcr/survey_wcr_form.html', {
+        'form': form,
+        'schedule': schedule,
+        'enquiry': schedule.enquiry,
+        'schedule_team': schedule_team,
+        'can_edit_signatory': can_edit_document_signatory(request.user),
+        'signatory_instance': form.instance,
+    })
