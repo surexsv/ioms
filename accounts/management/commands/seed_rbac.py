@@ -65,6 +65,10 @@ PERMISSION_LABELS = {
     'case_intelligence': 'Case Intelligence',
     'daily_meetings': 'Daily Meetings',
     'daily_meetings_manage': 'Manage Daily Meetings',
+    'erms': 'Employee Requests',
+    'erms_approve': 'Approve Employee Requests',
+    'erms_view_all': 'View All Employee Requests',
+    'erms_financial_approve': 'Approve Financial Employee Requests',
 }
 
 MENU_SEED = [
@@ -86,6 +90,10 @@ MENU_SEED = [
     ('User Approvals', 'user_approval_list', 'bi-person-check', 'user_approval', 140),
     ('Case Intelligence', 'case_stuck_dashboard', 'bi-diagram-3', 'case_intelligence', 145),
     ('Daily Meetings', 'dom_dashboard', 'bi-people-fill', 'daily_meetings', 148),
+    ('Requests', 'erms_dashboard', 'bi-inbox', 'erms', 149),
+    ('My Requests', 'erms_my_requests', 'bi-file-earmark-person', 'erms', 150),
+    ('Pending Approvals', 'erms_pending_approvals', 'bi-hourglass-split', 'erms_approve', 151),
+    ('Request Reports', 'erms_reports', 'bi-clipboard-data', 'erms', 152),
 ]
 
 

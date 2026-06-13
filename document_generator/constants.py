@@ -7,6 +7,7 @@ DOC_PURCHASE_ORDER = 'PURCHASE_ORDER'
 DOC_SCHEDULE = 'SCHEDULE'
 DOC_ENQUIRY = 'ENQUIRY'
 DOC_ESTIMATE_BOQ = 'ESTIMATE_BOQ'
+DOC_REQUEST = 'REQUEST'
 
 DOCUMENT_TYPES = (
     (DOC_ORDER, 'Order'),
@@ -18,6 +19,7 @@ DOCUMENT_TYPES = (
     (DOC_SCHEDULE, 'Work Schedule'),
     (DOC_ENQUIRY, 'Enquiry'),
     (DOC_ESTIMATE_BOQ, 'Estimate BOQ'),
+    (DOC_REQUEST, 'Employee Request'),
 )
 
 DOCUMENT_TYPE_LABELS = dict(DOCUMENT_TYPES)
@@ -32,4 +34,5 @@ PREFIX_FIELD_MAP = {
     DOC_SCHEDULE: 'schedule_prefix',
     DOC_ENQUIRY: 'enquiry_prefix',
     DOC_ESTIMATE_BOQ: 'estimate_boq_prefix',
+    DOC_REQUEST: 'request_prefix',
 }

@@ -1,0 +1,34 @@
+<div class="ioms-table-wrap">
+    <table class="ioms-table">
+        <thead>
+            <tr>
+                <th>Number</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Subject</th>
+                <th>Requested By</th>
+                <th>Submitted To</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in records %}
+            <tr>
+                <td>{{ r.request_number|default:"Draft" }}</td>
+                <td>{{ r.request_date|date:"d-M-Y" }}</td>
+                <td>{{ r.request_type.name }}</td>
+                <td>{{ r.subject|truncatechars:40 }}</td>
+                <td>{{ r.requested_by.get_full_name|default:r.requested_by.username }}</td>
+                <td>{{ r.submitted_to.get_full_name|default:r.submitted_to|default:"—" }}</td>
+                <td>{{ r.get_priority_display }}</td>
+                <td><strong>{{ r.get_status_display }}</strong></td>
+                <td><a href="{% url 'erms_request_detail' r.pk %}" class="btn btn-sm btn-secondary">View</a></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="9">No requests found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

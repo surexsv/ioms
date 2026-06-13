@@ -21,9 +21,12 @@ from .permissions import (
     can_access,
     MODULE_SCHEDULING,
     MODULE_CASE_INTELLIGENCE,
+    MODULE_ERMS,
+    MODULE_ERMS_APPROVE,
     has_full_access,
     attendance_nav_url,
 )
+from employee_requests.permissions import can_access_erms, can_approve_requests
 from daily_meetings.permissions import can_access_daily_meetings
 from productivity.permissions import (
     can_view_gps_dashboard,
@@ -61,6 +64,8 @@ def _active_nav(request):
         return 'case_intelligence'
     if path.startswith('/daily-meetings'):
         return 'daily_meetings'
+    if path.startswith('/requests'):
+        return 'employee_requests'
     if path.startswith('/productivity/gps'):
         return 'gps'
     if path.startswith('/productivity'):
@@ -83,6 +88,12 @@ def oms_navigation(request):
         pending_approval_count = User.objects.filter(
             approval_status=User.APPROVAL_PENDING,
         ).exclude(is_superuser=True).count()
+    erms_notification_count = 0
+    if can_access_erms(user):
+        from employee_requests.models import PortalNotification
+        erms_notification_count = PortalNotification.objects.filter(
+            user=user, is_read=False,
+        ).count()
     return {
         'dashboard_url': dashboard_url_name_for_user(user),
         'nav_active': _active_nav(request),
@@ -123,5 +134,8 @@ def oms_navigation(request):
         'show_nav_schedules': can_access(user, MODULE_SCHEDULING),
         'show_nav_case_intelligence': can_access(user, MODULE_CASE_INTELLIGENCE),
         'show_nav_daily_meetings': can_access_daily_meetings(user),
+        'show_nav_employee_requests': can_access_erms(user),
+        'show_nav_erms_pending': can_approve_requests(user),
+        'erms_notification_count': erms_notification_count,
         'pending_approval_count': pending_approval_count,
     }

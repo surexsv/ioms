@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Request Reports — IOMS{% endblock %}
+{% block content %}
+{% include 'employee_requests/_subnav.html' with erms_nav='reports' %}
+<div class="page-header"><h1>Request Reports</h1></div>
+<div class="ioms-kpi-grid">
+    <a href="{% url 'erms_report_register' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-journal-text"></i></div><div class="label">Request Register</div></div></a>
+    {% for t in types %}
+    <a href="{% url 'erms_report_type' t.codename %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-file-earmark"></i></div><div class="label">{{ t.name }}</div></div></a>
+    {% endfor %}
+    {% if show_nav_erms_pending %}
+    <a href="{% url 'erms_report_pending' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-hourglass-split"></i></div><div class="label">Pending Approval Report</div></div></a>
+    {% endif %}
+    <a href="{% url 'erms_report_history' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-clock-history"></i></div><div class="label">Approval History Report</div></div></a>
+    <a href="{% url 'erms_report_department' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-building"></i></div><div class="label">Department Wise Report</div></div></a>
+    <a href="{% url 'erms_report_employee' %}" class="ioms-kpi-link"><div class="ioms-kpi"><div class="value"><i class="bi bi-person-lines-fill"></i></div><div class="label">Employee Wise Report</div></div></a>
+</div>
+{% endblock %}

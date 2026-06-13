@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Request Notifications — IOMS{% endblock %}
+{% block content %}
+{% include 'employee_requests/_subnav.html' with erms_nav='dashboard' %}
+<div class="page-header">
+    <h1>Notifications</h1>
+    <form method="post" action="{% url 'erms_notifications_read' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-secondary btn-sm">Mark All Read</button>
+    </form>
+</div>
+<div class="card">
+    <ul class="erms-notification-list">
+    {% for n in notifications %}
+        <li class="{% if not n.is_read %}erms-notification-unread{% endif %}">
+            <strong>{{ n.title }}</strong>
+            {% if n.message %}<p>{{ n.message }}</p>{% endif %}
+            <small>{{ n.created_at|date:"d-M-Y H:i" }}</small>
+            {% if n.link %}<a href="{{ n.link }}" class="btn btn-sm btn-secondary">View</a>{% endif %}
+        </li>
+    {% empty %}
+        <li class="dom-hint">No notifications.</li>
+    {% endfor %}
+    </ul>
+</div>
+{% endblock %}

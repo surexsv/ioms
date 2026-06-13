@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Employee Wise Report — IOMS{% endblock %}
+{% block content %}
+{% include 'employee_requests/_subnav.html' with erms_nav='reports' %}
+<div class="page-header"><h1>Employee Wise Report</h1></div>
+<div class="ioms-table-wrap">
+    <table class="ioms-table">
+        <thead><tr><th>Employee</th><th>Total Requests</th></tr></thead>
+        <tbody>
+        {% for row in rows %}
+        <tr>
+            <td>{{ row.requested_by__first_name }} {{ row.requested_by__last_name }} ({{ row.requested_by__username }})</td>
+            <td>{{ row.total }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="2">No data.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

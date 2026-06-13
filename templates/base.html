@@ -118,6 +118,12 @@
                     <i class="bi bi-people-fill" aria-hidden="true"></i> Daily Meetings
                 </a>
                 {% endif %}
+                {% if show_nav_employee_requests %}
+                <a href="{% url 'erms_dashboard' %}" class="{% if nav_active == 'employee_requests' %}active{% endif %}">
+                    <i class="bi bi-inbox" aria-hidden="true"></i> Requests
+                    {% if erms_notification_count %}<span class="badge">{{ erms_notification_count }}</span>{% endif %}
+                </a>
+                {% endif %}
             </nav>
             <div class="ioms-sidebar-footer">
                 <strong>{{ user.get_full_name|default:user.username }}</strong>
@@ -137,6 +143,12 @@
                     <i class="bi bi-list"></i>
                 </button>
                 <h1 class="ioms-app-title">{{ ioms_product_name }}</h1>
+                {% if show_nav_employee_requests %}
+                <a href="{% url 'erms_notifications' %}" class="ioms-notification-bell" title="Request notifications" aria-label="Request notifications">
+                    <i class="bi bi-bell"></i>
+                    {% if erms_notification_count %}<span class="badge">{{ erms_notification_count }}</span>{% endif %}
+                </a>
+                {% endif %}
                 {% if show_nav_case_intelligence %}
                 <form method="get" action="{% url 'case_search' %}" class="ioms-global-search" role="search">
                     <input type="search" name="q" placeholder="Search cases, clients, locations…" aria-label="Universal case search" autocomplete="off" id="iomsGlobalSearchInput">

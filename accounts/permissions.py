@@ -54,6 +54,10 @@ MODULE_PRODUCTIVITY = 'productivity'
 MODULE_CASE_INTELLIGENCE = 'case_intelligence'
 MODULE_DAILY_MEETINGS = 'daily_meetings'
 MODULE_DAILY_MEETINGS_MANAGE = 'daily_meetings_manage'
+MODULE_ERMS = 'erms'
+MODULE_ERMS_APPROVE = 'erms_approve'
+MODULE_ERMS_VIEW_ALL = 'erms_view_all'
+MODULE_ERMS_FINANCIAL_APPROVE = 'erms_financial_approve'
 
 # Role → allowed modules
 _ACCESS = {
@@ -69,6 +73,7 @@ _ACCESS = {
         MODULE_USER_APPROVAL, MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MANAGE,
+        MODULE_ERMS, MODULE_ERMS_VIEW_ALL,
     },
     ROLE_OPERATIONS: {
         MODULE_DASHBOARD_OPERATIONS,
@@ -82,6 +87,7 @@ _ACCESS = {
         MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MANAGE,
+        MODULE_ERMS, MODULE_ERMS_APPROVE,
     },
     ROLE_PROJECT_MANAGER: {
         MODULE_DASHBOARD_PROJECT_MANAGER,
@@ -95,6 +101,7 @@ _ACCESS = {
         MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MANAGE,
+        MODULE_ERMS, MODULE_ERMS_APPROVE,
     },
     ROLE_SUPERVISOR: {
         MODULE_DASHBOARD_SUPERVISOR,
@@ -107,6 +114,7 @@ _ACCESS = {
         MODULE_SCHEDULING, MODULE_SCHEDULING_MANAGE,
         MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
+        MODULE_ERMS, MODULE_ERMS_APPROVE,
     },
     ROLE_ACCOUNTS: {
         MODULE_DASHBOARD_ACCOUNTS,
@@ -116,6 +124,7 @@ _ACCESS = {
         MODULE_SCHEDULING, MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS,
+        MODULE_ERMS, MODULE_ERMS_APPROVE, MODULE_ERMS_FINANCIAL_APPROVE,
     },
     ROLE_ENGINEER: {
         MODULE_DASHBOARD_ENGINEER,
@@ -123,6 +132,7 @@ _ACCESS = {
         MODULE_SCHEDULING, MODULE_SCHEDULING_FIELD_UPDATE, MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS,
+        MODULE_ERMS,
     },
     ROLE_TECHNICIAN: {
         MODULE_DASHBOARD_ENGINEER,
@@ -130,6 +140,7 @@ _ACCESS = {
         MODULE_SCHEDULING, MODULE_SCHEDULING_FIELD_UPDATE, MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS,
+        MODULE_ERMS,
     },
     ROLE_ACCOUNTS_EXECUTIVE: {
         MODULE_DASHBOARD_ACCOUNTS,
@@ -138,6 +149,7 @@ _ACCESS = {
         MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS,
+        MODULE_ERMS,
     },
     ROLE_BACK_OFFICE: {
         MODULE_DASHBOARD_OPERATIONS,
@@ -146,6 +158,7 @@ _ACCESS = {
         MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS,
+        MODULE_ERMS,
     },
 }
 
@@ -373,6 +386,12 @@ def resolve_path_module(path):
         if any(path.startswith(p) for p in manage_paths) or '/edit/' in path:
             return MODULE_DAILY_MEETINGS_MANAGE
         return MODULE_DAILY_MEETINGS
+    if path.startswith('/requests/'):
+        approve_paths = ('/requests/pending/', '/requests/reports/pending/')
+        action_paths = ('/approve/', '/reject/', '/return/')
+        if any(path.startswith(p) for p in approve_paths) or any(p in path for p in action_paths):
+            return MODULE_ERMS_APPROVE
+        return MODULE_ERMS
     if path.startswith('/user-approvals/'):
         return MODULE_USER_APPROVAL
     if path.startswith('/dashboard/'):

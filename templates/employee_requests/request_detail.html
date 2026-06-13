@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}{{ record.request_number|default:"Draft Request" }} — IOMS{% endblock %}
+{% block content %}
+{% include 'employee_requests/_subnav.html' with erms_nav='my' %}
+<div class="page-header">
+    <h1>{{ record.request_number|default:"Draft Request" }}</h1>
+    <div>
+        {% if can_edit %}<a href="{% url 'erms_request_edit' record.pk %}" class="btn btn-secondary">Edit</a>{% endif %}
+        <a href="{% url 'erms_my_requests' %}" class="btn btn-secondary btn-sm">My Requests</a>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Request Information</h3>
+    <div class="detail-grid">
+        <div class="detail-item"><label>Request Number</label><p>{{ record.request_number|default:"— (draft)" }}</p></div>
+        <div class="detail-item"><label>Request Date</label><p>{{ record.request_date|date:"d-M-Y" }}</p></div>
+        <div class="detail-item"><label>Type</label><p>{{ record.request_type.name }}</p></div>
+        <div class="detail-item"><label>Requested By</label><p>{{ record.requested_by.get_full_name|default:record.requested_by.username }}</p></div>
+        <div class="detail-item"><label>Department</label><p>{{ record.department|default:"—" }}</p></div>
+        <div class="detail-item"><label>Submitted To</label><p>{{ record.submitted_to.get_full_name|default:record.submitted_to|default:"—" }}</p></div>
+        <div class="detail-item"><label>Priority</label><p>{{ record.get_priority_display }}</p></div>
+        <div class="detail-item"><label>Status</label><p><strong>{{ record.get_status_display }}</strong></p></div>
+        {% if record.amount %}<div class="detail-item"><label>Amount</label><p>₹ {{ record.amount }}</p></div>{% endif %}
+        <div class="detail-item" style="grid-column:1/-1;"><label>Subject</label><p>{{ record.subject }}</p></div>
+        <div class="detail-item" style="grid-column:1/-1;"><label>Description</label><p style="white-space:pre-wrap;">{{ record.description }}</p></div>
+        {% if record.remarks %}<div class="detail-item" style="grid-column:1/-1;"><label>Remarks</label><p style="white-space:pre-wrap;">{{ record.remarks }}</p></div>{% endif %}
+    </div>
+</div>
+
+{% if can_edit %}
+{% if record.status == 'DRAFT' or record.status == 'RETURNED' %}
+<div class="card">
+    <h3 style="margin-top:0;">Submit for Approval</h3>
+    <form method="post" action="{% url 'erms_request_submit' record.pk %}">
+        {% csrf_token %}
+        {{ submit_form.remarks }}
+        <button type="submit" class="btn btn-success" style="margin-top:8px;">Submit Request</button>
+    </form>
+</div>
+{% endif %}
+{% endif %}
+
+{% if can_approve %}
+<div class="card" style="border-left:4px solid #198754;">
+    <h3 style="margin-top:0;">Approval Actions</h3>
+    <p class="dom-hint">You cannot edit the original request. Add remarks with your decision.</p>
+    <form method="post" action="{% url 'erms_request_approve' record.pk %}" style="margin-bottom:12px;">
+        {% csrf_token %}
+        {{ action_form.remarks }}
+        <button type="submit" class="btn btn-success btn-sm" style="margin-top:8px;">Approve</button>
+    </form>
+    <form method="post" action="{% url 'erms_request_return' record.pk %}" style="margin-bottom:12px;">
+        {% csrf_token %}
+        <input type="hidden" name="remarks" value="">
+        <textarea name="remarks" rows="2" placeholder="Remarks for return…" required class="form-control"></textarea>
+        <button type="submit" class="btn btn-warning btn-sm" style="margin-top:8px;">Return for Correction</button>
+    </form>
+    <form method="post" action="{% url 'erms_request_reject' record.pk %}">
+        {% csrf_token %}
+        <textarea name="remarks" rows="2" placeholder="Rejection remarks…" required class="form-control"></textarea>
+        <button type="submit" class="btn btn-danger btn-sm" style="margin-top:8px;">Reject</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3 style="margin-top:0;">Attachments</h3>
+    <ul>
+    {% for att in record.attachments.all %}
+        <li><a href="{{ att.file.url }}" target="_blank" rel="noopener">{{ att.original_name|default:att.file.name }}</a> — {{ att.uploaded_at|date:"d-M-Y H:i" }}</li>
+    {% empty %}
+        <li class="dom-hint">No attachments.</li>
+    {% endfor %}
+    </ul>
+    {% if can_edit %}
+    <form method="post" action="{% url 'erms_attachment_upload' record.pk %}" enctype="multipart/form-data" style="margin-top:12px;">
+        {% csrf_token %}
+        {{ attachment_form.file }}
+        <button type="submit" class="btn btn-secondary btn-sm" style="margin-top:8px;">Upload Attachment</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Approval History &amp; Status Timeline</h3>
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead><tr><th>Date</th><th>User</th><th>Action</th><th>Status Change</th><th>Remarks</th></tr></thead>
+            <tbody>
+            {% for h in record.approval_history.all %}
+            <tr>
+                <td>{{ h.created_at|date:"d-M-Y H:i" }}</td>
+                <td>{{ h.performed_by.get_full_name|default:h.performed_by|default:"—" }}</td>
+                <td>{{ h.action }}</td>
+                <td>{% if h.from_status %}{{ h.from_status }} → {% endif %}{{ h.to_status }}</td>
+                <td>{{ h.remarks|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">No history yet.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

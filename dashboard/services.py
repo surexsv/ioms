@@ -567,3 +567,12 @@ def merge_attendance_widget(context, user):
     return context
 
 
+def merge_erms_widget(context, user):
+    from employee_requests.permissions import can_access_erms, can_approve_requests
+    if can_access_erms(user):
+        from employee_requests.services import dashboard_summary
+        context['erms_summary'] = dashboard_summary(user)
+        context['show_erms_manager_panel'] = can_approve_requests(user)
+    return context
+
+

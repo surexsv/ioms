@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'productivity',
     'case_intelligence',
     'daily_meetings',
+    'employee_requests',
 ]
 
 MIDDLEWARE = [

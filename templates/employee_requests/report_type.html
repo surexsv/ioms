@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block title %}{{ request_type.name }} Report — IOMS{% endblock %}
+{% block content %}
+{% include 'employee_requests/_subnav.html' with erms_nav='reports' %}
+<div class="page-header"><h1>{{ request_type.name }}</h1></div>
+{% include 'employee_requests/_request_table.html' with records=records %}
+{% endblock %}

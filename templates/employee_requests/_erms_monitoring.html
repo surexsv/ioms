@@ -1,0 +1,25 @@
+{% if erms_summary %}
+<div class="card erms-monitoring-panel" style="margin-bottom:20px;border-left:4px solid #0d6efd;">
+    <div class="case-monitoring-header">
+        <div>
+            <h3 style="margin:0;">Employee Requests</h3>
+            <p class="case-dashboard-subtitle">Internal approval workflow — open requests and pending approvals.</p>
+        </div>
+        <div class="case-dashboard-actions">
+            <a href="{% url 'erms_dashboard' %}" class="btn btn-primary btn-sm">Open Requests</a>
+            {% if show_erms_manager_panel and erms_summary.pending_approvals %}
+            <a href="{% url 'erms_pending_approvals' %}" class="btn btn-warning btn-sm">Pending ({{ erms_summary.pending_approvals }})</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="ioms-kpi-grid" style="margin-top:12px;">
+        <div class="ioms-kpi"><div class="value">{{ erms_summary.my_open }}</div><div class="label">My Open Requests</div></div>
+        <div class="ioms-kpi"><div class="value text-warning">{{ erms_summary.my_pending_approval }}</div><div class="label">Pending Approvals</div></div>
+        <div class="ioms-kpi"><div class="value text-success">{{ erms_summary.my_approved }}</div><div class="label">Approved</div></div>
+        <div class="ioms-kpi"><div class="value text-danger">{{ erms_summary.my_rejected }}</div><div class="label">Rejected</div></div>
+        {% if show_erms_manager_panel %}
+        <div class="ioms-kpi"><div class="value text-danger">{{ erms_summary.overdue }}</div><div class="label">Overdue</div></div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

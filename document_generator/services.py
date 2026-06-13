@@ -9,6 +9,7 @@ from .constants import (
     DOC_ORDER,
     DOC_PURCHASE_ORDER,
     DOC_QUOTATION,
+    DOC_REQUEST,
     DOC_SCHEDULE,
     DOC_WCR,
     DOCUMENT_TYPE_LABELS,
@@ -82,6 +83,12 @@ def _number_exists(document_number):
     try:
         from estimate_boq.models import EstimateBOQ
         if EstimateBOQ.objects.filter(estimate_boq_number=document_number).exists():
+            return True
+    except Exception:
+        pass
+    try:
+        from employee_requests.models import EmployeeRequest
+        if EmployeeRequest.objects.filter(request_number=document_number).exists():
             return True
     except Exception:
         pass
@@ -181,6 +188,13 @@ def _collect_existing_numbers(document_type):
         ).values_list('estimate_boq_number', flat=True)
     except Exception:
         field_map[DOC_ESTIMATE_BOQ] = []
+    try:
+        from employee_requests.models import EmployeeRequest
+        field_map[DOC_REQUEST] = EmployeeRequest.objects.exclude(
+            request_number='',
+        ).values_list('request_number', flat=True)
+    except Exception:
+        field_map[DOC_REQUEST] = []
     return list(field_map.get(document_type, []))
 
 
@@ -199,6 +213,7 @@ def seed_counters_from_existing():
         (DOC_PURCHASE_ORDER, 'Purchase Order'),
         (DOC_ENQUIRY, 'Enquiry'),
         (DOC_ESTIMATE_BOQ, 'Estimate BOQ'),
+        (DOC_REQUEST, 'Employee Request'),
     ):
         max_by_series = {}
         for number in _collect_existing_numbers(document_type):

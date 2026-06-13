@@ -15,7 +15,7 @@ from accounts.roles import ROLE_SUPERVISOR, ROLE_TECHNICIAN, ROLE_ENGINEER
 
 from orders.models import Order
 from scheduling.models import WorkSchedule
-from .services import build_dashboard_context, build_project_manager_context, merge_attendance_widget
+from .services import build_dashboard_context, build_project_manager_context, merge_attendance_widget, merge_erms_widget
 
 
 @module_required(MODULE_DASHBOARD_DIRECTOR)
@@ -48,6 +48,7 @@ def director_dashboard(request):
     if can_access_daily_meetings(request.user):
         context['dom_summary'] = dashboard_summary()
     merge_attendance_widget(context, request.user)
+    merge_erms_widget(context, request.user)
     return render(request, 'dashboard/dashboard.html', context)
 
 
@@ -82,6 +83,7 @@ def operations_dashboard(request):
     if can_access_daily_meetings(request.user):
         context['dom_summary'] = dashboard_summary()
     merge_attendance_widget(context, request.user)
+    merge_erms_widget(context, request.user)
     return render(request, 'dashboard/dashboard.html', context)
 
 
@@ -94,6 +96,7 @@ def accounts_dashboard(request):
     )
     context['dashboard_title'] = 'Accounts Dashboard'
     merge_attendance_widget(context, request.user)
+    merge_erms_widget(context, request.user)
     return render(request, 'dashboard/dashboard.html', context)
 
 
@@ -178,6 +181,7 @@ def project_manager_dashboard(request):
     context = build_project_manager_context(request.user)
     context['dashboard_title'] = 'Project Manager Dashboard'
     merge_attendance_widget(context, request.user)
+    merge_erms_widget(context, request.user)
     return render(request, 'dashboard/project_manager_dashboard.html', context)
 
 
@@ -259,4 +263,5 @@ def supervisor_dashboard(request):
         'can_add_site_update': True,
     }
     merge_attendance_widget(context, user)
+    merge_erms_widget(context, user)
     return render(request, 'dashboard/supervisor_dashboard.html', context)

@@ -17,6 +17,7 @@ class DocumentNumberSettings(models.Model):
     schedule_prefix = models.CharField(max_length=10, default='SCH')
     enquiry_prefix = models.CharField(max_length=10, default='ENQ')
     estimate_boq_prefix = models.CharField(max_length=10, default='EBOQ')
+    request_prefix = models.CharField(max_length=10, default='REQ')
     serial_length = models.PositiveSmallIntegerField(default=4)
     year_format = models.CharField(max_length=10, default='YYYY')
     allow_editing = models.BooleanField(default=True)

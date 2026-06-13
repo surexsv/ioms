@@ -28,6 +28,7 @@ urlpatterns = [
     path('productivity/', include('productivity.urls')),
     path('case-intelligence/', include('case_intelligence.urls')),
     path('daily-meetings/', include('daily_meetings.urls')),
+    path('requests/', include('employee_requests.urls')),
 ]
 
 if settings.DEBUG:

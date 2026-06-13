@@ -1,0 +1,8 @@
+<nav class="dom-subnav" aria-label="Requests navigation">
+    <a href="{% url 'erms_my_requests' %}" class="{% if erms_nav == 'my' %}active{% endif %}">My Requests</a>
+    {% if show_nav_erms_pending %}
+    <a href="{% url 'erms_pending_approvals' %}" class="{% if erms_nav == 'pending' %}active{% endif %}">Pending Approvals</a>
+    {% endif %}
+    <a href="{% url 'erms_dashboard' %}" class="{% if erms_nav == 'dashboard' %}active{% endif %}">Request Dashboard</a>
+    <a href="{% url 'erms_reports' %}" class="{% if erms_nav == 'reports' %}active{% endif %}">Request Reports</a>
+</nav>
