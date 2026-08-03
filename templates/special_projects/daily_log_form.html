@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — {{ ioms_product_name }}{% endblock %}
+{% block extra_css %}
+<style>
+.sp-section { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e5e5e5; }
+.sp-section h3 { margin: 0 0 10px; }
+.line-table { width: 100%; font-size: 0.85rem; }
+.line-table th { background: #0F2D52; color: #fff; padding: 8px; }
+.line-table td { padding: 6px; vertical-align: top; border-bottom: 1px solid #eee; }
+.line-table input, .line-table select { width: 100%; box-sizing: border-box; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+    <a href="{% url 'special_project_detail' project.pk %}" class="btn btn-secondary">Back to project</a>
+</div>
+<p><strong>Project:</strong> {{ project.project_number }} — {{ project.name }}</p>
+<div class="card">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div style="color:#dc3545;">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+
+        {% include 'special_projects/_formset_table.html' with formset=labour_fs title='Labour register' %}
+        {% include 'special_projects/_formset_table.html' with formset=material_fs title='Material register (daily supply)' %}
+        {% include 'special_projects/_formset_table.html' with formset=service_fs title='Service register' %}
+        {% include 'special_projects/_formset_table.html' with formset=expense_fs title='Project expense register' %}
+        {% include 'special_projects/_formset_table.html' with formset=media_fs title='Photos / documents' %}
+
+        <button type="submit" class="btn btn-primary" style="margin-top:20px;">Save Daily Log</button>
+    </form>
+</div>
+{% endblock %}

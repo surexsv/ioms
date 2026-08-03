@@ -1,14 +1,61 @@
 {% extends 'base.html' %}
 {% block title %}Verify BOQ — Infomates Operations Management System{% endblock %}
 {% block content %}
-<div class="card" style="max-width:560px;">
-    <h2>Verify BOQ {{ boq.boq_number }}</h2>
-    <p>Once verified, this BOQ can be attached to invoices. Quantities and descriptions will flow to billing; rates are entered on the invoice.</p>
-    <p><strong>{{ boq.lines.count }}</strong> line item(s) for order {{ boq.order.order_no|default:boq.order.order_id }} — {{ boq.order.client.name }}</p>
+<div class="page-header">
+    <h1>Verify BOQ {{ boq.boq_number }}</h1>
+    <a href="{% url 'boq_detail' boq.pk %}" class="btn btn-secondary">Back to details</a>
+</div>
+
+<div class="card">
+    <p style="color:#555;margin-bottom:16px;">
+        Review the BOQ details below before verifying. Once verified, quantities and descriptions can flow to invoices; rates are entered on the invoice.
+    </p>
+    <div class="detail-grid">
+        <div class="detail-item"><label>Order</label><p>{{ boq.order.order_no|default:boq.order.order_id }}</p></div>
+        <div class="detail-item"><label>Client</label><p>{{ boq.order.client.name }}</p></div>
+        <div class="detail-item"><label>Status</label><p><span class="badge badge-pending">{{ boq.get_status_display }}</span></p></div>
+        <div class="detail-item"><label>Created by</label><p>{{ boq.created_by.get_full_name|default:boq.created_by|default:"—" }}</p></div>
+        <div class="detail-item"><label>Created</label><p>{{ boq.created_at|date:"d M Y H:i" }}</p></div>
+        <div class="detail-item"><label>Line items</label><p>{{ boq.lines.count }}</p></div>
+    </div>
+    {% if boq.notes %}
+    <h3 style="margin-top:16px;">Notes</h3>
+    <p style="white-space:pre-wrap;">{{ boq.notes }}</p>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top:16px;">
+    <h3 style="margin-top:0;">BOQ line items</h3>
+    <table>
+        <tr>
+            <th>Sl No</th>
+            <th>Item / Service Description</th>
+            <th>HSN/SAC</th>
+            <th>Unit</th>
+            <th>Qty</th>
+        </tr>
+        {% for line in boq.lines.all %}
+        <tr>
+            <td>{{ line.sl_no }}</td>
+            <td>{{ line.description }}</td>
+            <td>{{ line.hsn_sac }}</td>
+            <td>{{ line.unit }}</td>
+            <td>{{ line.qty }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No line items.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card" style="margin-top:16px;max-width:560px;">
     <form method="post">
         {% csrf_token %}
         <button type="submit" class="btn btn-success">Confirm Verification</button>
         <a href="{% url 'boq_detail' boq.pk %}" class="btn btn-secondary">Cancel</a>
+        {% if boq.is_editable %}
+        <a href="{% url 'edit_boq' boq.pk %}" class="btn btn-secondary">Edit BOQ</a>
+        {% endif %}
     </form>
 </div>
 {% endblock %}

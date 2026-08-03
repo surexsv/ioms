@@ -57,6 +57,10 @@
         <input type="hidden" name="latitude" value="">
         <input type="hidden" name="longitude" value="">
 
+        {% if form.non_field_errors %}
+        <div class="alert alert-warning" style="margin-bottom:16px;">{{ form.non_field_errors }}</div>
+        {% endif %}
+
         {% if can_field_edit and not can_edit %}
         <h3 style="margin-top:20px;">Update Work Status</h3>
         <div class="form-group">{{ form.status.label_tag }}{{ form.status }}</div>
@@ -76,9 +80,9 @@
 
         <h3 style="margin-top:20px;">Schedule Details</h3>
         <div class="form-row">
-            <div class="form-group">{{ form.scheduled_start_date.label_tag }}{{ form.scheduled_start_date }}</div>
-            <div class="form-group">{{ form.scheduled_end_date.label_tag }}{{ form.scheduled_end_date }}</div>
-            <div class="form-group">{{ form.scheduled_time.label_tag }}{{ form.scheduled_time }}</div>
+            <div class="form-group">{{ form.scheduled_start_date.label_tag }}{{ form.scheduled_start_date }}{% if form.scheduled_start_date.errors %}<span class="field-error">{{ form.scheduled_start_date.errors.0 }}</span>{% endif %}</div>
+            <div class="form-group">{{ form.scheduled_end_date.label_tag }}{{ form.scheduled_end_date }}{% if form.scheduled_end_date.errors %}<span class="field-error">{{ form.scheduled_end_date.errors.0 }}</span>{% endif %}</div>
+            <div class="form-group">{{ form.scheduled_time.label_tag }}{{ form.scheduled_time }}{% if form.scheduled_time.errors %}<span class="field-error">{{ form.scheduled_time.errors.0 }}</span>{% endif %}</div>
         </div>
         <div class="form-row">
             <div class="form-group">{{ form.expected_duration_hours.label_tag }}{{ form.expected_duration_hours }}</div>
@@ -92,8 +96,8 @@
         <div class="form-group">{{ form.resource_requirements.label_tag }}{{ form.resource_requirements }}</div>
         <div class="form-group">{{ form.work_instructions.label_tag }}{{ form.work_instructions }}</div>
         <div class="form-group">{{ form.status.label_tag }}{{ form.status }}</div>
-        {% if can_edit %}
-        <button type="submit" class="btn btn-primary">Save Schedule</button>
+        {% if can_edit or not schedule %}
+        <button type="submit" class="btn btn-primary">{% if schedule %}Save Schedule{% else %}Create Schedule{% endif %}</button>
         {% endif %}
         {% endif %}
     </form>

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+    <a href="{% url 'fleet_fuel_list' %}" class="btn btn-secondary">Back</a>
+</div>
+<div class="card" style="max-width:760px;">
+    <form method="post" enctype="multipart/form-data" id="fuel-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div style="color:#dc3545;margin-bottom:12px;">{{ form.non_field_errors }}</div>
+        {% endif %}
+        {% for field in form %}
+        <div class="form-group" {% if field.name == 'petrol_card' %}id="petrol-card-group"{% endif %}>
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div style="color:#dc3545;">{{ field.errors }}</div>{% endif %}
+            {% if field.help_text %}<small style="color:#666;">{{ field.help_text }}</small>{% endif %}
+        </div>
+        {% endfor %}
+        <p id="card-hint" style="color:#555;font-size:0.9rem;"></p>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+</div>
+<script>
+(function () {
+    var cards = {{ cards_json|safe }};
+    var methodEl = document.getElementById('id_payment_method');
+    var cardGroup = document.getElementById('petrol-card-group');
+    var cardEl = document.getElementById('id_petrol_card');
+    var hint = document.getElementById('card-hint');
+    function toggleCard() {
+        var isCard = methodEl && methodEl.value === 'PETROL_CARD';
+        if (cardGroup) cardGroup.style.display = isCard ? '' : 'none';
+        if (!isCard && hint) hint.textContent = '';
+        updateHint();
+    }
+    function updateHint() {
+        if (!hint || !cardEl || !methodEl || methodEl.value !== 'PETROL_CARD') return;
+        var id = cardEl.value;
+        var found = cards.find(function (c) { return String(c.id) === String(id); });
+        if (found) {
+            hint.textContent = found.card_name + ' · balance ' + found.current_balance +
+                (found.mobile_number ? ' · ' + found.mobile_number : '');
+        } else {
+            hint.textContent = '';
+        }
+    }
+    if (methodEl) {
+        methodEl.addEventListener('change', toggleCard);
+        toggleCard();
+    }
+    if (cardEl) cardEl.addEventListener('change', updateHint);
+})();
+</script>
+{% endblock %}

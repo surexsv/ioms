@@ -12,6 +12,24 @@ class Order(models.Model):
         ('INSTALLATION', 'Installation'),
         ('COMPLAINT', 'Complaint'),
         ('MAINTENANCE', 'Maintenance'),
+        ('AMC_VISIT', 'AMC Visit'),
+        ('PREVENTIVE_MAINTENANCE', 'Preventive Maintenance'),
+        ('SHIFTING', 'Shifting'),
+        ('UPGRADE', 'Upgrade'),
+        ('INTERNAL', 'Internal Work'),
+        ('OTHER', 'Other'),
+    )
+
+    SOURCE_CHOICES = (
+        ('PHONE', 'Phone Call'),
+        ('WHATSAPP', 'WhatsApp'),
+        ('EMAIL', 'Email'),
+        ('WEBSITE', 'Website'),
+        ('EXISTING_CUSTOMER', 'Existing Customer'),
+        ('TENDER', 'Tender'),
+        ('REFERRAL', 'Referral'),
+        ('WALK_IN', 'Walk-in'),
+        ('INTERNAL', 'Internal'),
     )
 
     STATUS_CHOICES = (
@@ -32,7 +50,11 @@ class Order(models.Model):
     order_date = models.DateField(default=timezone.now)
     project_site_name = models.CharField(max_length=200, blank=True)
     site_address = models.TextField(verbose_name='Location')
-    order_type = models.CharField(max_length=20, choices=ORDER_TYPE)
+    order_type = models.CharField(max_length=30, choices=ORDER_TYPE)
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, blank=True)
+    contact_person = models.CharField(max_length=120, blank=True)
+    mobile = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
     description = models.TextField()
     priority = models.CharField(max_length=20, default='Normal')
     expected_completion_date = models.DateField(null=True, blank=True)
@@ -45,6 +67,27 @@ class Order(models.Model):
         null=True,
         blank=True,
         related_name='legacy_assigned_orders',
+    )
+    assigned_project_manager = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='orders_as_pm',
+    )
+    assigned_supervisor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='orders_as_supervisor',
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='orders_created',
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='NEW')
 

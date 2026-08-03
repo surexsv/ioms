@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+    <a href="{% url 'peams_expense_list' %}" class="btn btn-secondary">Back</a>
+</div>
+<div class="card" style="max-width:760px;">
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+        {% if form.non_field_errors %}<div style="color:#dc3545;">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+        <div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+            {% if field.help_text %}<small style="color:#666;">{{ field.help_text }}</small>{% endif %}
+            {% if field.errors %}<div style="color:#dc3545;">{{ field.errors }}</div>{% endif %}</div>
+        {% endfor %}
+        <p style="color:#666;font-size:0.9rem;">Petrol card: link a Fleet fuel transaction (amount taken from Fleet). Do not re-enter fuel here.</p>
+        <button type="submit" name="action" value="draft" class="btn btn-secondary">Save draft</button>
+        <button type="submit" name="action" value="submit" class="btn btn-primary">Submit for approval</button>
+    </form>
+</div>
+{% endblock %}

@@ -54,6 +54,7 @@ MODULE_USER_APPROVAL = 'user_approval'
 MODULE_USER_MANAGEMENT = 'user_management'
 MODULE_SITE_PROGRESS = 'site_progress'
 MODULE_PRODUCTIVITY = 'productivity'
+MODULE_GPS_TRACKING = 'gps_tracking'
 MODULE_CASE_INTELLIGENCE = 'case_intelligence'
 MODULE_DAILY_MEETINGS = 'daily_meetings'
 MODULE_DAILY_MEETINGS_MANAGE = 'daily_meetings_manage'
@@ -61,6 +62,11 @@ MODULE_ERMS = 'erms'
 MODULE_ERMS_APPROVE = 'erms_approve'
 MODULE_ERMS_VIEW_ALL = 'erms_view_all'
 MODULE_ERMS_FINANCIAL_APPROVE = 'erms_financial_approve'
+MODULE_SPECIAL_PROJECTS = 'special_projects'
+MODULE_FLEET = 'fleet'
+MODULE_PROJECT_EXPENSES = 'project_expenses'
+MODULE_PROJECT_EXPENSES_APPROVE = 'project_expenses_approve'
+MODULE_PROJECT_EXPENSES_MANAGE = 'project_expenses_manage'
 
 # Role → allowed modules
 _ACCESS = {
@@ -78,6 +84,9 @@ _ACCESS = {
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MANAGE,
         MODULE_ERMS, MODULE_ERMS_VIEW_ALL,
+        MODULE_SPECIAL_PROJECTS,
+        MODULE_FLEET,
+        MODULE_PROJECT_EXPENSES, MODULE_PROJECT_EXPENSES_APPROVE, MODULE_PROJECT_EXPENSES_MANAGE,
     },
     ROLE_OPERATIONS: {
         MODULE_DASHBOARD_OPERATIONS,
@@ -91,6 +100,9 @@ _ACCESS = {
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MANAGE,
         MODULE_ERMS, MODULE_ERMS_APPROVE,
+        MODULE_SPECIAL_PROJECTS,
+        MODULE_FLEET,
+        MODULE_PROJECT_EXPENSES, MODULE_PROJECT_EXPENSES_APPROVE, MODULE_PROJECT_EXPENSES_MANAGE,
     },
     ROLE_PROJECT_MANAGER: {
         MODULE_DASHBOARD_PROJECT_MANAGER,
@@ -104,6 +116,9 @@ _ACCESS = {
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MANAGE,
         MODULE_ERMS, MODULE_ERMS_APPROVE,
+        MODULE_SPECIAL_PROJECTS,
+        MODULE_FLEET,
+        MODULE_PROJECT_EXPENSES, MODULE_PROJECT_EXPENSES_APPROVE, MODULE_PROJECT_EXPENSES_MANAGE,
     },
     ROLE_SUPERVISOR: {
         MODULE_DASHBOARD_SUPERVISOR,
@@ -116,6 +131,9 @@ _ACCESS = {
         MODULE_SITE_PROGRESS, MODULE_PRODUCTIVITY,
         MODULE_CASE_INTELLIGENCE,
         MODULE_ERMS, MODULE_ERMS_APPROVE,
+        MODULE_SPECIAL_PROJECTS,
+        MODULE_FLEET,
+        MODULE_PROJECT_EXPENSES, MODULE_PROJECT_EXPENSES_APPROVE,
     },
     ROLE_ACCOUNTS: {
         MODULE_DASHBOARD_ACCOUNTS,
@@ -126,6 +144,9 @@ _ACCESS = {
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS,
         MODULE_ERMS, MODULE_ERMS_APPROVE, MODULE_ERMS_FINANCIAL_APPROVE,
+        MODULE_SPECIAL_PROJECTS,
+        MODULE_FLEET,
+        MODULE_PROJECT_EXPENSES, MODULE_PROJECT_EXPENSES_APPROVE, MODULE_PROJECT_EXPENSES_MANAGE,
     },
     ROLE_ENGINEER: {
         MODULE_DASHBOARD_ENGINEER,
@@ -134,6 +155,9 @@ _ACCESS = {
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS,
         MODULE_ERMS,
+        MODULE_SPECIAL_PROJECTS,
+        MODULE_FLEET,
+        MODULE_PROJECT_EXPENSES,
     },
     ROLE_TECHNICIAN: {
         MODULE_DASHBOARD_ENGINEER,
@@ -142,6 +166,9 @@ _ACCESS = {
         MODULE_CASE_INTELLIGENCE,
         MODULE_DAILY_MEETINGS,
         MODULE_ERMS,
+        MODULE_SPECIAL_PROJECTS,
+        MODULE_FLEET,
+        MODULE_PROJECT_EXPENSES,
     },
     ROLE_ACCOUNTS_EXECUTIVE: {
         MODULE_DASHBOARD_ACCOUNTS,
@@ -170,36 +197,15 @@ def has_full_access(user):
 
 
 def can_access(user, module_key):
-    if user is None or not user.is_authenticated:
-        return False
-    if user.is_superuser:
-        return True
-    if not getattr(user, 'is_profile_approved', True):
-        return False
-    # Attendance self-service: driven by attendance_required profile flag.
-    if module_key == MODULE_ATTENDANCE_SELF:
-        from attendance.permissions import user_requires_attendance
-        if user_requires_attendance(user):
+    from accounts.enterprise_permissions import can_access_via_enterprise
+    if module_key in (MODULE_ATTENDANCE_TEAM, MODULE_ATTENDANCE_SUPERVISOR_TEAM):
+        if can_access_via_enterprise(user, MODULE_ATTENDANCE_MANAGE):
             return True
-    # Team attendance monitoring (read-only).
-    if module_key == MODULE_ATTENDANCE_TEAM:
-        from accounts.rbac_service import user_has_permission
-        return (
-            user_has_permission(user, MODULE_ATTENDANCE_MANAGE)
-            or user_has_permission(user, MODULE_ATTENDANCE_TEAM)
-            or user_has_permission(user, MODULE_ATTENDANCE_SUPERVISOR_TEAM)
-        )
-    if module_key == MODULE_ATTENDANCE_SUPERVISOR_TEAM:
-        from accounts.rbac_service import user_has_permission
-        return (
-            user_has_permission(user, MODULE_ATTENDANCE_MANAGE)
-            or user_has_permission(user, MODULE_ATTENDANCE_SUPERVISOR_TEAM)
-        )
-    from accounts.rbac_service import permissions_for_role
-    role = user_role(user)
-    if module_key in permissions_for_role(role):
-        return True
-    return module_key in _ACCESS.get(role, set())
+        if module_key == MODULE_ATTENDANCE_TEAM and can_access_via_enterprise(user, MODULE_ATTENDANCE_TEAM):
+            return True
+        if module_key == MODULE_ATTENDANCE_SUPERVISOR_TEAM and can_access_via_enterprise(user, MODULE_ATTENDANCE_SUPERVISOR_TEAM):
+            return True
+    return can_access_via_enterprise(user, module_key)
 
 
 def user_modules(user):
@@ -328,14 +334,25 @@ def can_view_company_settings(user):
 
 
 def can_manage_user_approvals(user):
-    return user.is_authenticated and (
-        user.is_superuser or user_role(user) == ROLE_DIRECTOR
-    )
+    from accounts.enterprise_permissions import has_enterprise_permission, has_employee_profile
+    if user.is_authenticated and user.is_superuser:
+        return True
+    if has_employee_profile(user):
+        return (
+            has_enterprise_permission(user, 'approval')
+            or has_enterprise_permission(user, 'user_management')
+        )
+    return user.is_authenticated and user_role(user) == ROLE_DIRECTOR
 
 
 def can_manage_users(user):
-    """Full user CRUD — Admin / Super User only."""
-    return user.is_authenticated and user.is_superuser
+    """Full user CRUD — requires user_management permission or superuser."""
+    from accounts.enterprise_permissions import has_enterprise_permission, has_employee_profile
+    if user.is_authenticated and user.is_superuser:
+        return True
+    if has_employee_profile(user):
+        return has_enterprise_permission(user, 'user_management')
+    return False
 
 
 def can_manage_site_progress(user):
@@ -362,7 +379,7 @@ def resolve_path_module(path):
     if path.startswith('/billing/'):
         return MODULE_MANAGE_BILLING
     if path.startswith('/enquiries/'):
-        return MODULE_ENQUIRIES
+        return None
     if path.startswith('/estimate-boq/'):
         return MODULE_ESTIMATE_BOQ
     if path.startswith('/clients/'):
@@ -397,6 +414,8 @@ def resolve_path_module(path):
         return MODULE_COMPANY_SETTINGS
     if path.startswith('/scheduling/'):
         return MODULE_SCHEDULING
+    if path.startswith('/productivity/gps') or path.startswith('/productivity/field-activities'):
+        return MODULE_GPS_TRACKING
     if path.startswith('/productivity/'):
         return MODULE_PRODUCTIVITY
     if path.startswith('/case-intelligence/'):
@@ -417,6 +436,12 @@ def resolve_path_module(path):
         if any(path.startswith(p) for p in approve_paths) or any(p in path for p in action_paths):
             return MODULE_ERMS_APPROVE
         return MODULE_ERMS
+    if path.startswith('/special-projects/'):
+        return MODULE_SPECIAL_PROJECTS
+    if path.startswith('/fleet/'):
+        return MODULE_FLEET
+    if path.startswith('/project-expenses/'):
+        return MODULE_PROJECT_EXPENSES
     if path.startswith('/user-approvals/'):
         return MODULE_USER_APPROVAL
     if path.startswith('/dashboard/'):
@@ -435,17 +460,5 @@ def resolve_path_module(path):
 
 
 def allowed_dashboard_url_name(user):
-    if has_full_access(user) or user_role(user) == ROLE_DIRECTOR:
-        return 'director_dashboard'
-    role = user_role(user)
-    if role == ROLE_OPERATIONS or role == ROLE_BACK_OFFICE:
-        return 'operations_dashboard'
-    if role in (ROLE_ACCOUNTS, ROLE_ACCOUNTS_EXECUTIVE):
-        return 'accounts_dashboard'
-    if role == ROLE_PROJECT_MANAGER:
-        return 'project_manager_dashboard'
-    if role in (ROLE_ENGINEER, ROLE_TECHNICIAN):
-        return 'field_team_dashboard'
-    if role == ROLE_SUPERVISOR:
-        return 'supervisor_dashboard'
-    return 'login'
+    from accounts.enterprise_permissions import allowed_dashboard_for_user
+    return allowed_dashboard_for_user(user)

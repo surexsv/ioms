@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}{{ advance.advance_number }} — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ advance.advance_number }}</h1>
+    <a href="{% url 'peams_advance_list' %}" class="btn btn-secondary">All Advances</a>
+</div>
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>Date</label><p>{{ advance.advance_date|date:"d M Y" }}</p></div>
+        <div class="detail-item"><label>Employee</label><p>{{ advance.employee.get_full_name|default:advance.employee }}</p></div>
+        <div class="detail-item"><label>Project</label><p>{{ advance.special_project.project_number|default:"—" }}</p></div>
+        <div class="detail-item"><label>Order</label><p>{% if advance.order %}<a href="{% url 'order_detail' advance.order_id %}">{{ advance.order.order_no }}</a>{% else %}—{% endif %}</p></div>
+        <div class="detail-item"><label>Amount</label><p><strong>{{ advance.amount }}</strong></p></div>
+        <div class="detail-item"><label>Status</label><p>{{ advance.get_status_display }}</p></div>
+        <div class="detail-item"><label>Employee ledger balance</label><p><strong>{{ employee_balance }}</strong></p></div>
+        <div class="detail-item"><label>Purpose</label><p>{{ advance.purpose }}</p></div>
+    </div>
+</div>
+{% if can_manage and advance.status != 'CLOSED' %}
+<div class="card" style="max-width:480px;">
+    <h3 style="margin-top:0;">Settle / return</h3>
+    <form method="post">{% csrf_token %}
+        {% for field in settle_form %}
+        <div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Post settlement</button>
+    </form>
+</div>
+{% endif %}
+<div class="card">
+    <h3 style="margin-top:0;">Ledger entries</h3>
+    <table>
+        <tr><th>Date</th><th>Type</th><th>Debit</th><th>Credit</th><th>Description</th></tr>
+        {% for e in entries %}
+        <tr>
+            <td>{{ e.txn_date|date:"d M Y" }}</td>
+            <td>{{ e.get_txn_type_display }}</td>
+            <td>{{ e.debit }}</td>
+            <td>{{ e.credit }}</td>
+            <td>{{ e.description }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No ledger rows.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

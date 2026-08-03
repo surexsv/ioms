@@ -83,29 +83,26 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
     total_clients = Client.objects.count()
 
     total_orders = Order.objects.count()
-
-    pending_orders = Order.objects.filter(status='IN_PROGRESS').count()
-
+    open_orders = Order.objects.exclude(status='CLOSED').count()
+    scheduled_orders = Order.objects.filter(status='SCHEDULED').count()
     wcr_pending = Order.objects.filter(status='COMPLETED').count()
-
-
+    billing_pending = Order.objects.filter(status__in=['APPROVED', 'WCR_SUBMITTED']).count()
+    payment_pending_orders = Order.objects.filter(status='PAYMENT_PENDING').count()
+    closed_orders = Order.objects.filter(status='CLOSED').count()
 
     context = {
-
         'show_financial': show_financial,
-
         'show_quotations': show_quotations,
-
         'show_operations': show_operations,
-
         'total_clients': total_clients,
-
         'total_orders': total_orders,
-
-        'pending_orders': pending_orders,
-
+        'open_orders': open_orders,
+        'scheduled_orders': scheduled_orders,
+        'pending_orders': open_orders,
         'wcr_pending': wcr_pending,
-
+        'billing_pending': billing_pending,
+        'payment_pending_orders': payment_pending_orders,
+        'closed_orders': closed_orders,
     }
 
 
@@ -453,95 +450,64 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
 
 
 
-    context.update(_enquiry_dashboard_stats())
+    context.update(_order_workflow_stats())
     return context
 
 
-def _enquiry_dashboard_stats():
-    try:
-        from enquiries.models import Enquiry
-    except Exception:
-        return {
-            'total_enquiries': 0,
-            'open_enquiries': 0,
-            'quotations_submitted': 0,
-            'won_opportunities': 0,
-            'lost_opportunities': 0,
-            'enquiry_pipeline_labels': json.dumps([]),
-            'enquiry_pipeline_values': json.dumps([]),
-        }
+def _order_workflow_stats():
+    """Order pipeline stats for dashboard charts (replaces retired enquiry pipeline)."""
+    status_labels = []
+    status_values = []
+    for code, label in Order.STATUS_CHOICES:
+        count = Order.objects.filter(status=code).count()
+        if count:
+            status_labels.append(label)
+            status_values.append(count)
 
-    closed_statuses = (
-        Enquiry.STATUS_LOST,
-        Enquiry.STATUS_CLOSED,
-        Enquiry.STATUS_CONVERTED,
-    )
-    pipeline_map = {
-        'NEW': Enquiry.STATUS_NEW,
-        'ASSIGNED': Enquiry.STATUS_ASSIGNED,
-        'SURVEY': [
-            Enquiry.STATUS_SURVEY_SCHEDULED,
-            Enquiry.STATUS_SURVEY_COMPLETED,
-            Enquiry.STATUS_FEASIBILITY_IN_PROGRESS,
-        ],
-        'QUOTATION': [
-            Enquiry.STATUS_QUOTATION_PREPARATION,
-            Enquiry.STATUS_QUOTATION_SUBMITTED,
-            Enquiry.STATUS_FOLLOW_UP,
-        ],
-        'WON': Enquiry.STATUS_WON,
-        'LOST': Enquiry.STATUS_LOST,
-    }
-    labels, values = [], []
-    for label, statuses in pipeline_map.items():
-        labels.append(label)
-        if isinstance(statuses, list):
-            values.append(Enquiry.objects.filter(status__in=statuses).count())
-        else:
-            values.append(Enquiry.objects.filter(status=statuses).count())
+    if not status_labels:
+        status_labels = ['No orders']
+        status_values = [0]
 
     return {
-        'total_enquiries': Enquiry.objects.count(),
-        'open_enquiries': Enquiry.objects.exclude(status__in=closed_statuses).count(),
-        'quotations_submitted': Enquiry.objects.filter(
-            status=Enquiry.STATUS_QUOTATION_SUBMITTED,
-        ).count(),
-        'won_opportunities': Enquiry.objects.filter(status=Enquiry.STATUS_WON).count(),
-        'lost_opportunities': Enquiry.objects.filter(status=Enquiry.STATUS_LOST).count(),
-        'enquiry_pipeline_labels': json.dumps(labels),
-        'enquiry_pipeline_values': json.dumps(values),
+        'order_pipeline_labels': json.dumps(status_labels),
+        'order_pipeline_values': json.dumps(status_values),
+    }
+
+
+def _enquiry_dashboard_stats():
+    """Deprecated — retained for backward-compatible template keys."""
+    return {
+        'total_enquiries': 0,
+        'open_enquiries': 0,
+        'quotations_submitted': 0,
+        'won_opportunities': 0,
+        'lost_opportunities': 0,
+        'enquiry_pipeline_labels': json.dumps([]),
+        'enquiry_pipeline_values': json.dumps([]),
     }
 
 
 def build_project_manager_context(user):
-    from enquiries.models import Enquiry
     from scheduling.models import WorkSchedule
 
     today = date.today()
-    my_enquiries = Enquiry.objects.filter(
-        Q(assigned_project_manager=user) | Q(assigned_to=user),
-    ).distinct()
     my_orders = Order.objects.filter(
-        Q(source_enquiry__assigned_project_manager=user)
-        | Q(work_schedule__team_leader=user),
+        Q(assigned_project_manager=user)
+        | Q(source_enquiry__assigned_project_manager=user)
+        | Q(work_schedule__team_leader=user)
+        | Q(created_by=user),
     ).distinct()
 
-    pending_surveys = my_enquiries.filter(
-        survey_required=True,
-        status__in=[
-            Enquiry.STATUS_ASSIGNED,
-            Enquiry.STATUS_SURVEY_SCHEDULED,
-        ],
+    pending_surveys = my_orders.filter(
+        order_type='SURVEY',
+        status__in=['NEW', 'SCHEDULED'],
     )
-    pending_quotations = my_enquiries.filter(
-        status__in=[
-            Enquiry.STATUS_QUOTATION_PREPARATION,
-            Enquiry.STATUS_FOLLOW_UP,
-        ],
-    )
+    pending_wcr = my_orders.filter(status='COMPLETED')
+    pending_billing = my_orders.filter(status__in=['APPROVED', 'WCR_SUBMITTED'])
     delayed = WorkSchedule.objects.filter(
+        Q(order__assigned_project_manager=user)
+        | Q(order__source_enquiry__assigned_project_manager=user),
         scheduled_end_date__lt=today,
-        order__source_enquiry__assigned_project_manager=user,
     ).exclude(
         status__in=[WorkSchedule.STATUS_COMPLETED, WorkSchedule.STATUS_CANCELLED],
     ).select_related('order', 'order__client')[:10]
@@ -559,13 +525,14 @@ def build_project_manager_context(user):
         })
 
     return {
-        'assigned_enquiries': my_enquiries.count(),
         'assigned_orders': my_orders.count(),
+        'open_orders': my_orders.exclude(status='CLOSED').count(),
         'pending_surveys': pending_surveys.count(),
-        'pending_quotations': pending_quotations.count(),
+        'pending_wcr': pending_wcr.count(),
+        'pending_billing': pending_billing.count(),
         'delayed_projects': delayed,
         'team_stats': team_stats,
-        'recent_enquiries': my_enquiries.order_by('-enquiry_date')[:8],
+        'recent_orders': my_orders.order_by('-order_date')[:8],
     }
 
 

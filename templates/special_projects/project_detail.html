@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}{{ project.project_number }} — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ project.project_number }} — {{ project.name }}</h1>
+    <div>
+        {% if can_manage %}
+        <a href="{% url 'special_project_edit' project.pk %}" class="btn btn-secondary">Edit</a>
+        {% endif %}
+        <a href="{% url 'special_project_list' %}" class="btn btn-secondary">All Projects</a>
+        <a href="{% url 'order_detail' project.order_id %}" class="btn btn-secondary">Order</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>Client</label><p>{{ project.order.client.name }}</p></div>
+        <div class="detail-item"><label>Order</label><p><a href="{% url 'order_detail' project.order_id %}">{{ project.order.order_no }}</a></p></div>
+        <div class="detail-item"><label>Category</label><p>{{ project.get_category_display }}</p></div>
+        <div class="detail-item"><label>Status</label><p><strong>{{ project.get_status_display }}</strong></p></div>
+        <div class="detail-item"><label>Progress</label><p>{{ project.overall_progress_pct }}%</p></div>
+        <div class="detail-item"><label>Project Manager</label><p>{{ project.project_manager.get_full_name|default:project.project_manager|default:"—" }}</p></div>
+        <div class="detail-item"><label>Planned</label><p>{{ project.planned_start_date|date:"d M Y"|default:"—" }} → {{ project.planned_end_date|date:"d M Y"|default:"—" }}</p></div>
+        <div class="detail-item"><label>Actual</label><p>{{ project.actual_start_date|date:"d M Y"|default:"—" }} → {{ project.actual_end_date|date:"d M Y"|default:"—" }}</p></div>
+    </div>
+    {% if project.remarks %}<p style="margin-top:12px;"><strong>Remarks:</strong> {{ project.remarks }}</p>{% endif %}
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Cost summary (separate from billing)</h3>
+    <div class="detail-grid">
+        <div class="detail-item"><label>Budget</label><p>{{ project.budget }}</p></div>
+        <div class="detail-item"><label>Total expenses (all)</label><p>{{ total_expense }}</p></div>
+        <div class="detail-item"><label>Approved expenses</label><p>{{ approved_expense }}</p></div>
+        <div class="detail-item"><label>Budget vs spend</label><p>{{ budget_variance }}</p></div>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <h3 style="margin:0;">Daily logs</h3>
+        {% if can_log and project.status != 'CLOSED' %}
+        <a href="{% url 'special_project_daily_log_create' project.pk %}" class="btn btn-primary btn-sm">Add Daily Log</a>
+        {% endif %}
+    </div>
+    <table style="margin-top:12px;">
+        <tr>
+            <th>Date</th>
+            <th>Progress</th>
+            <th>Work</th>
+            <th>Mentor</th>
+            <th></th>
+        </tr>
+        {% for log in logs %}
+        <tr>
+            <td>{{ log.log_date|date:"d M Y" }}</td>
+            <td>{{ log.daily_progress_pct }}%</td>
+            <td>{{ log.work_description|truncatewords:16 }}</td>
+            <td>{{ log.mentor.get_full_name|default:log.mentor|default:"—" }}</td>
+            <td><a href="{% url 'special_project_daily_log_detail' log.pk %}">View</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No daily logs yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Completion → normal WCR / BOQ / Billing</h3>
+    {% if project.status != 'COMPLETED' and project.status != 'CLOSED' and can_manage %}
+    <form method="post" action="{% url 'special_project_complete' project.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Mark Project Completed</button>
+    </form>
+    <p style="color:#666;margin-top:8px;">Sets project completed and aligns Order to Completed so you can submit WCR.</p>
+    {% endif %}
+    {% if wcr %}
+    <p>WCR: {{ wcr.wcr_number|default:wcr.pk }} — {% if wcr.approved %}Approved{% else %}Pending{% endif %}
+        {% if not wcr.approved %}<a href="{% url 'approve_wcr' wcr.pk %}">Approve</a>{% endif %}
+    </p>
+    {% else %}
+    <p>No WCR yet.
+        {% if project.order.status == 'COMPLETED' or project.status == 'COMPLETED' %}
+        <a href="{% url 'create_wcr' %}" class="btn btn-success btn-sm">Create WCR</a>
+        {% endif %}
+    </p>
+    {% endif %}
+    <p style="margin-top:8px;"><a href="{% url 'boq_list' %}">BOQ</a> · <a href="{% url 'invoice_list' %}">Billing</a></p>
+</div>
+{% endblock %}

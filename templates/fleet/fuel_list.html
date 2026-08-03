@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Fuel Log — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Fuel Log</h1>
+    <div>
+        <a href="{% url 'fleet_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+        {% if can_create %}
+        <a href="{% url 'fleet_fuel_create' %}" class="btn btn-primary">Add Fuel Entry</a>
+        {% endif %}
+    </div>
+</div>
+<form method="get" style="margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <label for="vehicle">Vehicle</label>
+    <select name="vehicle" id="vehicle" onchange="this.form.submit()">
+        <option value="">All</option>
+        {% for v in vehicles %}
+        <option value="{{ v.pk }}" {% if vehicle_filter == v.pk|stringformat:"s" %}selected{% endif %}>{{ v.vehicle_number }}</option>
+        {% endfor %}
+    </select>
+</form>
+<table>
+    <tr>
+        <th>Date</th>
+        <th>Vehicle</th>
+        <th>Driver</th>
+        <th>Litres</th>
+        <th>Amount</th>
+        <th>KM</th>
+        <th>KM/L</th>
+        <th>Pay</th>
+        <th></th>
+    </tr>
+    {% for t in transactions %}
+    <tr {% if t.odometer_warning %}style="background:#fff3cd;"{% endif %}>
+        <td>{{ t.transaction_date|date:"d M Y" }}</td>
+        <td>{{ t.vehicle.vehicle_number }}</td>
+        <td>{{ t.driver.get_full_name|default:t.driver }}</td>
+        <td>{{ t.fuel_quantity_litres }}</td>
+        <td>{{ t.total_amount }}</td>
+        <td>{{ t.distance_km }}{% if t.odometer_warning %} ⚠{% endif %}</td>
+        <td>{{ t.mileage_kmpl|default:"—" }}</td>
+        <td>{{ t.get_payment_method_display }}</td>
+        <td><a href="{% url 'fleet_fuel_detail' t.pk %}">View</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="9">No fuel entries yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

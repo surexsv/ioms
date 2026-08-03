@@ -15,12 +15,24 @@
         </div>
         <div class="form-row">
             <div class="form-group">{{ form.order_type.label_tag }}{{ form.order_type }}</div>
+            <div class="form-group">{{ form.source.label_tag }}{{ form.source }}</div>
+        </div>
+        <div class="form-row">
             <div class="form-group">{{ form.priority.label_tag }}{{ form.priority }}</div>
+            <div class="form-group">{{ form.contact_person.label_tag }}{{ form.contact_person }}</div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">{{ form.mobile.label_tag }}{{ form.mobile }}</div>
+            <div class="form-group">{{ form.email.label_tag }}{{ form.email }}</div>
         </div>
         <div class="form-group">{{ form.project_site_name.label_tag }}{{ form.project_site_name }}</div>
         <div class="form-group">{{ form.site_address.label_tag }}{{ form.site_address }}</div>
         <div class="form-group">{{ form.description.label_tag }}{{ form.description }}</div>
         <div class="form-group">{{ form.expected_completion_date.label_tag }}{{ form.expected_completion_date }}</div>
+        <div class="form-row">
+            <div class="form-group">{{ form.assigned_project_manager.label_tag }}{{ form.assigned_project_manager }}</div>
+            <div class="form-group">{{ form.assigned_supervisor.label_tag }}{{ form.assigned_supervisor }}</div>
+        </div>
         <div class="form-group">{{ form.remarks.label_tag }}{{ form.remarks }}</div>
 
         <h4 style="margin-top:20px;">Attachments (optional)</h4>

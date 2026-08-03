@@ -54,12 +54,15 @@ def _orders_for_user(user):
         ).distinct()
     if role == ROLE_PROJECT_MANAGER:
         return qs.filter(
-            Q(source_enquiry__assigned_project_manager=user)
-            | Q(work_schedule__team_leader=user),
+            Q(assigned_project_manager=user)
+            | Q(source_enquiry__assigned_project_manager=user)
+            | Q(work_schedule__team_leader=user)
+            | Q(created_by=user),
         ).distinct()
     if role == ROLE_SUPERVISOR:
         return qs.filter(
-            Q(source_enquiry__assigned_supervisor=user)
+            Q(assigned_supervisor=user)
+            | Q(source_enquiry__assigned_supervisor=user)
             | Q(work_schedule__assigned_engineers__role__in=list(FIELD_ROLES))
             | Q(assigned_to__role__in=list(FIELD_ROLES))
             | Q(work_schedule__isnull=True, assigned_to__isnull=True),
@@ -76,10 +79,14 @@ def _can_access_order(user, order):
     if role in (ROLE_DIRECTOR, ROLE_OPERATIONS):
         return True
     if role == ROLE_PROJECT_MANAGER:
+        if order.assigned_project_manager_id == user.id:
+            return True
         if hasattr(order, 'source_enquiry') and order.source_enquiry:
             return order.source_enquiry.assigned_project_manager_id == user.id
-        return True
+        return order.created_by_id == user.id
     if role == ROLE_SUPERVISOR:
+        if order.assigned_supervisor_id == user.id:
+            return True
         if hasattr(order, 'source_enquiry') and order.source_enquiry:
             if order.source_enquiry.assigned_supervisor_id == user.id:
                 return True
@@ -120,6 +127,7 @@ def create_order(request):
             with transaction.atomic():
                 order = form.save(commit=False)
                 order.status = 'NEW'
+                order.created_by = request.user
                 order.save()
                 attachment_formset.instance = order
                 attachment_formset.save()
@@ -149,7 +157,8 @@ def create_order(request):
 def order_detail(request, pk):
     order = get_object_or_404(
         Order.objects.select_related(
-            'client', 'assigned_to', 'work_schedule', 'work_schedule__team_leader',
+            'client', 'assigned_to', 'assigned_project_manager', 'assigned_supervisor',
+            'work_schedule', 'work_schedule__team_leader',
         ).prefetch_related('attachments', 'work_schedule__assigned_engineers'),
         pk=pk,
     )
@@ -225,6 +234,12 @@ def order_detail(request, pk):
         assigned_to=str(order.assigned_to or '—'),
     )
 
+    special_project = getattr(order, 'special_project', None)
+    from special_projects.permissions import can_manage_special_projects, can_view_special_projects
+    can_open_special_project = (
+        can_manage_special_projects(request.user) and can_view_special_projects(request.user)
+    )
+
     return render(request, 'orders/order_detail.html', {
         'order': order,
         'schedule': schedule,
@@ -237,5 +252,7 @@ def order_detail(request, pk):
         'can_manage_billing': can_manage_billing(request.user),
         'site_attendance': site_attendance,
         'can_site_attendance': can_site_attendance,
+        'special_project': special_project,
+        'can_open_special_project': can_open_special_project,
         **case_ctx,
     })

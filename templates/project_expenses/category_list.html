@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Expense Categories — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Expense Categories</h1>
+    <div>
+        <a href="{% url 'peams_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+        {% if can_manage %}<a href="{% url 'peams_category_create' %}" class="btn btn-primary">Add</a>{% endif %}
+    </div>
+</div>
+<table>
+    <tr><th>Code</th><th>Name</th><th>Order</th><th>Active</th><th>GL</th></tr>
+    {% for c in categories %}
+    <tr>
+        <td>{{ c.code }}</td>
+        <td>{{ c.name }}</td>
+        <td>{{ c.sort_order }}</td>
+        <td>{% if c.is_active %}Yes{% else %}No{% endif %}</td>
+        <td>{{ c.gl_account_code|default:"—" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">No categories.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

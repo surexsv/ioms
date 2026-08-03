@@ -21,109 +21,24 @@
                 <span class="ioms-sidebar-version">v{{ ioms_version_label }}</span>
             </div>
             <nav class="ioms-sidebar-nav">
-                {% if show_nav_dashboard %}
+                {% if show_nav_dashboard and dashboard_url and dashboard_url != 'login' %}
                 <a href="{% url dashboard_url %}" class="{% if nav_active == 'dashboard' %}active{% endif %}">
                     <i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard
                 </a>
                 {% endif %}
-                {% if show_nav_enquiries %}
-                <a href="{% url 'enquiry_list' %}" class="{% if nav_active == 'enquiries' %}active{% endif %}">
-                    <i class="bi bi-chat-left-text" aria-hidden="true"></i> Enquiries
+                {% for section in enterprise_nav_sections %}
+                {% if section.label %}<div class="ioms-nav-section">{{ section.label }}</div>{% endif %}
+                {% for item in section.items %}
+                {% if item.nav_key != 'dashboard' %}
+                <a href="{% url item.url_name %}{% if item.query %}?{{ item.query }}{% endif %}"
+                   class="{% if nav_active == item.nav_key %}active{% endif %}">
+                    <i class="bi {{ item.icon }}" aria-hidden="true"></i>
+                    {% if item.nav_key == 'orders' and is_field_staff %}My Orders{% else %}{{ item.label }}{% endif %}
+                    {% if item.badge %}<span class="badge">{{ item.badge }}</span>{% endif %}
                 </a>
                 {% endif %}
-                {% if show_nav_orders %}
-                <a href="{% url 'order_list' %}" class="{% if nav_active == 'orders' %}active{% endif %}">
-                    <i class="bi bi-clipboard-check" aria-hidden="true"></i>
-                    {% if is_field_staff %}My Orders{% else %}Orders{% endif %}
-                </a>
-                {% endif %}
-                {% if show_nav_clients %}
-                <a href="{% url 'client_list' %}" class="{% if nav_active == 'clients' %}active{% endif %}">
-                    <i class="bi bi-people" aria-hidden="true"></i> Clients
-                </a>
-                {% endif %}
-                {% if show_nav_quotations %}
-                <a href="{% url 'quotation_list' %}" class="{% if nav_active == 'quotations' %}active{% endif %}">
-                    <i class="bi bi-file-earmark-ruled" aria-hidden="true"></i> Quotations
-                </a>
-                {% endif %}
-                {% if show_nav_wcr %}
-                <a href="{% url 'wcr_list' %}" class="{% if nav_active == 'wcr' %}active{% endif %}">
-                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i> WCR
-                </a>
-                {% endif %}
-                {% if show_nav_boq %}
-                <a href="{% url 'boq_list' %}" class="{% if nav_active == 'boq' %}active{% endif %}">
-                    <i class="bi bi-list-check" aria-hidden="true"></i> BOQ
-                </a>
-                {% endif %}
-                {% if show_nav_billing %}
-                <a href="{% url 'invoice_list' %}" class="{% if nav_active == 'billing' %}active{% endif %}">
-                    <i class="bi bi-receipt" aria-hidden="true"></i> Billing
-                </a>
-                {% endif %}
-                {% if show_nav_my_attendance %}
-                <a href="{% url 'my_attendance' %}" class="{% if nav_active == 'attendance' %}active{% endif %}">
-                    <i class="bi bi-person-check" aria-hidden="true"></i> My Attendance
-                </a>
-                {% endif %}
-                {% if show_nav_attendance_management %}
-                <a href="{% url 'attendance_dashboard' %}" class="{% if nav_active == 'attendance' %}active{% endif %}">
-                    <i class="bi bi-calendar-check" aria-hidden="true"></i> Attendance Management
-                </a>
-                {% endif %}
-                {% if show_nav_team_attendance %}
-                <a href="{% url 'attendance_team' %}" class="{% if nav_active == 'attendance' %}active{% endif %}">
-                    <i class="bi bi-people" aria-hidden="true"></i> Team Attendance
-                </a>
-                {% endif %}
-                {% if show_nav_document_numbers %}
-                <a href="{% url 'document_control_panel' %}" class="{% if nav_active == 'document_numbers' %}active{% endif %}">
-                    <i class="bi bi-hash" aria-hidden="true"></i> Doc Numbers
-                </a>
-                {% endif %}
-                {% if show_nav_company_settings %}
-                <a href="{% url 'company_settings' %}" class="{% if nav_active == 'company_settings' %}active{% endif %}">
-                    <i class="bi bi-building-gear" aria-hidden="true"></i> Company Settings
-                </a>
-                {% endif %}
-                {% if show_nav_user_approvals %}
-                <a href="{% url 'user_approval_list' %}" class="{% if nav_active == 'user_approvals' %}active{% endif %}">
-                    <i class="bi bi-person-check" aria-hidden="true"></i> User Approvals
-                    {% if pending_approval_count %}<span class="badge">{{ pending_approval_count }}</span>{% endif %}
-                </a>
-                {% endif %}
-                {% if show_nav_schedules %}
-                <a href="{% url 'schedule_list' %}" class="{% if nav_active == 'schedules' %}active{% endif %}">
-                    <i class="bi bi-calendar-event" aria-hidden="true"></i> Schedules
-                </a>
-                {% endif %}
-                {% if show_nav_productivity %}
-                <a href="{% url 'productivity_dashboard' %}" class="{% if nav_active == 'productivity' %}active{% endif %}">
-                    <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Productivity
-                </a>
-                {% endif %}
-                {% if show_nav_gps %}
-                <a href="{% url 'gps_dashboard' %}" class="{% if nav_active == 'gps' %}active{% endif %}">
-                    <i class="bi bi-geo-alt" aria-hidden="true"></i> GPS Tracking
-                </a>
-                {% endif %}
-                {% if show_nav_case_intelligence %}
-                <a href="{% url 'case_stuck_dashboard' %}" class="{% if nav_active == 'case_intelligence' %}active{% endif %}">
-                    <i class="bi bi-diagram-3" aria-hidden="true"></i> Case Intelligence
-                </a>
-                {% endif %}
-                {% if show_nav_daily_meetings %}
-                <a href="{% url 'dom_dashboard' %}" class="{% if nav_active == 'daily_meetings' %}active{% endif %}">
-                    <i class="bi bi-people-fill" aria-hidden="true"></i> Daily Meetings
-                </a>
-                {% endif %}
-                {% if show_nav_employee_requests %}
-                <a href="{% url 'erms_dashboard' %}" class="{% if nav_active == 'employee_requests' %}active{% endif %}">
-                    <i class="bi bi-inbox" aria-hidden="true"></i> Requests
-                    {% if erms_notification_count %}<span class="badge">{{ erms_notification_count }}</span>{% endif %}
-                </a>
-                {% endif %}
+                {% endfor %}
+                {% endfor %}
             </nav>
             <div class="ioms-sidebar-footer">
                 <strong>{{ user.get_full_name|default:user.username }}</strong>
@@ -142,7 +57,11 @@
                 <button type="button" class="ioms-menu-toggle" id="iomsMenuToggle" aria-label="Open menu" aria-expanded="false">
                     <i class="bi bi-list"></i>
                 </button>
-                <h1 class="ioms-app-title">{{ ioms_product_name }}</h1>
+                <h1 class="ioms-app-title">
+                    <span class="ioms-title-full">{{ ioms_product_name }}</span>
+                    <span class="ioms-title-short" aria-label="{{ ioms_product_name }}">{{ ioms_short_name }}</span>
+                </h1>
+                <div class="ioms-header-actions">
                 {% if show_nav_employee_requests %}
                 <a href="{% url 'erms_notifications' %}" class="ioms-notification-bell" title="Request notifications" aria-label="Request notifications">
                     <i class="bi bi-bell"></i>
@@ -155,6 +74,7 @@
                     <button type="submit" class="btn btn-secondary btn-sm"><i class="bi bi-search"></i></button>
                 </form>
                 {% endif %}
+                </div>
             </header>
 
             <main class="ioms-content">

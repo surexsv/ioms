@@ -1,0 +1,25 @@
+<div class="sp-section">
+    <h3>{{ title }}</h3>
+    {{ formset.management_form }}
+    {% if formset.non_form_errors %}<div style="color:#dc3545;">{{ formset.non_form_errors }}</div>{% endif %}
+    <table class="line-table">
+        <tr>
+            {% for field in formset.forms.0.visible_fields %}
+            {% if field.name != 'DELETE' %}<th>{{ field.label }}</th>{% endif %}
+            {% empty %}
+            <th>—</th>
+            {% endfor %}
+            <th>Delete</th>
+        </tr>
+        {% for f in formset %}
+        <tr>
+            {% for field in f.visible_fields %}
+            {% if field.name != 'DELETE' %}
+            <td>{{ field }}{% if field.errors %}<br><span style="color:#dc3545;">{{ field.errors }}</span>{% endif %}</td>
+            {% endif %}
+            {% endfor %}
+            <td>{% if f.DELETE %}{{ f.DELETE }}{% endif %}{% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>

@@ -1,0 +1,386 @@
+{
+  "generated_at": "2026-08-03T10:18:47.068843+00:00",
+  "counts": {
+    "PASS": 53
+  },
+  "results": [
+    {
+      "step": "SETUP",
+      "case": "user:director",
+      "status": "PASS",
+      "detail": "surex role=DIRECTOR",
+      "evidence": ""
+    },
+    {
+      "step": "SETUP",
+      "case": "user:tech",
+      "status": "PASS",
+      "detail": "Tech1 role=Technician",
+      "evidence": ""
+    },
+    {
+      "step": "SETUP",
+      "case": "user:accounts",
+      "status": "PASS",
+      "detail": "Maya role=ACCOUNTS",
+      "evidence": ""
+    },
+    {
+      "step": "SETUP",
+      "case": "user:pm",
+      "status": "PASS",
+      "detail": "Jayan role=PROJECT_MANAGER",
+      "evidence": ""
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET peams_dashboard",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET peams_dashboard",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET peams_expense_create",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/expenses/add/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET peams_expense_create",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/expenses/add/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET peams_expense_list",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/expenses/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET peams_expense_list",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/expenses/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET peams_advance_list",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/advances/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET peams_advance_list",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/advances/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET peams_employee_ledger",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/ledger/employee/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET peams_employee_ledger",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/ledger/employee/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET peams_pending_approvals",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/approvals/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET peams_pending_approvals",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/approvals/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET fleet_dashboard",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/fleet/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET fleet_dashboard",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/fleet/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET fleet_fuel_create",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/fleet/fuel/add/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET fleet_fuel_create",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/fleet/fuel/add/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET fleet_fuel_list",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/fleet/fuel/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET fleet_fuel_list",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/fleet/fuel/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET fleet_vehicle_list",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/fleet/vehicles/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET fleet_vehicle_list",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/fleet/vehicles/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET special_project_list",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/special-projects/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET special_project_list",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/special-projects/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET fleet_petty_cash",
+      "status": "PASS",
+      "detail": "status=302 expected=302",
+      "evidence": "/fleet/petty-cash/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET fleet_reimbursement_list",
+      "status": "PASS",
+      "detail": "status=302 expected=302",
+      "evidence": "/fleet/reimbursements/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET peams_settings",
+      "status": "PASS",
+      "detail": "status=302 expected=302",
+      "evidence": "/project-expenses/settings/"
+    },
+    {
+      "step": "HTTP",
+      "case": "Tech1 GET peams_advance_create",
+      "status": "PASS",
+      "detail": "status=302 expected=302",
+      "evidence": "/project-expenses/advances/add/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET fleet_petty_cash",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/fleet/petty-cash/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET peams_settings",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/settings/"
+    },
+    {
+      "step": "HTTP",
+      "case": "surex GET peams_advance_create",
+      "status": "PASS",
+      "detail": "status=200 expected=200",
+      "evidence": "/project-expenses/advances/add/"
+    },
+    {
+      "step": "RBAC",
+      "case": "PEAMS tech employee lock",
+      "status": "PASS",
+      "detail": "employee queryset = self",
+      "evidence": ""
+    },
+    {
+      "step": "RBAC",
+      "case": "PEAMS director employee list",
+      "status": "PASS",
+      "detail": "count=12",
+      "evidence": ""
+    },
+    {
+      "step": "RBAC",
+      "case": "Fleet tech no petty + driver lock",
+      "status": "PASS",
+      "detail": "['DIRECT_CASH', 'PETROL_CARD']",
+      "evidence": ""
+    },
+    {
+      "step": "RBAC",
+      "case": "SP diary approval_status field",
+      "status": "PASS",
+      "detail": "tech hidden, manager visible",
+      "evidence": ""
+    },
+    {
+      "step": "AUDIT",
+      "case": "Order order_by order_id",
+      "status": "PASS",
+      "detail": "",
+      "evidence": ""
+    },
+    {
+      "step": "PEAMS",
+      "case": "approval steps by amount",
+      "status": "PASS",
+      "detail": "low=['MANAGER', 'ACCOUNTS'] high=['MANAGER', 'ACCOUNTS', 'DIRECTOR']",
+      "evidence": ""
+    },
+    {
+      "step": "FLEET",
+      "case": "tech cash fuel + reimb pending",
+      "status": "PASS",
+      "detail": "pk=3 amt=500.00",
+      "evidence": ""
+    },
+    {
+      "step": "FLEET",
+      "case": "card fuel deducts balance",
+      "status": "PASS",
+      "detail": "3000.00 -> 2600.00",
+      "evidence": ""
+    },
+    {
+      "step": "FLEET",
+      "case": "tech petty cash blocked",
+      "status": "PASS",
+      "detail": "<ul class=\"errorlist\" id=\"id_payment_method_error\"><li>Select a valid choice. PETTY_CASH is not one of the available choices.</li></ul>",
+      "evidence": ""
+    },
+    {
+      "step": "FLEET",
+      "case": "fuel detail IDOR blocked",
+      "status": "PASS",
+      "detail": "status=302",
+      "evidence": ""
+    },
+    {
+      "step": "PEAMS",
+      "case": "advance issue ledger",
+      "status": "PASS",
+      "detail": "ADV260002 rem=2000 emp_bal=2000",
+      "evidence": ""
+    },
+    {
+      "step": "PEAMS",
+      "case": "expense vs advance posted",
+      "status": "PASS",
+      "detail": "EXP260002 rem=1650 status=APPROVED",
+      "evidence": ""
+    },
+    {
+      "step": "PEAMS",
+      "case": "advance overdraw blocked",
+      "status": "PASS",
+      "detail": "{'amount': ['Amount exceeds remaining advance balance (1650).']}",
+      "evidence": ""
+    },
+    {
+      "step": "PEAMS",
+      "case": "reject does not post ledger",
+      "status": "PASS",
+      "detail": "EXP260004",
+      "evidence": ""
+    },
+    {
+      "step": "PEAMS",
+      "case": "duplicate fleet fuel link blocked",
+      "status": "PASS",
+      "detail": "<ul class=\"errorlist\" id=\"id_fuel_transaction_error\"><li>This Fleet fuel entry is already linked in PEAMS.</li><li>Link a Fleet fuel transaction for petrol card payments.</li></ul>",
+      "evidence": ""
+    },
+    {
+      "step": "PEAMS",
+      "case": "SP pending expense not in ledger",
+      "status": "PASS",
+      "detail": "",
+      "evidence": ""
+    },
+    {
+      "step": "PEAMS",
+      "case": "SP approved expense syncs ledger",
+      "status": "PASS",
+      "detail": "LED260007",
+      "evidence": ""
+    },
+    {
+      "step": "PEAMS",
+      "case": "SP delete voids ledger (pre_delete)",
+      "status": "PASS",
+      "detail": "",
+      "evidence": ""
+    },
+    {
+      "step": "SP",
+      "case": "project queryset scoped by role",
+      "status": "PASS",
+      "detail": "tech=0 dir=2",
+      "evidence": ""
+    },
+    {
+      "step": "SETUP",
+      "case": "FAT data retained",
+      "status": "PASS",
+      "detail": "Vehicle FAT-P1-MH01, card FAT-P1-CARD, tagged advances/expenses",
+      "evidence": ""
+    },
+    {
+      "step": "SUMMARY",
+      "case": "totals",
+      "status": "PASS",
+      "detail": "{'PASS': 53}",
+      "evidence": ""
+    }
+  ]
+}

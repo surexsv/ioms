@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Vehicles — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Vehicles</h1>
+    <div>
+        <a href="{% url 'fleet_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+        {% if can_manage %}
+        <a href="{% url 'fleet_vehicle_create' %}" class="btn btn-primary">Add Vehicle</a>
+        {% endif %}
+    </div>
+</div>
+<form method="get" style="margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <label for="status">Status</label>
+    <select name="status" id="status" onchange="this.form.submit()">
+        <option value="">All</option>
+        <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>Active</option>
+        <option value="INACTIVE" {% if status_filter == 'INACTIVE' %}selected{% endif %}>Inactive</option>
+        <option value="MAINTENANCE" {% if status_filter == 'MAINTENANCE' %}selected{% endif %}>Maintenance</option>
+    </select>
+</form>
+<table>
+    <tr>
+        <th>Number</th>
+        <th>Type</th>
+        <th>Fuel</th>
+        <th>Assigned</th>
+        <th>Odometer</th>
+        <th>Status</th>
+        <th></th>
+    </tr>
+    {% for v in vehicles %}
+    <tr>
+        <td>{{ v.vehicle_number }}</td>
+        <td>{{ v.get_vehicle_type_display }}</td>
+        <td>{{ v.get_fuel_type_display }}</td>
+        <td>{{ v.assigned_employee.get_full_name|default:v.assigned_employee|default:"—" }}</td>
+        <td>{{ v.last_odometer_km }}</td>
+        <td>{{ v.get_status_display }}</td>
+        <td>
+            {% if can_manage %}<a href="{% url 'fleet_vehicle_edit' v.pk %}">Edit</a> · {% endif %}
+            <a href="{% url 'fleet_fuel_create' %}?vehicle={{ v.pk }}">Fuel</a>
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7">No vehicles yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

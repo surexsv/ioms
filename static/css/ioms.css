@@ -123,6 +123,15 @@ body.ioms-app.ioms-guest {
     padding: 12px 0 24px;
 }
 
+.ioms-nav-section {
+    padding: 14px 20px 6px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.45);
+}
+
 .ioms-sidebar-nav a {
     display: flex;
     align-items: center;
@@ -214,10 +223,11 @@ body.ioms-app.ioms-guest {
     z-index: 150;
     width: 100%;
     min-height: 64px;
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: center;
-    padding: 18px 48px;
+    column-gap: 12px;
+    padding: 18px 28px;
     background: var(--ioms-navy);
     color: var(--ioms-white);
     box-shadow: 0 4px 14px rgba(15, 45, 82, 0.25);
@@ -226,8 +236,8 @@ body.ioms-app.ioms-guest {
 
 .ioms-app-header .ioms-app-title {
     margin: 0;
-    width: 100%;
-    max-width: 100%;
+    min-width: 0;
+    grid-column: 2;
     font-size: clamp(1.1rem, 2.5vw, 1.75rem);
     font-weight: 700;
     letter-spacing: 0.02em;
@@ -236,27 +246,33 @@ body.ioms-app.ioms-guest {
     text-wrap: balance;
 }
 
+.ioms-app-header .ioms-title-full { display: inline; }
+.ioms-app-header .ioms-title-short { display: none; }
+
 .ioms-app-header .ioms-menu-toggle {
     display: none;
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 2;
+    grid-column: 1;
     background: transparent;
     border: none;
     color: var(--ioms-white);
     font-size: 1.5rem;
     cursor: pointer;
-    padding: 4px 8px;
+    padding: 6px 8px;
     line-height: 1;
 }
 
+.ioms-app-header .ioms-header-actions {
+    grid-column: 3;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    min-width: 0;
+}
+
 .ioms-app-header .ioms-notification-bell {
-    position: absolute;
-    right: 48px;
-    top: 50%;
-    transform: translateY(-50%);
+    position: relative;
+    flex: 0 0 auto;
     color: var(--ioms-white);
     font-size: 1.25rem;
     text-decoration: none;
@@ -702,14 +718,37 @@ table:not(.ioms-table) tbody tr:hover td {
         margin-left: 0;
     }
     .ioms-app-header {
-        padding: 14px 48px;
-        min-height: 56px;
+        grid-template-columns: auto auto minmax(0, 1fr);
+        column-gap: 8px;
+        padding: 10px 12px;
+        min-height: 52px;
     }
     .ioms-app-header .ioms-menu-toggle {
-        display: block;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
     .ioms-app-header .ioms-app-title {
-        font-size: clamp(0.85rem, 3.5vw, 1rem);
+        font-size: 1.05rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: left;
+        line-height: 1.2;
+    }
+    .ioms-app-header .ioms-title-full { display: none; }
+    .ioms-app-header .ioms-title-short { display: inline; }
+    .ioms-app-header .ioms-global-search {
+        max-width: none;
+        min-width: 0;
+        width: 100%;
+        margin-left: 0;
+    }
+    .ioms-app-header .ioms-global-search input {
+        min-width: 0;
+        width: 100%;
+        font-size: 0.85rem;
+        padding: 6px 8px;
     }
     .ioms-content {
         padding: 20px 16px 24px;
@@ -736,6 +775,20 @@ table:not(.ioms-table) tbody tr:hover td {
         grid-template-columns: 1fr 1fr;
     }
     .ioms-kpi .value { font-size: 1.35rem; }
+    .ioms-app-header {
+        padding: 8px 10px;
+        gap: 6px;
+    }
+    .ioms-app-header .ioms-app-title {
+        font-size: 1rem;
+        max-width: 4.5rem;
+    }
+    .ioms-app-header .ioms-global-search input {
+        font-size: 0.8rem;
+    }
+    .ioms-app-header .ioms-global-search .btn {
+        padding: 4px 8px;
+    }
 }
 
 /* Case Intelligence */
@@ -743,9 +796,8 @@ table:not(.ioms-table) tbody tr:hover td {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-left: auto;
     max-width: 360px;
-    flex: 1;
+    width: min(360px, 100%);
 }
 .ioms-global-search input {
     flex: 1;

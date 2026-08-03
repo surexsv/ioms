@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Fleet & Fuel — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Fleet & Fuel</h1>
+    <div>
+        {% if can_create %}
+        <a href="{% url 'fleet_fuel_create' %}" class="btn btn-primary">Add Fuel Entry</a>
+        {% endif %}
+        <a href="{% url 'fleet_fuel_list' %}" class="btn btn-secondary">Fuel Log</a>
+        <a href="{% url 'fleet_vehicle_list' %}" class="btn btn-secondary">Vehicles</a>
+        <a href="{% url 'fleet_card_list' %}" class="btn btn-secondary">Petrol Cards</a>
+        {% if can_manage %}
+        <a href="{% url 'fleet_petty_cash' %}" class="btn btn-secondary">Petty Cash</a>
+        <a href="{% url 'fleet_reimbursement_list' %}" class="btn btn-secondary">Reimbursements</a>
+        {% endif %}
+        <a href="{% url 'fleet_mileage_report' %}" class="btn btn-secondary">Mileage</a>
+    </div>
+</div>
+
+<div class="detail-grid" style="margin-bottom:16px;">
+    <div class="card detail-item"><label>Today fuel spend</label><p><strong>{{ stats.today_total }}</strong></p></div>
+    <div class="card detail-item"><label>This month</label><p><strong>{{ stats.month_total }}</strong> ({{ stats.txn_count_month }} entries)</p></div>
+    <div class="card detail-item"><label>Avg mileage</label><p><strong>{% if stats.avg_mileage %}{{ stats.avg_mileage|floatformat:2 }}{% else %}—{% endif %}</strong> KM/L</p></div>
+    <div class="card detail-item"><label>Active vehicles</label><p><strong>{{ stats.vehicle_count }}</strong></p></div>
+    <div class="card detail-item"><label>Petty cash</label><p><strong>{{ stats.petty_balance }}</strong></p></div>
+    <div class="card detail-item"><label>Pending reimbursements</label><p><strong>{{ stats.pending_reimbursements }}</strong></p></div>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Spend by vehicle (top)</h3>
+    <table>
+        <tr><th>Vehicle</th><th>Entries</th><th>Total</th><th>Avg KM/L</th></tr>
+        {% for row in stats.by_vehicle %}
+        <tr>
+            <td>{{ row.vehicle__vehicle_number }}</td>
+            <td>{{ row.trips }}</td>
+            <td>{{ row.total }}</td>
+            <td>{% if row.avg_m %}{{ row.avg_m|floatformat:2 }}{% else %}—{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">No fuel entries yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Petrol card balances</h3>
+    <table>
+        <tr><th>Card</th><th>Number</th><th>Balance</th></tr>
+        {% for c in stats.cards %}
+        <tr>
+            <td><a href="{% url 'fleet_card_detail' c.pk %}">{{ c.card_name }}</a></td>
+            <td>{{ c.card_number }}</td>
+            <td>{{ c.current_balance }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3">No active cards.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

@@ -146,3 +146,13 @@ from accounts.rbac_models import (  # noqa: E402, F401
     SystemPermission,
     SystemRole,
 )
+
+# Enterprise user-management models (Phase 1)
+from accounts.enterprise_models import (  # noqa: E402, F401
+    Branch,
+    Department,
+    Designation,
+    Employee,
+    EmployeePermissionGrant,
+    ModulePermission,
+)

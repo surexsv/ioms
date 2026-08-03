@@ -19,13 +19,20 @@ from scheduling.models import WorkSchedule
 from .services import build_dashboard_context, build_project_manager_context, merge_attendance_widget, merge_erms_widget
 
 
+def _widget_context(user):
+    from accounts.enterprise_permissions import dashboard_widget_flags
+    return dashboard_widget_flags(user)
+
+
 @module_required(MODULE_DASHBOARD_DIRECTOR)
 def director_dashboard(request):
+    flags = _widget_context(request.user)
     context = build_dashboard_context(
-        show_financial=can_manage_billing(request.user),
-        show_quotations=True,
-        show_operations=True,
+        show_financial=flags['show_financial'],
+        show_quotations=flags['show_quotations'],
+        show_operations=flags['show_operations'],
     )
+    context.update(flags)
     context['dashboard_title'] = 'Director Dashboard'
     from case_intelligence.stuck_cases import director_monitoring_summary
     from django.urls import reverse
@@ -55,11 +62,13 @@ def director_dashboard(request):
 
 @module_required(MODULE_DASHBOARD_OPERATIONS)
 def operations_dashboard(request):
+    flags = _widget_context(request.user)
     context = build_dashboard_context(
-        show_financial=False,
-        show_quotations=True,
-        show_operations=True,
+        show_financial=flags['show_financial'],
+        show_quotations=flags['show_quotations'],
+        show_operations=flags['show_operations'],
     )
+    context.update(flags)
     context['dashboard_title'] = 'Operations Dashboard'
     from case_intelligence.stuck_cases import operations_monitoring_summary
     from django.urls import reverse
@@ -90,11 +99,13 @@ def operations_dashboard(request):
 
 @module_required(MODULE_DASHBOARD_ACCOUNTS)
 def accounts_dashboard(request):
+    flags = _widget_context(request.user)
     context = build_dashboard_context(
-        show_financial=can_manage_billing(request.user),
-        show_quotations=False,
-        show_operations=False,
+        show_financial=flags['show_financial'],
+        show_quotations=flags['show_quotations'],
+        show_operations=flags['show_operations'],
     )
+    context.update(flags)
     context['dashboard_title'] = 'Accounts Dashboard'
     merge_attendance_widget(context, request.user)
     merge_erms_widget(context, request.user)
@@ -179,7 +190,9 @@ def engineer_dashboard(request):
 
 @module_required(MODULE_DASHBOARD_PROJECT_MANAGER)
 def project_manager_dashboard(request):
+    flags = _widget_context(request.user)
     context = build_project_manager_context(request.user)
+    context.update(flags)
     context['dashboard_title'] = 'Project Manager Dashboard'
     merge_attendance_widget(context, request.user)
     merge_erms_widget(context, request.user)

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Project Expenses — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Project Expenses</h1>
+    <div>
+        {% if can_create %}<a href="{% url 'peams_expense_create' %}" class="btn btn-primary">New Expense</a>{% endif %}
+        <a href="{% url 'peams_expense_list' %}" class="btn btn-secondary">Expenses</a>
+        <a href="{% url 'peams_advance_list' %}" class="btn btn-secondary">Advances</a>
+        <a href="{% url 'peams_pending_approvals' %}" class="btn btn-secondary">Approvals</a>
+        <a href="{% url 'peams_employee_ledger' %}" class="btn btn-secondary">Employee Ledger</a>
+        <a href="{% url 'peams_project_ledger' %}" class="btn btn-secondary">Project Ledger</a>
+        {% if can_manage %}
+        <a href="{% url 'peams_category_list' %}" class="btn btn-secondary">Categories</a>
+        <a href="{% url 'peams_settings' %}" class="btn btn-secondary">Settings</a>
+        {% endif %}
+    </div>
+</div>
+<p style="color:#555;margin-bottom:16px;">
+    PEAMS financial control layer — advances, expenses, and ledgers. Fuel stays in Fleet; Special Project diary expenses sync here when approved.
+</p>
+<div class="detail-grid" style="margin-bottom:16px;">
+    <div class="card detail-item"><label>Today project cost</label><p><strong>{{ stats.today_cost }}</strong></p></div>
+    <div class="card detail-item"><label>This month</label><p><strong>{{ stats.month_cost }}</strong></p></div>
+    <div class="card detail-item"><label>Pending approvals</label><p><strong>{{ stats.pending_approvals }}</strong></p></div>
+    <div class="card detail-item"><label>Open advances</label><p><strong>{{ stats.open_advances }}</strong></p></div>
+    <div class="card detail-item"><label>Pending reimbursements</label><p><strong>{{ stats.pending_reimbursements }}</strong></p></div>
+    <div class="card detail-item"><label>Director threshold</label><p><strong>{{ stats.director_threshold }}</strong></p></div>
+</div>
+<div class="card">
+    <h3 style="margin-top:0;">Cost by category</h3>
+    <table>
+        <tr><th>Category</th><th>Total</th></tr>
+        {% for row in stats.by_category %}
+        <tr><td>{{ row.category__name }}</td><td>{{ row.total }}</td></tr>
+        {% empty %}
+        <tr><td colspan="2">No posted costs yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+<div class="card">
+    <h3 style="margin-top:0;">Budget vs actual (Special Projects)</h3>
+    <table>
+        <tr><th>Project</th><th>Budget</th><th>Actual (ledger)</th><th>Remaining</th></tr>
+        {% for row in budget_rows %}
+        <tr>
+            <td><a href="{% url 'peams_project_ledger' %}?project={{ row.project.pk }}">{{ row.project.project_number }}</a></td>
+            <td>{{ row.budget }}</td>
+            <td>{{ row.actual }}</td>
+            <td>{{ row.remaining }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">No projects with budget.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

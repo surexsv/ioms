@@ -1,21 +1,118 @@
 {% extends 'base.html' %}
 {% block title %}Approve WCR — Infomates Operations Management System{% endblock %}
 {% block content %}
-{% with t='div' %}
-<{{ t }} class="card" style="max-width:600px;">
-    <h2>Approve WCR — {% if wcr.enquiry %}{{ wcr.enquiry.enquiry_number }}{% else %}Order #{{ wcr.order.order_id }}{% endif %}</h2>
-    <p><strong>Client:</strong> {% if wcr.enquiry %}{{ wcr.enquiry.client.name }}{% else %}{{ wcr.order.client.name }}{% endif %}</p>
-    <p><strong>Work:</strong> {{ wcr.work_description }}</p>
-    {% if wcr.material_used %}<p><strong>Materials:</strong> {{ wcr.material_used }}</p>{% endif %}
-    <form method="post" style="margin-top:20px;" data-gps-capture>
+<div class="page-header">
+    <h1>Approve WCR{% if wcr.wcr_number %} — {{ wcr.wcr_number }}{% endif %}</h1>
+    <a href="{% url 'wcr_list' %}" class="btn btn-secondary">Back to list</a>
+</div>
+
+<div class="card" style="max-width:900px;">
+    <div class="detail-grid">
+        <div class="detail-item">
+            <label>{% if wcr.enquiry %}Enquiry{% else %}Order{% endif %}</label>
+            <p>{% if wcr.enquiry %}{{ wcr.enquiry.enquiry_number }}{% else %}{{ wcr.order.order_no|default:wcr.order.order_id }}{% endif %}</p>
+        </div>
+        <div class="detail-item">
+            <label>Client</label>
+            <p>{% if wcr.enquiry %}{{ wcr.enquiry.client.name }}{% else %}{{ wcr.order.client.name }}{% endif %}</p>
+        </div>
+        <div class="detail-item">
+            <label>Submitted by</label>
+            <p>{{ wcr.submitted_by.get_full_name|default:wcr.submitted_by|default:"—" }}</p>
+        </div>
+        <div class="detail-item">
+            <label>Submitted</label>
+            <p>{{ wcr.submitted_date|date:"d M Y H:i" }}</p>
+        </div>
+        <div class="detail-item">
+            <label>Work start</label>
+            <p>{% if wcr.work_start_time %}{{ wcr.work_start_time|date:"d M Y H:i" }}{% else %}—{% endif %}</p>
+        </div>
+        <div class="detail-item">
+            <label>Work end</label>
+            <p>{% if wcr.work_end_time %}{{ wcr.work_end_time|date:"d M Y H:i" }}{% else %}—{% endif %}</p>
+        </div>
+        <div class="detail-item">
+            <label>Total hours</label>
+            <p>{{ wcr.total_hours|default:"—" }}</p>
+        </div>
+        <div class="detail-item">
+            <label>Completion</label>
+            <p>{{ wcr.get_completion_status_display|default:wcr.completion_status }}</p>
+        </div>
+    </div>
+
+    <h3 style="margin-top:20px;">Work description</h3>
+    <p style="white-space:pre-wrap;">{{ wcr.work_description }}</p>
+
+    {% if wcr.material_used %}
+    <h3 style="margin-top:16px;">Materials used</h3>
+    <p style="white-space:pre-wrap;">{{ wcr.material_used }}</p>
+    {% endif %}
+
+    {% if wcr.site_findings %}
+    <h3 style="margin-top:16px;">Site findings</h3>
+    <p style="white-space:pre-wrap;">{{ wcr.site_findings }}</p>
+    {% endif %}
+
+    {% if wcr.feasibility_remarks %}
+    <h3 style="margin-top:16px;">Feasibility remarks</h3>
+    <p style="white-space:pre-wrap;">{{ wcr.feasibility_remarks }}</p>
+    {% endif %}
+
+    <h3 style="margin-top:20px;">Attached photo</h3>
+    {% if wcr.photo %}
+    <div style="margin:12px 0;">
+        <a href="{{ wcr.photo.url }}" target="_blank" rel="noopener">
+            <img src="{{ wcr.photo.url }}" alt="WCR attachment"
+                 style="max-width:100%;max-height:360px;border:1px solid #ddd;border-radius:8px;object-fit:contain;">
+        </a>
+        <p style="margin-top:8px;">
+            <a href="{{ wcr.photo.url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Open full size</a>
+        </p>
+    </div>
+    {% else %}
+    <p style="color:#856404;background:#fff3cd;padding:10px 12px;border-radius:6px;">No photo was attached to this WCR.</p>
+    {% endif %}
+
+    {% if wcr.signature_image %}
+    <h3 style="margin-top:20px;">Authorized signature</h3>
+    <img src="{{ wcr.signature_image.url }}" alt="Signature" style="max-height:120px;border:1px solid #eee;padding:8px;background:#fff;">
+    {% if wcr.authorized_signatory_name %}
+    <p style="margin-top:6px;">{{ wcr.authorized_signatory_name }}{% if wcr.authorized_signatory_designation %} — {{ wcr.authorized_signatory_designation }}{% endif %}</p>
+    {% endif %}
+    {% endif %}
+
+    {% if team_participants %}
+    <h3 style="margin-top:20px;">Team participation</h3>
+    <table>
+        <tr>
+            <th>Employee</th>
+            <th>Role</th>
+            <th>Attended</th>
+            <th>Hours</th>
+            <th>Man-days</th>
+        </tr>
+        {% for p in team_participants %}
+        <tr>
+            <td>{{ p.employee.get_full_name|default:p.employee.username }}</td>
+            <td>{{ p.get_participant_role_display }}</td>
+            <td>{% if p.attended %}Yes{% else %}No{% endif %}</td>
+            <td>{{ p.hours_worked }}</td>
+            <td>{{ p.man_days }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+
+    <form method="post" style="margin-top:24px;" data-gps-capture>
         {% csrf_token %}
         <input type="hidden" name="latitude" value="">
         <input type="hidden" name="longitude" value="">
         <button type="submit" class="btn btn-success">Confirm Approval</button>
         <a href="{% url 'wcr_list' %}" class="btn btn-secondary">Cancel</a>
     </form>
-</{{ t }}>
-{% endwith %}
+</div>
 {% endblock %}
 
 {% block extra_js %}

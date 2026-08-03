@@ -19,10 +19,22 @@ class DocumentNumberSettingsForm(forms.ModelForm):
             'enquiry_prefix',
             'estimate_boq_prefix',
             'request_prefix',
+            'special_project_prefix',
             'serial_length',
             'year_format',
             'allow_editing',
         ]
+        help_texts = {
+            'invoice_prefix': (
+                'Leave blank for Invoice series ITSPL26270001. '
+                'Existing invoices keep their old numbers.'
+            ),
+        }
+        widgets = {
+            'invoice_prefix': forms.TextInput(attrs={
+                'placeholder': '(blank = ITSPL + year + serial)',
+            }),
+        }
 
 
 class CounterResetForm(forms.Form):

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Expenses — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Project Expenses</h1>
+    <div>
+        <a href="{% url 'peams_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+        {% if can_create %}<a href="{% url 'peams_expense_create' %}" class="btn btn-primary">New Expense</a>{% endif %}
+    </div>
+</div>
+<form method="get" style="margin-bottom:16px;">
+    <select name="status" onchange="this.form.submit()">
+        <option value="">All</option>
+        <option value="DRAFT" {% if status_filter == 'DRAFT' %}selected{% endif %}>Draft</option>
+        <option value="MANAGER_REVIEW" {% if status_filter == 'MANAGER_REVIEW' %}selected{% endif %}>Manager</option>
+        <option value="ACCOUNTS_REVIEW" {% if status_filter == 'ACCOUNTS_REVIEW' %}selected{% endif %}>Accounts</option>
+        <option value="DIRECTOR_REVIEW" {% if status_filter == 'DIRECTOR_REVIEW' %}selected{% endif %}>Director</option>
+        <option value="APPROVED" {% if status_filter == 'APPROVED' %}selected{% endif %}>Approved</option>
+        <option value="REJECTED" {% if status_filter == 'REJECTED' %}selected{% endif %}>Rejected</option>
+    </select>
+</form>
+<table>
+    <tr><th>Number</th><th>Date</th><th>Employee</th><th>Category</th><th>Amount</th><th>Pay</th><th>Status</th></tr>
+    {% for e in expenses %}
+    <tr>
+        <td><a href="{% url 'peams_expense_detail' e.pk %}">{{ e.expense_number }}</a></td>
+        <td>{{ e.expense_date|date:"d M Y" }}</td>
+        <td>{{ e.employee.get_full_name|default:e.employee }}</td>
+        <td>{{ e.category.name }}</td>
+        <td>{{ e.amount }}</td>
+        <td>{{ e.get_payment_method_display }}</td>
+        <td>{{ e.get_status_display }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7">No expenses.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

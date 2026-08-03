@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+    <a href="{% url 'fleet_vehicle_list' %}" class="btn btn-secondary">Back</a>
+</div>
+<div class="card" style="max-width:720px;">
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div style="color:#dc3545;">{{ field.errors }}</div>{% endif %}
+            {% if field.help_text %}<small style="color:#666;">{{ field.help_text }}</small>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+</div>
+{% endblock %}

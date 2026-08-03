@@ -4,4 +4,4 @@ from django.apps import AppConfig
 class EnquiriesConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'enquiries'
-    verbose_name = 'Enquiry Management'
+    verbose_name = 'Enquiry Management (Deprecated — data retained)'

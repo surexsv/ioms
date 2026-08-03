@@ -4,7 +4,6 @@ from .roles import user_role, is_field_staff, ROLE_SUPERVISOR, LEGACY_SUPERVISOR
 from .permissions import (
     can_view_clients,
     can_view_orders,
-    can_view_enquiries,
     can_view_wcr,
     can_view_boq,
     can_manage_billing,
@@ -27,6 +26,7 @@ from .permissions import (
     has_full_access,
     attendance_nav_url,
 )
+from .enterprise_permissions import build_navigation_menu, dashboard_widget_flags
 from employee_requests.permissions import can_access_erms, can_approve_requests
 from daily_meetings.permissions import can_access_daily_meetings
 from productivity.permissions import (
@@ -61,6 +61,14 @@ def _active_nav(request):
         return 'company_settings'
     if path.startswith('/scheduling'):
         return 'schedules'
+    if path.startswith('/special-projects'):
+        return 'special_projects'
+    if path.startswith('/fleet'):
+        return 'fleet'
+    if path.startswith('/project-expenses'):
+        return 'project_expenses'
+    if path.startswith('/case-intelligence/reports'):
+        return 'reports'
     if path.startswith('/case-intelligence'):
         return 'case_intelligence'
     if path.startswith('/daily-meetings'):
@@ -76,6 +84,14 @@ def _active_nav(request):
     return ''
 
 
+def _nav_keys_from_sections(sections):
+    keys = set()
+    for section in sections:
+        for item in section.get('items', []):
+            keys.add(item.get('nav_key'))
+    return keys
+
+
 def oms_navigation(request):
     user = request.user
     if not user.is_authenticated:
@@ -84,6 +100,11 @@ def oms_navigation(request):
         return {}
     role = user_role(user)
     raw_role = getattr(user, 'role', None)
+    dashboard_url = dashboard_url_name_for_user(user)
+    enterprise_nav_sections = build_navigation_menu(user, dashboard_url)
+    nav_keys = _nav_keys_from_sections(enterprise_nav_sections)
+    widget_flags = dashboard_widget_flags(user)
+
     pending_approval_count = 0
     if can_manage_user_approvals(user):
         pending_approval_count = User.objects.filter(
@@ -96,24 +117,31 @@ def oms_navigation(request):
             user=user, is_read=False,
         ).count()
     return {
-        'dashboard_url': dashboard_url_name_for_user(user),
+        'dashboard_url': dashboard_url,
+        'enterprise_nav_sections': enterprise_nav_sections,
         'nav_active': _active_nav(request),
         'is_superuser': has_full_access(user),
         'user_role': raw_role,
         'user_role_display': user.get_role_display() if hasattr(user, 'get_role_display') else raw_role,
-        'show_nav_dashboard': True,
-        'show_nav_enquiries': can_view_enquiries(user),
-        'show_nav_orders': can_view_orders(user),
-        'show_nav_clients': can_view_clients(user),
-        'show_nav_quotations': can_view_quotations(user),
-        'show_nav_wcr': can_view_wcr(user),
-        'show_nav_boq': can_view_boq(user),
-        'show_nav_billing': can_manage_billing(user),
-        'show_nav_my_attendance': show_nav_my_attendance(user),
-        'show_nav_attendance_management': show_nav_attendance_management(user),
-        'show_nav_team_attendance': show_nav_team_attendance(user),
+        'show_nav_dashboard': (
+            'dashboard' in nav_keys
+            or (bool(dashboard_url) and dashboard_url != 'login')
+        ),
+        'show_nav_enquiries': False,
+        'show_nav_orders': 'orders' in nav_keys or can_view_orders(user),
+        'show_nav_clients': 'clients' in nav_keys or can_view_clients(user),
+        'show_nav_quotations': 'quotations' in nav_keys or can_view_quotations(user),
+        'show_nav_wcr': 'wcr' in nav_keys or can_view_wcr(user),
+        'show_nav_boq': 'boq' in nav_keys or can_view_boq(user),
+        'show_nav_billing': 'billing' in nav_keys or can_manage_billing(user),
+        'show_nav_my_attendance': 'attendance' in nav_keys or show_nav_my_attendance(user),
+        'show_nav_attendance_management': 'attendance_mgmt' in nav_keys or show_nav_attendance_management(user),
+        'show_nav_team_attendance': 'attendance_team' in nav_keys or show_nav_team_attendance(user),
         'show_nav_attendance': (
-            show_nav_my_attendance(user)
+            'attendance' in nav_keys
+            or 'attendance_mgmt' in nav_keys
+            or 'attendance_team' in nav_keys
+            or show_nav_my_attendance(user)
             or show_nav_attendance_management(user)
             or show_nav_team_attendance(user)
         ),
@@ -128,16 +156,20 @@ def oms_navigation(request):
         'can_view_attendance_audit_data': can_view_attendance_audit_data(user),
         'can_check_in': show_nav_my_attendance(user),
         'can_view_quotations': can_view_quotations(user),
-        'show_nav_document_numbers': user.is_superuser or role == 'DIRECTOR',
-        'show_nav_company_settings': can_view_company_settings(user),
-        'show_nav_user_approvals': can_manage_user_approvals(user),
-        'show_nav_productivity': can_view_management_productivity(user),
-        'show_nav_gps': can_view_gps_dashboard(user),
-        'show_nav_schedules': can_access(user, MODULE_SCHEDULING),
-        'show_nav_case_intelligence': can_access(user, MODULE_CASE_INTELLIGENCE),
-        'show_nav_daily_meetings': can_access_daily_meetings(user),
-        'show_nav_employee_requests': can_access_erms(user),
+        'show_nav_document_numbers': 'document_numbers' in nav_keys,
+        'show_nav_company_settings': 'company_settings' in nav_keys or can_view_company_settings(user),
+        'show_nav_user_approvals': 'user_approvals' in nav_keys or can_manage_user_approvals(user),
+        'show_nav_productivity': 'productivity' in nav_keys or can_view_management_productivity(user),
+        'show_nav_gps': 'gps' in nav_keys or can_view_gps_dashboard(user),
+        'show_nav_schedules': 'schedules' in nav_keys or can_access(user, MODULE_SCHEDULING),
+        'show_nav_case_intelligence': (
+            'case_intelligence' in nav_keys or 'reports' in nav_keys
+            or can_access(user, MODULE_CASE_INTELLIGENCE)
+        ),
+        'show_nav_daily_meetings': 'daily_meetings' in nav_keys or can_access_daily_meetings(user),
+        'show_nav_employee_requests': 'employee_requests' in nav_keys or can_access_erms(user),
         'show_nav_erms_pending': can_approve_requests(user),
         'erms_notification_count': erms_notification_count,
         'pending_approval_count': pending_approval_count,
+        **widget_flags,
     }

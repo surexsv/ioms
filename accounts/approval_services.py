@@ -27,17 +27,30 @@ def _send_notification(subject, message, recipient_email):
 
 
 def approve_user(user, approved_by):
+    from accounts.enterprise_approval import assign_default_permissions_on_approval
+    from accounts.enterprise_models import Employee
+    from accounts.enterprise_permissions import invalidate_enterprise_permission_cache
+
+    employee = getattr(user, 'employee_profile', None)
+
     user.approval_status = User.APPROVAL_APPROVED
     user.approved_by = approved_by
     user.approved_date = timezone.now()
     user.rejection_reason = ''
     user.is_active = True
     user.is_active_employee = True
-    if user.role_requested and not user.role:
+    if not user.role and user.role_requested:
         user.role = user.map_requested_role()
-    elif user.role_requested:
-        user.role = user.map_requested_role()
+    elif not user.role and employee and employee.designation_id:
+        from accounts.enterprise_constants import DESIGNATION_TO_LEGACY_ROLE
+        user.role = DESIGNATION_TO_LEGACY_ROLE.get(employee.designation.code, '')
     user.save()
+
+    if employee:
+        employee.status = Employee.STATUS_ACTIVE
+        employee.save(update_fields=['status', 'updated_at'])
+        assign_default_permissions_on_approval(user)
+    invalidate_enterprise_permission_cache(user.pk)
     log_approval_action(
         user,
         UserApprovalAuditLog.ACTION_APPROVED,

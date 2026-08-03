@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Project Ledger — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Project Expense Ledger</h1>
+    <a href="{% url 'peams_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+</div>
+<form method="get" style="margin-bottom:16px;">
+    <select name="project" onchange="this.form.submit()">
+        <option value="">Select project…</option>
+        {% for p in projects %}
+        <option value="{{ p.pk }}" {% if project and p.pk == project.pk %}selected{% endif %}>{{ p.project_number }} — {{ p.name }}</option>
+        {% endfor %}
+    </select>
+</form>
+{% if project %}
+<p>
+    Budget: <strong>{{ budget }}</strong> ·
+    Actual (ledger): <strong>{{ total }}</strong> ·
+    Remaining: <strong>{{ remaining }}</strong>
+</p>
+<table>
+    <tr><th>Date</th><th>Type</th><th>Category</th><th>Employee</th><th>Project cost</th><th>Description</th><th>Fleet</th></tr>
+    {% for e in rows %}
+    <tr>
+        <td>{{ e.txn_date|date:"d M Y" }}</td>
+        <td>{{ e.get_txn_type_display }}</td>
+        <td>{{ e.category.name|default:"—" }}</td>
+        <td>{{ e.employee|default:"—" }}</td>
+        <td>{{ e.project_cost }}</td>
+        <td>{{ e.description }}</td>
+        <td>{% if e.fuel_transaction_id %}<a href="{% url 'fleet_fuel_detail' e.fuel_transaction_id %}">Fuel #{{ e.fuel_transaction_id }}</a>{% else %}—{% endif %}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7">No ledger cost for this project.</td></tr>
+    {% endfor %}
+</table>
+{% endif %}
+{% endblock %}

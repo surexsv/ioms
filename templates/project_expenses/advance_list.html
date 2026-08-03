@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Advances — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Employee Advances</h1>
+    <div>
+        <a href="{% url 'peams_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+        {% if can_manage %}<a href="{% url 'peams_advance_create' %}" class="btn btn-primary">Issue Advance</a>{% endif %}
+    </div>
+</div>
+<form method="get" style="margin-bottom:16px;">
+    <select name="status" onchange="this.form.submit()">
+        <option value="">All statuses</option>
+        <option value="OPEN" {% if status_filter == 'OPEN' %}selected{% endif %}>Open</option>
+        <option value="ADJUSTED" {% if status_filter == 'ADJUSTED' %}selected{% endif %}>Adjusted</option>
+        <option value="CLOSED" {% if status_filter == 'CLOSED' %}selected{% endif %}>Closed</option>
+    </select>
+</form>
+<table>
+    <tr><th>Number</th><th>Date</th><th>Employee</th><th>Project</th><th>Amount</th><th>Status</th></tr>
+    {% for a in advances %}
+    <tr>
+        <td><a href="{% url 'peams_advance_detail' a.pk %}">{{ a.advance_number }}</a></td>
+        <td>{{ a.advance_date|date:"d M Y" }}</td>
+        <td>{{ a.employee.get_full_name|default:a.employee }}</td>
+        <td>{{ a.special_project.project_number|default:"—" }}</td>
+        <td>{{ a.amount }}</td>
+        <td>{{ a.get_status_display }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">No advances.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Open Special Project — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Open as Special Project</h1>
+    <a href="{% url 'order_detail' order.pk %}" class="btn btn-secondary">Back to Order</a>
+</div>
+<div class="card" style="max-width:720px;">
+    <p><strong>Order:</strong> {{ order.order_no|default:order.order_id }} — {{ order.client.name }}</p>
+    <p style="color:#555;">This creates a long-duration project workspace linked to this order for daily supply, service and expense capture.</p>
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div style="color:#dc3545;">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Open Special Project</button>
+    </form>
+</div>
+{% endblock %}

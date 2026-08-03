@@ -1,0 +1,705 @@
+{
+  "summary": {
+    "PASS": 85,
+    "FAIL": 0,
+    "WARNING": 6,
+    "NOT_IN_SCOPE": 8,
+    "BLOCKED": 0
+  },
+  "results": [
+    {
+      "step": "STEP1_LOGIN",
+      "case": "dashboard_route_superuser",
+      "status": "PASS",
+      "detail": "surex role=DIRECTOR dash=director_dashboard profile=True",
+      "evidence": "nav=['dashboard', 'orders', 'schedules', 'boq', 'wcr', 'clients', 'quotations', 'billing', 'payments', 'user_approvals', 'document_numbers', 'company_settings', 'reports', 'case_intelligence', 'attendance_mgmt', 'productivity', 'gps', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "sidebar_nonempty_superuser",
+      "status": "PASS",
+      "detail": "19 nav items",
+      "evidence": "['dashboard', 'orders', 'schedules', 'boq', 'wcr', 'clients', 'quotations', 'billing', 'payments', 'user_approvals', 'document_numbers', 'company_settings', 'reports', 'case_intelligence', 'attendance_mgmt', 'productivity', 'gps', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "http_dashboard_force_superuser",
+      "status": "PASS",
+      "detail": "password unknown; force_login status=200 url=/dashboard/",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "schedules_has_home_superuser",
+      "status": "PASS",
+      "detail": "status=200 dashboard_link=True",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "dashboard_route_director",
+      "status": "PASS",
+      "detail": "Manoj role=DIRECTOR dash=director_dashboard profile=True",
+      "evidence": "nav=['dashboard', 'orders', 'schedules', 'boq', 'wcr', 'clients', 'quotations', 'user_approvals', 'reports', 'case_intelligence', 'attendance_mgmt', 'productivity', 'gps', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "sidebar_nonempty_director",
+      "status": "PASS",
+      "detail": "15 nav items",
+      "evidence": "['dashboard', 'orders', 'schedules', 'boq', 'wcr', 'clients', 'quotations', 'user_approvals', 'reports', 'case_intelligence', 'attendance_mgmt', 'productivity', 'gps', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "http_dashboard_force_director",
+      "status": "PASS",
+      "detail": "password unknown; force_login status=200 url=/dashboard/",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "schedules_has_home_director",
+      "status": "PASS",
+      "detail": "status=200 dashboard_link=True",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "dashboard_route_manager_pm",
+      "status": "PASS",
+      "detail": "Jayan role=PROJECT_MANAGER dash=supervisor_dashboard profile=True",
+      "evidence": "nav=['dashboard', 'orders', 'schedules', 'boq', 'wcr', 'clients', 'quotations', 'user_approvals', 'reports', 'case_intelligence', 'attendance', 'attendance_mgmt', 'productivity', 'gps', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "sidebar_nonempty_manager_pm",
+      "status": "PASS",
+      "detail": "16 nav items",
+      "evidence": "['dashboard', 'orders', 'schedules', 'boq', 'wcr', 'clients', 'quotations', 'user_approvals', 'reports', 'case_intelligence', 'attendance', 'attendance_mgmt', 'productivity', 'gps', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "http_dashboard_force_manager_pm",
+      "status": "PASS",
+      "detail": "password unknown; force_login status=200 url=/dashboard/supervisor/",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "schedules_has_home_manager_pm",
+      "status": "PASS",
+      "detail": "status=200 dashboard_link=True",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "dashboard_route_manager_ops",
+      "status": "PASS",
+      "detail": "Prathibha role=OPERATIONS dash=supervisor_dashboard profile=True",
+      "evidence": "nav=['dashboard', 'orders', 'schedules', 'boq', 'wcr', 'clients', 'quotations', 'user_approvals', 'reports', 'case_intelligence', 'attendance', 'attendance_mgmt', 'productivity', 'gps', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "sidebar_nonempty_manager_ops",
+      "status": "PASS",
+      "detail": "16 nav items",
+      "evidence": "['dashboard', 'orders', 'schedules', 'boq', 'wcr', 'clients', 'quotations', 'user_approvals', 'reports', 'case_intelligence', 'attendance', 'attendance_mgmt', 'productivity', 'gps', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "http_dashboard_force_manager_ops",
+      "status": "PASS",
+      "detail": "password unknown; force_login status=200 url=/dashboard/supervisor/",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "schedules_has_home_manager_ops",
+      "status": "PASS",
+      "detail": "status=200 dashboard_link=True",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "dashboard_route_technician",
+      "status": "PASS",
+      "detail": "Tech1 role=Technician dash=field_team_dashboard profile=False",
+      "evidence": "nav=['dashboard', 'orders', 'schedules', 'wcr', 'reports', 'case_intelligence', 'attendance', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "sidebar_nonempty_technician",
+      "status": "PASS",
+      "detail": "9 nav items",
+      "evidence": "['dashboard', 'orders', 'schedules', 'wcr', 'reports', 'case_intelligence', 'attendance', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "technician_security_matrix",
+      "status": "PASS",
+      "detail": "no forbidden modules",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "technician_sidebar_leak",
+      "status": "PASS",
+      "detail": "no finance/admin in sidebar",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "http_dashboard_force_technician",
+      "status": "PASS",
+      "detail": "password unknown; force_login status=200 url=/dashboard/field-team/",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "schedules_has_home_technician",
+      "status": "PASS",
+      "detail": "status=200 dashboard_link=True",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "dashboard_route_accounts",
+      "status": "PASS",
+      "detail": "Maya role=ACCOUNTS dash=director_dashboard profile=True",
+      "evidence": "nav=['dashboard', 'schedules', 'boq', 'clients', 'quotations', 'billing', 'payments', 'user_approvals', 'reports', 'case_intelligence', 'attendance', 'attendance_mgmt', 'productivity', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "sidebar_nonempty_accounts",
+      "status": "PASS",
+      "detail": "15 nav items",
+      "evidence": "['dashboard', 'schedules', 'boq', 'clients', 'quotations', 'billing', 'payments', 'user_approvals', 'reports', 'case_intelligence', 'attendance', 'attendance_mgmt', 'productivity', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "http_dashboard_force_accounts",
+      "status": "PASS",
+      "detail": "password unknown; force_login status=200 url=/dashboard/",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "schedules_has_home_accounts",
+      "status": "PASS",
+      "detail": "status=200 dashboard_link=True",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "dashboard_route_engineer",
+      "status": "PASS",
+      "detail": "Vishnu role=ENGINEER dash=field_team_dashboard profile=True",
+      "evidence": "nav=['dashboard', 'orders', 'schedules', 'wcr', 'reports', 'case_intelligence', 'attendance', 'attendance_mgmt', 'productivity', 'gps', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "sidebar_nonempty_engineer",
+      "status": "PASS",
+      "detail": "12 nav items",
+      "evidence": "['dashboard', 'orders', 'schedules', 'wcr', 'reports', 'case_intelligence', 'attendance', 'attendance_mgmt', 'productivity', 'gps', 'daily_meetings', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "http_dashboard_force_engineer",
+      "status": "PASS",
+      "detail": "password unknown; force_login status=200 url=/dashboard/field-team/",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "schedules_has_home_engineer",
+      "status": "PASS",
+      "detail": "status=200 dashboard_link=True",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "dashboard_route_supervisor",
+      "status": "PASS",
+      "detail": "supervisor1 role=SUPERVISOR dash=supervisor_dashboard profile=True",
+      "evidence": "nav=['dashboard', 'orders', 'schedules', 'boq', 'wcr', 'clients', 'quotations', 'user_approvals', 'reports', 'case_intelligence', 'attendance', 'attendance_mgmt', 'productivity', 'gps', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "sidebar_nonempty_supervisor",
+      "status": "PASS",
+      "detail": "15 nav items",
+      "evidence": "['dashboard', 'orders', 'schedules', 'boq', 'wcr', 'clients', 'quotations', 'user_approvals', 'reports', 'case_intelligence', 'attendance', 'attendance_mgmt', 'productivity', 'gps', 'employee_requests']"
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "http_dashboard_force_supervisor",
+      "status": "PASS",
+      "detail": "password unknown; force_login status=200 url=/dashboard/supervisor/",
+      "evidence": ""
+    },
+    {
+      "step": "STEP1_LOGIN",
+      "case": "schedules_has_home_supervisor",
+      "status": "PASS",
+      "detail": "status=200 dashboard_link=True",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "create_client",
+      "status": "PASS",
+      "detail": "reused existing id=8 name=FAT ABC Technologies Pvt Ltd",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "client_list_filter_orm",
+      "status": "PASS",
+      "detail": "ORM contains match",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "client_ui_search",
+      "status": "NOT_IN_SCOPE",
+      "detail": "Client list has no search box; Case Intelligence search is workaround",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "create_order",
+      "status": "PASS",
+      "detail": "reused order_no=ITSPLORD26270017 status=CLOSED",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "order_number_generated",
+      "status": "PASS",
+      "detail": "ITSPLORD26270017",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "order_activity_field",
+      "status": "NOT_IN_SCOPE",
+      "detail": "No Activity master on Order (OPMS future)",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "order_smart_manpower",
+      "status": "NOT_IN_SCOPE",
+      "detail": "Smart Manpower not on Order model",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "order_priority",
+      "status": "PASS",
+      "detail": "priority=High (free-text)",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "order_work_type",
+      "status": "PASS",
+      "detail": "order_type=INSTALLATION",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "create_schedule",
+      "status": "PASS",
+      "detail": "reused ITSPLSCH26270022",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "schedule_mentor",
+      "status": "NOT_IN_SCOPE",
+      "detail": "No Mentor field; Team Leader/Supervisor used",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "schedule_tech_assigned",
+      "status": "PASS",
+      "detail": "techs=['Tech1']",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "schedule_vehicle",
+      "status": "PASS",
+      "detail": "FAT-KL-01",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "order_in_scheduling",
+      "status": "PASS",
+      "detail": "schedule linked to order",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "order_completed_for_wcr",
+      "status": "PASS",
+      "detail": "status=CLOSED",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "create_wcr",
+      "status": "PASS",
+      "detail": "reused wcr=ITSPLWCR26270014",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "wcr_materials",
+      "status": "PASS",
+      "detail": "FAT Cable 10m, Connectors x4",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "wcr_photo",
+      "status": "WARNING",
+      "detail": "Photo field exists; binary upload not exercised in ORM FAT",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "wcr_gps",
+      "status": "WARNING",
+      "detail": "GPS via productivity field events; not a mandatory WCR form field",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "wcr_customer_signature",
+      "status": "NOT_IN_SCOPE",
+      "detail": "Authorized signatory image, not live customer capture",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "wcr_approval",
+      "status": "PASS",
+      "detail": "approved=True order_status=CLOSED",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "create_boq",
+      "status": "PASS",
+      "detail": "reused boq=ITSPLBOQ26270010",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "boq_price_tax",
+      "status": "NOT_IN_SCOPE",
+      "detail": "Execution BOQ has qty/desc/HSN only; rates on Invoice",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "boq_verified",
+      "status": "PASS",
+      "detail": "VERIFIED",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "create_invoice",
+      "status": "PASS",
+      "detail": "reused FAT-INV-26270017 total=12390.00",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "invoice_gst_totals",
+      "status": "PASS",
+      "detail": "amount=10500.00 gst=1890.00 total=12390.00",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "invoice_number_unique",
+      "status": "PASS",
+      "detail": "unique constraint OK count=1",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "partial_payment",
+      "status": "NOT_IN_SCOPE",
+      "detail": "System supports PENDING|RECEIVED only (full mark-paid)",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "mark_paid_closes_order",
+      "status": "PASS",
+      "detail": "payment=RECEIVED order=CLOSED",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "dashboard_data_available",
+      "status": "PASS",
+      "detail": "orders=24 pending_invoices=15 fat_order=ITSPLORD26270017",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "http_client_list",
+      "status": "PASS",
+      "detail": "/clients/ -> 200",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "http_order_list",
+      "status": "PASS",
+      "detail": "/orders/ -> 200",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "http_schedule_list",
+      "status": "PASS",
+      "detail": "/scheduling/ -> 200",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "http_schedule_calendar",
+      "status": "PASS",
+      "detail": "/scheduling/calendar/ -> 200",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "http_wcr_list",
+      "status": "PASS",
+      "detail": "/wcr/ -> 200",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "http_boq_list",
+      "status": "PASS",
+      "detail": "/boq/ -> 200",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "http_invoice_list",
+      "status": "PASS",
+      "detail": "/billing/ -> 200",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "tech_my_schedule_list",
+      "status": "PASS",
+      "detail": "status=200",
+      "evidence": ""
+    },
+    {
+      "step": "OPS_E2E",
+      "case": "tech_billing_denied",
+      "status": "PASS",
+      "detail": "status=302 loc=/access-denied/",
+      "evidence": ""
+    },
+    {
+      "step": "PRESALES",
+      "case": "module_enquiry",
+      "status": "PASS",
+      "detail": "enquiries app present",
+      "evidence": ""
+    },
+    {
+      "step": "PRESALES",
+      "case": "module_estimate_boq",
+      "status": "PASS",
+      "detail": "estimate_boq app present",
+      "evidence": ""
+    },
+    {
+      "step": "PRESALES",
+      "case": "module_quotation",
+      "status": "PASS",
+      "detail": "quotations app present",
+      "evidence": ""
+    },
+    {
+      "step": "PRESALES",
+      "case": "quotation_position",
+      "status": "PASS",
+      "detail": "Quotation is pre-order (Enquiry->Estimate BOQ->Quotation->Order), not after execution BOQ",
+      "evidence": ""
+    },
+    {
+      "step": "PRESALES",
+      "case": "http_enquiries",
+      "status": "WARNING",
+      "detail": "Enquiries module retired; redirects to /orders/",
+      "evidence": ""
+    },
+    {
+      "step": "PRESALES",
+      "case": "http_quotations",
+      "status": "PASS",
+      "detail": "/quotations/ -> 200",
+      "evidence": ""
+    },
+    {
+      "step": "PRESALES",
+      "case": "http_estimate_boq",
+      "status": "PASS",
+      "detail": "/estimate-boq/ -> 200",
+      "evidence": ""
+    },
+    {
+      "step": "PRESALES",
+      "case": "quotation_pdf_module",
+      "status": "PASS",
+      "detail": "quotations.pdf importable",
+      "evidence": ""
+    },
+    {
+      "step": "PRESALES",
+      "case": "full_presales_data_create",
+      "status": "WARNING",
+      "detail": "Skipped creating new enquiry/quote to avoid duplicate commercial docs; modules smoke-tested",
+      "evidence": ""
+    },
+    {
+      "step": "SECURITY_NAV_USER_REPORTS",
+      "case": "registration_page",
+      "status": "PASS",
+      "detail": "/register/ -> 200",
+      "evidence": ""
+    },
+    {
+      "step": "SECURITY_NAV_USER_REPORTS",
+      "case": "password_reset",
+      "status": "PASS",
+      "detail": "/password-reset/ -> 302 (self-service not implemented)",
+      "evidence": ""
+    },
+    {
+      "step": "SECURITY_NAV_USER_REPORTS",
+      "case": "additional_responsibilities",
+      "status": "NOT_IN_SCOPE",
+      "detail": "OPMS Additional Responsibilities not present; EmployeePermissionGrant is closest",
+      "evidence": ""
+    },
+    {
+      "step": "SECURITY_NAV_USER_REPORTS",
+      "case": "department_designation",
+      "status": "PASS",
+      "detail": "depts=8 desigs=13 employees=10",
+      "evidence": ""
+    },
+    {
+      "step": "SECURITY_NAV_USER_REPORTS",
+      "case": "excel_export",
+      "status": "PASS",
+      "detail": "['scripts\\\\fat_corrected_plan_a.py']",
+      "evidence": ""
+    },
+    {
+      "step": "SECURITY_NAV_USER_REPORTS",
+      "case": "csv_pdf_exports",
+      "status": "PASS",
+      "detail": "Productivity/Case Intelligence CSV + Quotation/Invoice PDF exist (code-reviewed)",
+      "evidence": ""
+    },
+    {
+      "step": "SECURITY_NAV_USER_REPORTS",
+      "case": "director_key_pages",
+      "status": "PASS",
+      "detail": "all OK",
+      "evidence": ""
+    },
+    {
+      "step": "SECURITY_NAV_USER_REPORTS",
+      "case": "tech_denied_company_settings",
+      "status": "PASS",
+      "detail": "/company-settings/ -> 302 loc=/access-denied/",
+      "evidence": ""
+    },
+    {
+      "step": "SECURITY_NAV_USER_REPORTS",
+      "case": "tech_denied_user_approvals",
+      "status": "PASS",
+      "detail": "/user-approvals/ -> 302 loc=/access-denied/",
+      "evidence": ""
+    },
+    {
+      "step": "SECURITY_NAV_USER_REPORTS",
+      "case": "tech_denied_billing",
+      "status": "PASS",
+      "detail": "/billing/ -> 302 loc=/access-denied/",
+      "evidence": ""
+    },
+    {
+      "step": "DB_UI_INFRA",
+      "case": "migrations_applied",
+      "status": "PASS",
+      "detail": "all applied",
+      "evidence": ""
+    },
+    {
+      "step": "DB_UI_INFRA",
+      "case": "unique_fields",
+      "status": "PASS",
+      "detail": "Order.order_id, Order.order_no, Invoice.id, Invoice.order, Invoice.invoice_number, WorkSchedule.id, WorkSchedule.schedule_number, WorkSchedule.enquiry, WorkSchedule.order, WorkCompletionReport.id, WorkCompletionReport.order, WorkCompletionReport.enquiry, WorkCompletionReport.wcr_number, BOQ.id, BOQ.boq_number",
+      "evidence": ""
+    },
+    {
+      "step": "DB_UI_INFRA",
+      "case": "order_client_fk",
+      "status": "PASS",
+      "detail": "orphans=0",
+      "evidence": ""
+    },
+    {
+      "step": "DB_UI_INFRA",
+      "case": "db_engine",
+      "status": "PASS",
+      "detail": "django.db.backends.sqlite3",
+      "evidence": ""
+    },
+    {
+      "step": "DB_UI_INFRA",
+      "case": "n_plus_one_profiling",
+      "status": "WARNING",
+      "detail": "Deep query profiling not run; recommend django-debug-toolbar on staging",
+      "evidence": ""
+    },
+    {
+      "step": "DB_UI_INFRA",
+      "case": "ui_mobile_responsiveness",
+      "status": "WARNING",
+      "detail": "Manual visual check recommended; CSS has sidebar breakpoints",
+      "evidence": ""
+    },
+    {
+      "step": "DB_UI_INFRA",
+      "case": "print_layouts",
+      "status": "PASS",
+      "detail": "Invoice/Quotation PDF modules present (code-reviewed)",
+      "evidence": ""
+    }
+  ],
+  "generated_at": "2026-08-02T15:06:54.233967+00:00"
+}

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Special Projects — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Special Projects</h1>
+</div>
+<p style="color:#555;margin-bottom:16px;">
+    Long-duration projects opened from Orders. Capture daily labour, materials, services and expenses here,
+    then complete via normal WCR → BOQ → Billing.
+</p>
+<form method="get" style="margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <label for="status">Status</label>
+    <select name="status" id="status" onchange="this.form.submit()">
+        <option value="">All</option>
+        {% for code, label in status_choices %}
+        <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+</form>
+<table>
+    <tr>
+        <th>Project #</th>
+        <th>Name</th>
+        <th>Client</th>
+        <th>Order</th>
+        <th>Status</th>
+        <th>Progress</th>
+        <th>Budget</th>
+        <th>PM</th>
+    </tr>
+    {% for p in projects %}
+    <tr>
+        <td><a href="{% url 'special_project_detail' p.pk %}">{{ p.project_number }}</a></td>
+        <td>{{ p.name }}</td>
+        <td>{{ p.order.client.name }}</td>
+        <td><a href="{% url 'order_detail' p.order_id %}">{{ p.order.order_no|default:p.order_id }}</a></td>
+        <td>{{ p.get_status_display }}</td>
+        <td>{{ p.overall_progress_pct }}%</td>
+        <td>{{ p.budget }}</td>
+        <td>{{ p.project_manager.get_full_name|default:p.project_manager|default:"—" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="8">No Special Projects yet. Open one from an Order detail page.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

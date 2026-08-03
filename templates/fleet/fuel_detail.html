@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Fuel {{ fuel.pk }} — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Fuel entry #{{ fuel.pk }}</h1>
+    <div>
+        {% if can_edit %}
+        <a href="{% url 'fleet_fuel_edit' fuel.pk %}" class="btn btn-secondary">Edit</a>
+        {% endif %}
+        <a href="{% url 'fleet_fuel_list' %}" class="btn btn-secondary">Fuel Log</a>
+    </div>
+</div>
+
+{% if fuel.odometer_warning %}
+<div class="card" style="border-left:4px solid #ffc107;">
+    <strong>Odometer warning:</strong> current KM ({{ fuel.current_odometer_km }}) is less than previous KM ({{ fuel.previous_odometer_km }}).
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>Date</label><p>{{ fuel.transaction_date|date:"d M Y" }}</p></div>
+        <div class="detail-item"><label>Vehicle</label><p>{{ fuel.vehicle.vehicle_number }}</p></div>
+        <div class="detail-item"><label>Driver</label><p>{{ fuel.driver.get_full_name|default:fuel.driver }}</p></div>
+        <div class="detail-item"><label>Previous KM</label><p>{{ fuel.previous_odometer_km }}</p></div>
+        <div class="detail-item"><label>Current KM</label><p>{{ fuel.current_odometer_km }}</p></div>
+        <div class="detail-item"><label>Distance</label><p>{{ fuel.distance_km }} KM</p></div>
+        <div class="detail-item"><label>Quantity</label><p>{{ fuel.fuel_quantity_litres }} L</p></div>
+        <div class="detail-item"><label>Rate</label><p>{{ fuel.fuel_rate }}</p></div>
+        <div class="detail-item"><label>Amount</label><p><strong>{{ fuel.total_amount }}</strong></p></div>
+        <div class="detail-item"><label>Mileage</label><p>{{ fuel.mileage_kmpl|default:"—" }} KM/L</p></div>
+        <div class="detail-item"><label>Payment</label><p>{{ fuel.get_payment_method_display }}</p></div>
+        <div class="detail-item"><label>Petrol card</label><p>{{ fuel.petrol_card|default:"—" }}</p></div>
+        <div class="detail-item"><label>Reimbursement</label><p>{{ fuel.get_reimbursement_status_display|default:"—" }}</p></div>
+        <div class="detail-item"><label>Order</label><p>{% if fuel.order %}<a href="{% url 'order_detail' fuel.order_id %}">{{ fuel.order.order_no|default:fuel.order_id }}</a>{% else %}—{% endif %}</p></div>
+        <div class="detail-item"><label>Special Project</label><p>{% if fuel.special_project %}<a href="{% url 'special_project_detail' fuel.special_project_id %}">{{ fuel.special_project.project_number }}</a>{% else %}—{% endif %}</p></div>
+        <div class="detail-item"><label>Station</label><p>{{ fuel.fuel_station|default:"—" }}</p></div>
+        <div class="detail-item"><label>Bill #</label><p>{{ fuel.bill_number|default:"—" }}</p></div>
+        <div class="detail-item"><label>Location</label><p>{{ fuel.location|default:"—" }}</p></div>
+    </div>
+    {% if fuel.remarks %}<p style="margin-top:12px;"><strong>Remarks:</strong> {{ fuel.remarks }}</p>{% endif %}
+    {% if fuel.bill_upload %}<p style="margin-top:8px;"><a href="{{ fuel.bill_upload.url }}" target="_blank">View bill</a></p>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Daily Log {{ log.log_date }} — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Daily Log — {{ log.log_date|date:"d M Y" }}</h1>
+    <div>
+        {% if can_log %}<a href="{% url 'special_project_daily_log_edit' log.pk %}" class="btn btn-primary">Edit</a>{% endif %}
+        <a href="{% url 'special_project_detail' project.pk %}" class="btn btn-secondary">Back to project</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>Project</label><p>{{ project.project_number }}</p></div>
+        <div class="detail-item"><label>Location</label><p>{{ log.site_location|default:"—" }}</p></div>
+        <div class="detail-item"><label>Mentor</label><p>{{ log.mentor.get_full_name|default:log.mentor|default:"—" }}</p></div>
+        <div class="detail-item"><label>Daily progress</label><p>{{ log.daily_progress_pct }}%</p></div>
+        <div class="detail-item"><label>Day expense</label><p>{{ day_expense }}</p></div>
+    </div>
+    <h3>Work description</h3>
+    <p style="white-space:pre-wrap;">{{ log.work_description }}</p>
+    {% if log.planned_work %}<h3>Planned</h3><p style="white-space:pre-wrap;">{{ log.planned_work }}</p>{% endif %}
+    {% if log.actual_work %}<h3>Actual</h3><p style="white-space:pre-wrap;">{{ log.actual_work }}</p>{% endif %}
+    {% if log.issues_risks %}<h3>Issues / risks</h3><p style="white-space:pre-wrap;">{{ log.issues_risks }}</p>{% endif %}
+    {% if log.next_day_plan %}<h3>Next day plan</h3><p style="white-space:pre-wrap;">{{ log.next_day_plan }}</p>{% endif %}
+    {% if log.assigned_employees.exists %}
+    <p><strong>Assigned:</strong>
+        {% for u in log.assigned_employees.all %}{{ u.get_full_name|default:u.username }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    </p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Labour</h3>
+    <table>
+        <tr><th>Employee</th><th>Attendance</th><th>Hours</th><th>OT</th><th>Special</th><th>Emergency</th></tr>
+        {% for row in log.labour_lines.all %}
+        <tr>
+            <td>{{ row.employee.get_full_name|default:row.employee.username }}</td>
+            <td>{{ row.get_attendance_display }}</td>
+            <td>{{ row.hours_worked }}</td>
+            <td>{{ row.overtime_hours }}</td>
+            <td>{{ row.special_work|default:"—" }}</td>
+            <td>{% if row.emergency_callout %}Yes{% else %}No{% endif %}</td>
+        </tr>
+        {% empty %}<tr><td colspan="6">None</td></tr>{% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Materials (supply)</h3>
+    <table>
+        <tr><th>Material</th><th>Unit</th><th>Open</th><th>Issued</th><th>Consumed</th><th>Returned</th><th>Close</th><th>BOQ ref</th></tr>
+        {% for row in log.material_lines.all %}
+        <tr>
+            <td>{{ row.material }}</td><td>{{ row.unit }}</td>
+            <td>{{ row.opening_balance }}</td><td>{{ row.issued_qty }}</td>
+            <td>{{ row.consumed_qty }}</td><td>{{ row.returned_qty }}</td>
+            <td>{{ row.closing_balance }}</td><td>{{ row.linked_boq_item|default:"—" }}</td>
+        </tr>
+        {% empty %}<tr><td colspan="8">None</td></tr>{% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Services</h3>
+    <table>
+        <tr><th>Service</th><th>Qty</th><th>Unit</th><th>Remarks</th></tr>
+        {% for row in log.service_lines.all %}
+        <tr>
+            <td>{{ row.get_service_type_display }}</td>
+            <td>{{ row.quantity }}</td><td>{{ row.unit }}</td><td>{{ row.remarks|default:"—" }}</td>
+        </tr>
+        {% empty %}<tr><td colspan="4">None</td></tr>{% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Expenses</h3>
+    <table>
+        <tr><th>Type</th><th>Amount</th><th>Status</th><th>Bill</th><th>Remarks</th></tr>
+        {% for row in log.expenses.all %}
+        <tr>
+            <td>{{ row.get_expense_type_display }}</td>
+            <td>{{ row.amount }}</td>
+            <td>{{ row.get_approval_status_display }}</td>
+            <td>{% if row.bill_photo %}<a href="{{ row.bill_photo.url }}" target="_blank">View</a>{% else %}—{% endif %}</td>
+            <td>{{ row.remarks|default:"—" }}</td>
+        </tr>
+        {% empty %}<tr><td colspan="5">None</td></tr>{% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Media</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;">
+        {% for m in log.media_files.all %}
+        <div style="width:180px;">
+            <p style="margin:0 0 4px;font-size:0.85rem;">{{ m.get_media_type_display }}</p>
+            {% if m.file.url|lower|slice:"-4:" == '.jpg' or m.file.url|lower|slice:"-5:" == '.jpeg' or m.file.url|lower|slice:"-4:" == '.png' or m.file.url|lower|slice:"-4:" == '.gif' or m.file.url|lower|slice:"-5:" == '.webp' %}
+            <a href="{{ m.file.url }}" target="_blank"><img src="{{ m.file.url }}" alt="" style="width:100%;max-height:120px;object-fit:cover;border-radius:6px;border:1px solid #ddd;"></a>
+            {% else %}
+            <a href="{{ m.file.url }}" target="_blank">{{ m.caption|default:m.file.name }}</a>
+            {% endif %}
+            {% if m.caption %}<p style="font-size:0.8rem;color:#666;">{{ m.caption }}</p>{% endif %}
+        </div>
+        {% empty %}
+        <p>No media uploaded.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

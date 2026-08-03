@@ -29,6 +29,9 @@ urlpatterns = [
     path('case-intelligence/', include('case_intelligence.urls')),
     path('daily-meetings/', include('daily_meetings.urls')),
     path('requests/', include('employee_requests.urls')),
+    path('special-projects/', include('special_projects.urls')),
+    path('fleet/', include('fleet.urls')),
+    path('project-expenses/', include('project_expenses.urls')),
 ]
 
 if settings.DEBUG:

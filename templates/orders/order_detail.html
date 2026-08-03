@@ -12,11 +12,17 @@
         <div class="detail-item"><label>Client</label><p>{{ order.client.name }}</p></div>
         <div class="detail-item"><label>Order Date</label><p>{{ order.order_date|date:"d M Y" }}</p></div>
         <div class="detail-item"><label>Type</label><p>{{ order.get_order_type_display }}</p></div>
+        <div class="detail-item"><label>Source</label><p>{{ order.get_source_display|default:"—" }}</p></div>
         <div class="detail-item"><label>Status</label><p><strong>{{ order.get_status_display }}</strong></p></div>
         <div class="detail-item"><label>Priority</label><p>{{ order.priority }}</p></div>
         <div class="detail-item"><label>Project / Site</label><p>{{ order.display_site_name }}</p></div>
         <div class="detail-item"><label>Expected Completion</label><p>{{ order.expected_completion_date|date:"d M Y"|default:"—" }}</p></div>
         <div class="detail-item"><label>Created</label><p>{{ order.created_date|date:"d M Y H:i" }}</p></div>
+        {% if order.contact_person %}<div class="detail-item"><label>Contact Person</label><p>{{ order.contact_person }}</p></div>{% endif %}
+        {% if order.mobile %}<div class="detail-item"><label>Mobile</label><p>{{ order.mobile }}</p></div>{% endif %}
+        {% if order.email %}<div class="detail-item"><label>Email</label><p>{{ order.email }}</p></div>{% endif %}
+        {% if order.assigned_project_manager %}<div class="detail-item"><label>Project Manager</label><p>{{ order.assigned_project_manager }}</p></div>{% endif %}
+        {% if order.assigned_supervisor %}<div class="detail-item"><label>Supervisor</label><p>{{ order.assigned_supervisor }}</p></div>{% endif %}
         {% if order.quotation_source %}
         <div class="detail-item"><label>Quotation</label><p><a href="{% url 'quotation_detail' order.quotation_source.pk %}">{{ order.quotation_source.quotation_number }}</a></p></div>
         {% endif %}
@@ -91,6 +97,20 @@
     {% endfor %}
 </div>
 {% endif %}
+
+<div class="card">
+    <h3 style="margin-top:0;">Special Project</h3>
+    {% if special_project %}
+    <p>This order is linked to <strong>{{ special_project.project_number }}</strong> — {{ special_project.name }}
+       ({{ special_project.get_status_display }}, {{ special_project.overall_progress_pct }}%).</p>
+    <a href="{% url 'special_project_detail' special_project.pk %}" class="btn btn-primary btn-sm">Open Special Project</a>
+    {% elif can_open_special_project %}
+    <p style="color:#555;">For multi-day / long-duration work, open this order as a Special Project to capture daily supply, service and expenses.</p>
+    <a href="{% url 'special_project_open_from_order' order.pk %}" class="btn btn-primary btn-sm">Open as Special Project</a>
+    {% else %}
+    <p style="color:#6c757d;">No Special Project linked.</p>
+    {% endif %}
+</div>
 
 {% if order.status == 'COMPLETED' and not wcr %}
 <div class="card">

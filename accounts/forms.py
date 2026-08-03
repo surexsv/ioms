@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 
+from .enterprise_models import Branch, Department, Designation, Employee
 from .models import User
 
 
@@ -44,14 +45,26 @@ class ApprovalAuthenticationForm(AuthenticationForm):
 
 class UserRegistrationForm(UserCreationForm):
     full_name = forms.CharField(max_length=150, label='Full Name')
-    employee_id = forms.CharField(max_length=50, required=False, label='Employee ID (optional)')
+    employee_code = forms.CharField(max_length=30, required=False, label='Employee Code (optional)')
     mobile = forms.CharField(max_length=15, label='Mobile Number')
     email = forms.EmailField(label='Email Address')
-    department = forms.CharField(max_length=100)
-    designation = forms.CharField(max_length=100)
-    role_requested = forms.ChoiceField(
-        choices=User.ROLE_REQUEST_CHOICES,
-        label='Role Requested',
+    department = forms.ModelChoiceField(
+        queryset=Department.objects.filter(is_active=True),
+        label='Department',
+    )
+    designation = forms.ModelChoiceField(
+        queryset=Designation.objects.filter(is_active=True),
+        label='Designation',
+    )
+    branch = forms.ModelChoiceField(
+        queryset=Branch.objects.filter(is_active=True),
+        label='Branch',
+        required=False,
+    )
+    employment_type = forms.ChoiceField(
+        choices=Employee.EMPLOYMENT_TYPE_CHOICES,
+        initial=Employee.EMPLOYMENT_FULL_TIME,
+        label='Employment Type',
     )
     address = forms.CharField(widget=forms.Textarea(attrs={'rows': 2}))
     city = forms.CharField(max_length=100)
@@ -65,9 +78,11 @@ class UserRegistrationForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in ('username', 'password1', 'password2', 'email', 'mobile'):
+        for field in ('username', 'password1', 'password2', 'email', 'mobile', 'department', 'designation'):
             if field in self.fields:
                 self.fields[field].required = True
+        if not self.fields['branch'].queryset.exists():
+            self.fields['branch'].required = False
 
     def clean_email(self):
         email = self.cleaned_data['email'].strip().lower()
@@ -81,6 +96,12 @@ class UserRegistrationForm(UserCreationForm):
             raise forms.ValidationError('An account with this mobile number already exists.')
         return mobile
 
+    def clean_employee_code(self):
+        code = (self.cleaned_data.get('employee_code') or '').strip()
+        if code and Employee.objects.filter(employee_code=code).exists():
+            raise forms.ValidationError('This employee code is already registered.')
+        return code
+
     def save(self, commit=True):
         user = super().save(commit=False)
         full_name = self.cleaned_data['full_name'].strip()
@@ -89,11 +110,11 @@ class UserRegistrationForm(UserCreationForm):
         user.last_name = parts[1] if len(parts) > 1 else ''
         user.email = self.cleaned_data['email']
         user.phone = self.cleaned_data['mobile']
-        user.employee_id = self.cleaned_data.get('employee_id', '')
-        user.department = self.cleaned_data['department']
-        user.designation = self.cleaned_data['designation']
-        user.role_requested = self.cleaned_data['role_requested']
-        user.role = user.map_requested_role()
+        user.employee_id = self.cleaned_data.get('employee_code', '')
+        user.department = self.cleaned_data['department'].name
+        user.designation = self.cleaned_data['designation'].name
+        user.role_requested = ''
+        user.role = ''
         user.address = self.cleaned_data['address']
         user.city = self.cleaned_data['city']
         user.state = self.cleaned_data['state']
@@ -106,7 +127,31 @@ class UserRegistrationForm(UserCreationForm):
         user.is_active_employee = False
         if commit:
             user.save()
+            self._create_pending_employee(user)
         return user
+
+    def _create_pending_employee(self, user):
+        branch = self.cleaned_data.get('branch') or Branch.objects.filter(is_head_office=True).first()
+        if not branch:
+            branch = Branch.objects.filter(is_active=True).first()
+        code = (self.cleaned_data.get('employee_code') or '').strip() or f'EMP{user.pk:05d}'
+        base = code
+        n = 1
+        while Employee.objects.filter(employee_code=code).exists():
+            code = f'{base}-{n}'
+            n += 1
+        Employee.objects.update_or_create(
+            user=user,
+            defaults={
+                'employee_code': code,
+                'department': self.cleaned_data['department'],
+                'designation': self.cleaned_data['designation'],
+                'branch': branch,
+                'employment_type': self.cleaned_data['employment_type'],
+                'mobile': self.cleaned_data['mobile'],
+                'status': Employee.STATUS_INACTIVE,
+            },
+        )
 
 
 class ProfileResubmitVerifyForm(forms.Form):
@@ -133,24 +178,35 @@ class ProfileResubmitVerifyForm(forms.Form):
 class ProfileResubmitForm(forms.ModelForm):
     full_name = forms.CharField(max_length=150, label='Full Name')
     mobile = forms.CharField(max_length=15, label='Mobile Number')
+    department = forms.ModelChoiceField(
+        queryset=Department.objects.filter(is_active=True),
+        label='Department',
+        required=False,
+    )
+    designation = forms.ModelChoiceField(
+        queryset=Designation.objects.filter(is_active=True),
+        label='Designation',
+        required=False,
+    )
 
     class Meta:
         model = User
         fields = [
-            'employee_id', 'email', 'department', 'designation',
-            'role_requested', 'address', 'city', 'state', 'pin_code', 'profile_photo',
+            'employee_id', 'email', 'address', 'city', 'state', 'pin_code', 'profile_photo',
         ]
         labels = {
-            'employee_id': 'Employee ID (optional)',
-            'role_requested': 'Role Requested',
+            'employee_id': 'Employee Code (optional)',
             'profile_photo': 'Profile Photo (optional)',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['role_requested'].choices = User.ROLE_REQUEST_CHOICES
         self.fields['full_name'].initial = self.instance.full_name_display
         self.fields['mobile'].initial = self.instance.phone
+        employee = getattr(self.instance, 'employee_profile', None)
+        if employee:
+            self.fields['department'].initial = employee.department_id
+            self.fields['designation'].initial = employee.designation_id
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -159,9 +215,20 @@ class ProfileResubmitForm(forms.ModelForm):
         user.first_name = parts[0]
         user.last_name = parts[1] if len(parts) > 1 else ''
         user.phone = self.cleaned_data['mobile']
-        user.role = user.map_requested_role()
+        dept = self.cleaned_data.get('department')
+        desig = self.cleaned_data.get('designation')
+        if dept:
+            user.department = dept.name
+        if desig:
+            user.designation = desig.name
         if commit:
             user.save()
+            employee = getattr(user, 'employee_profile', None)
+            if employee and dept and desig:
+                employee.department = dept
+                employee.designation = desig
+                employee.mobile = self.cleaned_data['mobile']
+                employee.save()
         return user
 
 

@@ -12,12 +12,18 @@ class DocumentNumberSettings(models.Model):
     quotation_prefix = models.CharField(max_length=10, default='QT')
     wcr_prefix = models.CharField(max_length=10, default='WCR')
     boq_prefix = models.CharField(max_length=10, default='BOQ')
-    invoice_prefix = models.CharField(max_length=10, default='INV')
+    invoice_prefix = models.CharField(
+        max_length=10,
+        blank=True,
+        default='',
+        help_text='Leave blank for series like ITSPL26270001 (company + year + serial).',
+    )
     purchase_order_prefix = models.CharField(max_length=10, default='PO')
     schedule_prefix = models.CharField(max_length=10, default='SCH')
     enquiry_prefix = models.CharField(max_length=10, default='ENQ')
     estimate_boq_prefix = models.CharField(max_length=10, default='EBOQ')
     request_prefix = models.CharField(max_length=10, default='REQ')
+    special_project_prefix = models.CharField(max_length=10, default='SP')
     serial_length = models.PositiveSmallIntegerField(default=4)
     year_format = models.CharField(max_length=10, default='YYYY')
     allow_editing = models.BooleanField(default=True)

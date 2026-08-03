@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Fuel Reimbursements — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Cash reimbursements</h1>
+    <a href="{% url 'fleet_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+</div>
+<form method="get" style="margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <label for="status">Status</label>
+    <select name="status" id="status" onchange="this.form.submit()">
+        <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending</option>
+        <option value="APPROVED" {% if status_filter == 'APPROVED' %}selected{% endif %}>Approved</option>
+        <option value="REJECTED" {% if status_filter == 'REJECTED' %}selected{% endif %}>Rejected</option>
+        <option value="PAID" {% if status_filter == 'PAID' %}selected{% endif %}>Paid</option>
+        <option value="" {% if status_filter == '' %}selected{% endif %}>All</option>
+    </select>
+</form>
+<table>
+    <tr>
+        <th>Date</th>
+        <th>Vehicle</th>
+        <th>Driver</th>
+        <th>Amount</th>
+        <th>Status</th>
+        <th>Action</th>
+    </tr>
+    {% for t in transactions %}
+    <tr>
+        <td><a href="{% url 'fleet_fuel_detail' t.pk %}">{{ t.transaction_date|date:"d M Y" }}</a></td>
+        <td>{{ t.vehicle.vehicle_number }}</td>
+        <td>{{ t.driver.get_full_name|default:t.driver }}</td>
+        <td>{{ t.total_amount }}</td>
+        <td>{{ t.get_reimbursement_status_display }}</td>
+        <td>
+            <form method="post" action="{% url 'fleet_reimbursement_update' t.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <select name="reimbursement_status">
+                    <option value="PENDING">Pending</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
+                    <option value="PAID">Paid</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary">Update</button>
+            </form>
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">No cash reimbursements in this status.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -552,23 +552,11 @@ def quotation_reject(request, pk):
 
 @module_required(MODULE_QUOTATIONS)
 def quotation_create_from_enquiry(request, enquiry_pk):
-    from enquiries.models import Enquiry
-    enquiry = get_object_or_404(Enquiry, pk=enquiry_pk)
-    if request.method == 'POST':
-        estimate_id = request.POST.get('estimate_boq')
-        estimate_boq = None
-        if estimate_id:
-            from estimate_boq.models import EstimateBOQ
-            estimate_boq = get_object_or_404(EstimateBOQ, pk=estimate_id, enquiry=enquiry)
-        q = services.create_quotation_from_enquiry(enquiry, request.user, estimate_boq=estimate_boq)
-        from case_intelligence.integrations import quotation_created
-        quotation_created(request.user, q)
-        messages.success(request, f'Quotation {q.quotation_number} created from enquiry.')
-        return redirect('quotation_edit', pk=q.pk)
-    return render(request, 'quotations/quotation_from_enquiry.html', {
-        'enquiry': enquiry,
-        'estimate_boqs': enquiry.estimate_boqs.all(),
-    })
+    messages.info(
+        request,
+        'Enquiries are retired. Create a quotation from a client/order workflow, or create an order first.',
+    )
+    return redirect('quotation_list')
 
 
 @role_required('DIRECTOR', 'OPERATIONS', 'PROJECT_MANAGER')

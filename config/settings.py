@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'accounts',
+    'accounts.apps.AccountsConfig',
     'clients',
     'orders',
     'wcr',
@@ -57,6 +57,9 @@ INSTALLED_APPS = [
     'case_intelligence',
     'daily_meetings',
     'employee_requests',
+    'special_projects',
+    'fleet',
+    'project_expenses.apps.ProjectExpensesConfig',
 ]
 
 MIDDLEWARE = [

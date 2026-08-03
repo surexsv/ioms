@@ -67,7 +67,7 @@ class InvoiceForm(AuthorizedSignatoryFormMixin, forms.ModelForm):
 
             'service_title': forms.TextInput(attrs={'placeholder': 'e.g. OFC Connectivity'}),
 
-            'invoice_number': forms.TextInput(attrs={'placeholder': 'e.g. ITSPL26270001 or ITSPLINV26270001'}),
+            'invoice_number': forms.TextInput(attrs={'placeholder': 'e.g. ITSPL26270001'}),
 
         }
 

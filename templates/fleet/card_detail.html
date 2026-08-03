@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}{{ card.card_name }} — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ card.card_name }}</h1>
+    <div>
+        <a href="{% url 'fleet_card_list' %}" class="btn btn-secondary">All Cards</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>Card number</label><p>{{ card.card_number }}</p></div>
+        <div class="detail-item"><label>Mobile</label><p>{{ card.mobile_number|default:"—" }}</p></div>
+        <div class="detail-item"><label>Vehicle</label><p>{{ card.vehicle.vehicle_number|default:"—" }}</p></div>
+        <div class="detail-item"><label>Balance</label><p><strong>{{ card.current_balance }}</strong></p></div>
+        <div class="detail-item"><label>Last recharge</label><p>{{ card.last_recharge_date|date:"d M Y"|default:"—" }}</p></div>
+        <div class="detail-item"><label>Status</label><p>{{ card.get_status_display }}</p></div>
+    </div>
+</div>
+
+{% if can_manage %}
+<div class="card" style="max-width:560px;">
+    <h3 style="margin-top:0;">Recharge</h3>
+    <form method="post" action="{% url 'fleet_card_recharge' card.pk %}">
+        {% csrf_token %}
+        {% for field in recharge_form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div style="color:#dc3545;">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Recharge</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3 style="margin-top:0;">Recent recharges</h3>
+    <table>
+        <tr><th>Date</th><th>Amount</th><th>Balance after</th><th>Ref</th><th>By</th></tr>
+        {% for r in recharges %}
+        <tr>
+            <td>{{ r.recharge_date|date:"d M Y" }}</td>
+            <td>{{ r.amount }}</td>
+            <td>{{ r.balance_after }}</td>
+            <td>{{ r.reference_number|default:"—" }}</td>
+            <td>{{ r.created_by|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No recharges yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Recent fuel on this card</h3>
+    <table>
+        <tr><th>Date</th><th>Vehicle</th><th>Driver</th><th>Amount</th><th></th></tr>
+        {% for f in fuels %}
+        <tr>
+            <td>{{ f.transaction_date|date:"d M Y" }}</td>
+            <td>{{ f.vehicle.vehicle_number }}</td>
+            <td>{{ f.driver }}</td>
+            <td>{{ f.total_amount }}</td>
+            <td><a href="{% url 'fleet_fuel_detail' f.pk %}">View</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No fuel entries on this card.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

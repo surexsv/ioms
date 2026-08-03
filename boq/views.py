@@ -100,7 +100,10 @@ def edit_boq(request, pk):
 
 @module_required(MODULE_BOQ)
 def verify_boq(request, pk):
-    boq = get_object_or_404(BOQ, pk=pk)
+    boq = get_object_or_404(
+        BOQ.objects.select_related('order', 'order__client', 'created_by').prefetch_related('lines'),
+        pk=pk,
+    )
     if boq.status == 'VERIFIED':
         messages.info(request, 'BOQ is already verified.')
         return redirect('boq_detail', pk=pk)

@@ -74,7 +74,7 @@ def resolve_detail_url(schedule):
     if schedule.order_id:
         return ('order_detail', schedule.order_id)
     if schedule.enquiry_id:
-        return ('enquiry_detail', schedule.enquiry_id)
+        return ('schedule_edit', schedule.pk)
     return None
 
 

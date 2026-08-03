@@ -14,11 +14,15 @@
     {% if show_nav_clients %}<div class="ioms-kpi"><div class="value">{{ total_clients }}</div><div class="label">Clients</div></div>{% endif %}
     {% if show_operations %}
     <div class="ioms-kpi"><div class="value">{{ total_orders }}</div><div class="label">Total Orders</div></div>
-    <div class="ioms-kpi"><div class="value">{{ scheduled_jobs }}</div><div class="label">Scheduled Jobs</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ open_orders }}</div><div class="label">Open Orders</div></div>
+    <div class="ioms-kpi"><div class="value">{{ scheduled_orders }}</div><div class="label">Scheduled Orders</div></div>
+    <div class="ioms-kpi"><div class="value">{{ wcr_pending }}</div><div class="label">WCR Pending</div></div>
+    <div class="ioms-kpi"><div class="value text-warning">{{ billing_pending }}</div><div class="label">Billing Pending</div></div>
+    <div class="ioms-kpi"><div class="value text-danger">{{ payment_pending_orders }}</div><div class="label">Payment Pending</div></div>
+    <div class="ioms-kpi"><div class="value text-success">{{ closed_orders }}</div><div class="label">Closed Orders</div></div>
+    <div class="ioms-kpi"><div class="value">{{ scheduled_jobs }}</div><div class="label">Active Schedules</div></div>
     <div class="ioms-kpi"><div class="value text-warning">{{ unscheduled_jobs }}</div><div class="label">Unscheduled Jobs</div></div>
     <div class="ioms-kpi"><div class="value">{{ jobs_in_progress }}</div><div class="label">Jobs In Progress</div></div>
-    <div class="ioms-kpi"><div class="value text-success">{{ completed_jobs }}</div><div class="label">Completed Jobs</div></div>
-    <div class="ioms-kpi"><div class="value">{{ wcr_pending }}</div><div class="label">Awaiting WCR</div></div>
     {% endif %}
     {% if show_financial %}
     <div class="ioms-kpi"><div class="value">{{ total_invoices }}</div><div class="label">Invoices</div></div>
@@ -40,13 +44,12 @@
     {% endif %}
 </div>
 
-<h3 class="ioms-section-title" style="margin-top:8px;">Enquiry Pipeline</h3>
-<div class="ioms-kpi-grid">
-    <div class="ioms-kpi"><div class="value">{{ total_enquiries }}</div><div class="label">Total Enquiries</div></div>
-    <div class="ioms-kpi"><div class="value text-warning">{{ open_enquiries }}</div><div class="label">Open Enquiries</div></div>
-    <div class="ioms-kpi"><div class="value">{{ quotations_submitted }}</div><div class="label">Quotations Submitted</div></div>
-    <div class="ioms-kpi"><div class="value text-success">{{ won_opportunities }}</div><div class="label">Won</div></div>
-    <div class="ioms-kpi"><div class="value text-danger">{{ lost_opportunities }}</div><div class="label">Lost</div></div>
+<h3 class="ioms-section-title" style="margin-top:8px;">Order Pipeline</h3>
+<div class="ioms-charts-row ioms-charts-row-3">
+    <div class="ioms-chart-card">
+        <h3>Orders by Status</h3>
+        <div class="ioms-chart-wrap"><canvas id="orderPipelineChart"></canvas></div>
+    </div>
 </div>
 
 {% if show_quotations %}
@@ -88,10 +91,6 @@
 </p>
 
 <div class="ioms-charts-row ioms-charts-row-3">
-    <div class="ioms-chart-card">
-        <h3>Enquiry Pipeline</h3>
-        <div class="ioms-chart-wrap"><canvas id="enquiryPipelineChart"></canvas></div>
-    </div>
     {% if show_quotations %}
     <div class="ioms-chart-card">
         <h3>Monthly Quotation Value</h3>
@@ -160,12 +159,12 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-const enquiryLabels = {{ enquiry_pipeline_labels|safe }};
-const enquiryValues = {{ enquiry_pipeline_values|safe }};
-if (document.getElementById('enquiryPipelineChart')) {
-    new Chart(document.getElementById('enquiryPipelineChart'), {
+const orderPipelineLabels = {{ order_pipeline_labels|safe }};
+const orderPipelineValues = {{ order_pipeline_values|safe }};
+if (document.getElementById('orderPipelineChart')) {
+    new Chart(document.getElementById('orderPipelineChart'), {
         type: 'bar',
-        data: { labels: enquiryLabels.length ? enquiryLabels : ['No data'], datasets: [{ label: 'Enquiries', data: enquiryValues.length ? enquiryValues : [0], backgroundColor: 'rgba(15, 45, 82, 0.8)' }] },
+        data: { labels: orderPipelineLabels.length ? orderPipelineLabels : ['No data'], datasets: [{ label: 'Orders', data: orderPipelineValues.length ? orderPipelineValues : [0], backgroundColor: 'rgba(15, 45, 82, 0.8)' }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
     });
 }

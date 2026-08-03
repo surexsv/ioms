@@ -3,7 +3,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.decorators import module_required
-from accounts.permissions import MODULE_ESTIMATE_BOQ, can_manage_enquiries
+from accounts.permissions import MODULE_ESTIMATE_BOQ, MODULE_ORDERS_CREATE, can_access
 from enquiries.models import Enquiry
 from .forms import EstimateBOQForm, EstimateBOQLineFormSet
 from .models import EstimateBOQ
@@ -17,10 +17,14 @@ def estimate_boq_list(request):
 
 @module_required(MODULE_ESTIMATE_BOQ)
 def create_estimate_boq(request):
+    if request.GET.get('enquiry') or request.POST.get('enquiry'):
+        messages.info(
+            request,
+            'Estimate BOQ from enquiries is retired. Create an order first, then prepare BOQ from the order workflow.',
+        )
+        return redirect('order_list')
+
     enquiry = None
-    enquiry_id = request.GET.get('enquiry') or request.POST.get('enquiry')
-    if enquiry_id:
-        enquiry = get_object_or_404(Enquiry, pk=enquiry_id)
 
     if request.method == 'POST':
         form = EstimateBOQForm(request.POST)
@@ -35,7 +39,7 @@ def create_estimate_boq(request):
                 formset.instance = eboq
                 formset.save()
                 eboq.recalculate()
-                if eboq.enquiry.status == Enquiry.STATUS_SURVEY_COMPLETED:
+                if eboq.enquiry_id and eboq.enquiry.status == Enquiry.STATUS_SURVEY_COMPLETED:
                     eboq.enquiry.status = Enquiry.STATUS_QUOTATION_PREPARATION
                     eboq.enquiry.save(update_fields=['status', 'updated_at'])
             from productivity.activity_logger import log_activity
@@ -73,7 +77,7 @@ def estimate_boq_detail(request, pk):
     )
     return render(request, 'estimate_boq/estimate_boq_detail.html', {
         'estimate_boq': eboq,
-        'can_edit': eboq.status == EstimateBOQ.STATUS_DRAFT and can_manage_enquiries(request.user),
+        'can_edit': eboq.status == EstimateBOQ.STATUS_DRAFT and can_access(request.user, MODULE_ORDERS_CREATE),
     })
 
 

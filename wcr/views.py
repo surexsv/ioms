@@ -165,7 +165,13 @@ def schedule_team_json(request, order_id):
 
 @module_required(MODULE_WCR_APPROVE)
 def approve_wcr(request, pk):
-    wcr = get_object_or_404(WorkCompletionReport, pk=pk)
+    wcr = get_object_or_404(
+        WorkCompletionReport.objects.select_related(
+            'order', 'order__client', 'enquiry', 'enquiry__client',
+            'submitted_by', 'schedule',
+        ),
+        pk=pk,
+    )
     if request.method == 'POST':
         wcr.approved = True
         wcr.save()
@@ -198,7 +204,15 @@ def approve_wcr(request, pk):
         else:
             messages.success(request, f'WCR {wcr.wcr_number} approved.')
         return redirect('wcr_list')
-    return render(request, 'wcr/wcr_approve.html', {'wcr': wcr})
+    team_participants = []
+    if hasattr(wcr, 'team_participants'):
+        team_participants = list(
+            wcr.team_participants.select_related('employee').order_by('participant_role', 'employee_id')
+        )
+    return render(request, 'wcr/wcr_approve.html', {
+        'wcr': wcr,
+        'team_participants': team_participants,
+    })
 
 
 @module_required(MODULE_WCR)

@@ -1,7 +1,16 @@
 from django import forms
 
 from accounts.models import User
-from accounts.roles import ROLE_ENGINEER, ROLE_PROJECT_MANAGER, ROLE_SUPERVISOR, ROLE_TECHNICIAN
+
+from scheduling.staff_selectors import (
+    engineer_queryset,
+    field_staff_queryset,
+    order_team_initial,
+    project_manager_queryset,
+    supervisor_queryset,
+    team_leader_queryset,
+    technician_queryset,
+)
 
 from .models import WorkSchedule
 
@@ -40,20 +49,20 @@ class FieldScheduleUpdateForm(forms.ModelForm):
 
 class WorkScheduleForm(forms.ModelForm):
     assigned_engineers = forms.ModelMultipleChoiceField(
-        queryset=User.objects.filter(role__in=['ENGINEER', 'Technician'], is_active_employee=True),
+        queryset=User.objects.none(),
         widget=forms.SelectMultiple(attrs={'size': 4}),
         required=False,
         label='Assigned Engineers (Legacy)',
         help_text='Optional — use team fields below for multi-resource assignment',
     )
     supporting_engineers = forms.ModelMultipleChoiceField(
-        queryset=User.objects.filter(role=ROLE_ENGINEER, is_active_employee=True),
+        queryset=User.objects.none(),
         widget=forms.SelectMultiple(attrs={'size': 5}),
         required=False,
         label='Supporting Engineers',
     )
     technicians = forms.ModelMultipleChoiceField(
-        queryset=User.objects.filter(role=ROLE_TECHNICIAN, is_active_employee=True),
+        queryset=User.objects.none(),
         widget=forms.SelectMultiple(attrs={'size': 5}),
         required=False,
         label='Technicians',
@@ -79,6 +88,12 @@ class WorkScheduleForm(forms.ModelForm):
             'work_instructions',
             'status',
         ]
+        labels = {
+            'lead_engineer': 'Engineer',
+            'supervisor': 'Team Leader',
+            'project_manager': 'Project Manager',
+            'team_leader': 'On-site Team Leader',
+        }
         widgets = {
             'scheduled_start_date': forms.DateInput(attrs={'type': 'date'}),
             'scheduled_end_date': forms.DateInput(attrs={'type': 'date'}),
@@ -87,24 +102,29 @@ class WorkScheduleForm(forms.ModelForm):
             'work_instructions': forms.Textarea(attrs={'rows': 3}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, order=None, enquiry=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['project_manager'].queryset = User.objects.filter(
-            role=ROLE_PROJECT_MANAGER, is_active_employee=True,
-        )
-        self.fields['supervisor'].queryset = User.objects.filter(
-            role__in=[ROLE_SUPERVISOR, 'Supervisor'], is_active_employee=True,
-        )
-        self.fields['lead_engineer'].queryset = User.objects.filter(
-            role=ROLE_ENGINEER, is_active_employee=True,
-        )
-        self.fields['team_leader'].queryset = User.objects.filter(
-            role__in=[ROLE_ENGINEER, ROLE_TECHNICIAN, ROLE_SUPERVISOR, 'Supervisor', 'OPERATIONS'],
-            is_active_employee=True,
-        )
+        if order is not None:
+            self.instance.order = order
+        if enquiry is not None:
+            self.instance.enquiry = enquiry
+
+        self.fields['project_manager'].queryset = project_manager_queryset()
+        self.fields['supervisor'].queryset = supervisor_queryset()
+        self.fields['lead_engineer'].queryset = engineer_queryset()
+        self.fields['team_leader'].queryset = team_leader_queryset()
+        self.fields['supporting_engineers'].queryset = engineer_queryset()
+        self.fields['technicians'].queryset = technician_queryset()
+        self.fields['assigned_engineers'].queryset = field_staff_queryset()
+
         self.fields['team_leader'].required = False
-        for f in ('project_manager', 'supervisor', 'lead_engineer'):
-            self.fields[f].required = False
+        for field_name in ('project_manager', 'supervisor', 'lead_engineer'):
+            self.fields[field_name].required = False
+
+        if order is not None and not self.is_bound and not kwargs.get('instance'):
+            for key, value in order_team_initial(order).items():
+                if key in self.fields and key not in self.initial:
+                    self.initial[key] = value
 
     def clean(self):
         cleaned = super().clean()

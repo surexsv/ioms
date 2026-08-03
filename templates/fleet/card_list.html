@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Petrol Cards — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Petrol Cards</h1>
+    <div>
+        <a href="{% url 'fleet_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+        {% if can_manage %}
+        <a href="{% url 'fleet_card_create' %}" class="btn btn-primary">Add Card</a>
+        {% endif %}
+    </div>
+</div>
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Number</th>
+        <th>Vehicle</th>
+        <th>Balance</th>
+        <th>Last recharge</th>
+        <th>Status</th>
+    </tr>
+    {% for c in cards %}
+    <tr>
+        <td><a href="{% url 'fleet_card_detail' c.pk %}">{{ c.card_name }}</a></td>
+        <td>{{ c.card_number }}</td>
+        <td>{{ c.vehicle.vehicle_number|default:"—" }}</td>
+        <td>{{ c.current_balance }}</td>
+        <td>{{ c.last_recharge_date|date:"d M Y"|default:"—" }}</td>
+        <td>{{ c.get_status_display }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">No petrol cards yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ title }}</h1>
+    <a href="{% url 'peams_advance_list' %}" class="btn btn-secondary">Back</a>
+</div>
+<div class="card" style="max-width:720px;">
+    <form method="post">{% csrf_token %}
+        {% if form.non_field_errors %}<div style="color:#dc3545;">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+        <div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+            {% if field.errors %}<div style="color:#dc3545;">{{ field.errors }}</div>{% endif %}</div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Issue &amp; post to ledger</button>
+    </form>
+</div>
+{% endblock %}

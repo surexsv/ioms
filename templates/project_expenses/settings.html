@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}PEAMS Settings — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>PEAMS Settings</h1>
+    <a href="{% url 'peams_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+</div>
+<div class="card" style="max-width:640px;">
+    <h3 style="margin-top:0;">Approval threshold</h3>
+    <form method="post">{% csrf_token %}
+        {% for field in settings_form %}
+        <div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+            {% if field.help_text %}<small style="color:#666;">{{ field.help_text }}</small>{% endif %}
+            {% if field.errors %}<div style="color:#dc3545;">{{ field.errors }}</div>{% endif %}</div>
+        {% endfor %}
+        <button type="submit" name="save_settings" class="btn btn-primary">Save settings</button>
+    </form>
+</div>
+<div class="card">
+    <h3 style="margin-top:0;">Approval limits / steps</h3>
+    <table>
+        <tr><th>Step</th><th>Order</th><th>Min</th><th>Max</th><th>Approve up to</th><th>Active</th></tr>
+        {% for lim in limits %}
+        <tr>
+            <td>{{ lim.get_step_code_display }}</td>
+            <td>{{ lim.step_order }}</td>
+            <td>{{ lim.min_amount }}</td>
+            <td>{{ lim.max_amount|default:"∞" }}</td>
+            <td>{{ lim.can_approve_up_to|default:"∞" }}</td>
+            <td>{% if lim.is_active %}Yes{% else %}No{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h4>Add step</h4>
+    <form method="post" style="max-width:640px;">{% csrf_token %}
+        {% for field in limit_form %}
+        <div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+            {% if field.errors %}<div style="color:#dc3545;">{{ field.errors }}</div>{% endif %}</div>
+        {% endfor %}
+        <button type="submit" name="add_limit" class="btn btn-primary">Add limit</button>
+    </form>
+</div>
+{% endblock %}

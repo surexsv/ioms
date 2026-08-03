@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.decorators import module_required
 from accounts.navigation import redirect_target_after_schedule, schedule_back_navigation
@@ -14,6 +15,7 @@ from productivity.activity_logger import log_activity
 from productivity.constants import ACT_SCHEDULE_CREATED
 
 from scheduling.constants import REF_ORDER
+from scheduling.staff_selectors import order_team_initial
 from scheduling.engine import category_from_order, survey_reference_context
 from .forms import FieldScheduleUpdateForm, WorkScheduleForm
 from .models import WorkSchedule
@@ -73,11 +75,10 @@ def schedule_create(request, order_pk):
         return access_denied_response(request, reason=REASON_ROLE)
 
     if request.method == 'POST':
-        form = WorkScheduleForm(request.POST)
+        form = WorkScheduleForm(request.POST, order=order)
         if form.is_valid():
             with transaction.atomic():
                 schedule = form.save(commit=False)
-                schedule.order = order
                 schedule.reference_type = REF_ORDER
                 schedule.reference_number = order.order_no
                 schedule.schedule_category = category_from_order(order)
@@ -97,16 +98,26 @@ def schedule_create(request, order_pk):
             schedule_created(request.user, schedule)
             messages.success(request, f'Schedule {schedule.schedule_number} created.')
             return redirect('order_detail', pk=order.pk)
+        messages.error(request, 'Please correct the errors below and try again.')
     else:
-        initial = {}
+        today = timezone.localdate()
+        initial = {
+            'scheduled_start_date': today,
+            **order_team_initial(order),
+        }
         if order.expected_completion_date:
             initial['scheduled_end_date'] = order.expected_completion_date
-        form = WorkScheduleForm(initial=initial)
+        elif order.order_date:
+            initial['scheduled_end_date'] = order.order_date
+        else:
+            initial['scheduled_end_date'] = today
+        form = WorkScheduleForm(initial=initial, order=order)
 
     return render(request, 'scheduling/schedule_form.html', {
         'form': form,
         'order': order,
         'title': 'Create Schedule',
+        'can_edit': True,
         'back_nav': schedule_back_navigation(request.user, None),
     })
 
@@ -152,6 +163,7 @@ def schedule_edit(request, pk):
                 record_schedule_status_gps(request.user, schedule, old_status, schedule.status, request)
             messages.success(request, 'Schedule updated.')
             return _redirect_after_schedule(request, schedule)
+        messages.error(request, 'Please correct the errors below and try again.')
     else:
         if can_edit:
             form = WorkScheduleForm(instance=schedule)

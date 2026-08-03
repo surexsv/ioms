@@ -75,6 +75,7 @@ class WorkSchedule(models.Model):
         null=True, blank=True,
         related_name='schedules_as_lead_engineer',
         limit_choices_to={'role': 'ENGINEER'},
+        verbose_name='Engineer',
     )
     supporting_engineers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -175,9 +176,9 @@ class WorkSchedule(models.Model):
         if self.project_manager:
             parts.append(f'PM: {self.project_manager.get_full_name() or self.project_manager.username}')
         if self.supervisor:
-            parts.append(f'Supervisor: {self.supervisor.get_full_name() or self.supervisor.username}')
+            parts.append(f'Team Leader: {self.supervisor.get_full_name() or self.supervisor.username}')
         if self.lead_engineer:
-            parts.append(f'Lead: {self.lead_engineer.get_full_name() or self.lead_engineer.username}')
+            parts.append(f'Engineer: {self.lead_engineer.get_full_name() or self.lead_engineer.username}')
         for u in self.supporting_engineers.all():
             parts.append(u.get_full_name() or u.username)
         for u in self.technicians.all():

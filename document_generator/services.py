@@ -11,6 +11,7 @@ from .constants import (
     DOC_QUOTATION,
     DOC_REQUEST,
     DOC_SCHEDULE,
+    DOC_SPECIAL_PROJECT,
     DOC_WCR,
     DOCUMENT_TYPE_LABELS,
     PREFIX_FIELD_MAP,
@@ -92,6 +93,12 @@ def _number_exists(document_number):
             return True
     except Exception:
         pass
+    try:
+        from special_projects.models import SpecialProject
+        if SpecialProject.objects.filter(project_number=document_number).exists():
+            return True
+    except Exception:
+        pass
     return False
 
 
@@ -139,10 +146,14 @@ def parse_document_number(number, document_type, settings=None):
     if not number.startswith(company):
         return None
     rest = number[len(company):]
-    doc_prefix = settings.prefix_for(document_type)
+    doc_prefix = settings.prefix_for(document_type) or ''
     if document_type == DOC_INVOICE:
-        if rest.startswith(doc_prefix):
+        # Current series: ITSPL26270001 (blank prefix)
+        # Legacy series: ITSPLINV26270001
+        if doc_prefix and rest.startswith(doc_prefix):
             rest = rest[len(doc_prefix):]
+        elif not doc_prefix and rest.startswith('INV') and len(rest) > 7 and rest[3:7].isdigit():
+            rest = rest[3:]
     else:
         if not rest.startswith(doc_prefix):
             return None
@@ -195,6 +206,13 @@ def _collect_existing_numbers(document_type):
         ).values_list('request_number', flat=True)
     except Exception:
         field_map[DOC_REQUEST] = []
+    try:
+        from special_projects.models import SpecialProject
+        field_map[DOC_SPECIAL_PROJECT] = SpecialProject.objects.exclude(
+            project_number='',
+        ).values_list('project_number', flat=True)
+    except Exception:
+        field_map[DOC_SPECIAL_PROJECT] = []
     return list(field_map.get(document_type, []))
 
 
@@ -214,6 +232,7 @@ def seed_counters_from_existing():
         (DOC_ENQUIRY, 'Enquiry'),
         (DOC_ESTIMATE_BOQ, 'Estimate BOQ'),
         (DOC_REQUEST, 'Employee Request'),
+        (DOC_SPECIAL_PROJECT, 'Special Project'),
     ):
         max_by_series = {}
         for number in _collect_existing_numbers(document_type):

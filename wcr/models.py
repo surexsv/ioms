@@ -69,8 +69,10 @@ class WorkCompletionReport(AuthorizedSignatoryMixin, models.Model):
         super().save(*args, **kwargs)
         if self.wcr_type == WCR_TYPE_SURVEY or not self.order_id:
             return
-        if self.approved:
-            self.order.status = 'APPROVED'
-        else:
-            self.order.status = 'WCR_SUBMITTED'
-        self.order.save(update_fields=['status'])
+        # Never regress billing/payment lifecycle statuses on WCR re-save
+        if self.order.status in ('BILLED', 'PAYMENT_PENDING', 'CLOSED'):
+            return
+        new_status = 'APPROVED' if self.approved else 'WCR_SUBMITTED'
+        if self.order.status != new_status:
+            self.order.status = new_status
+            self.order.save(update_fields=['status'])
