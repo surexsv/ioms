@@ -25,6 +25,7 @@ local_settings.py
 # Environment / secrets
 .env
 .env.*
+!.env.example
 *.pem
 
 # IDE / editor
