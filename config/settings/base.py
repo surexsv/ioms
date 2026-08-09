@@ -2,6 +2,7 @@
 Common Django settings for all environments.
 
 Environment-specific values live in development.py / production.py.
+Database ENGINE / NAME / USER / PASSWORD are NOT defined here.
 """
 
 from pathlib import Path
