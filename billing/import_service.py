@@ -161,6 +161,14 @@ def build_template_workbook():
         cell = ws.cell(2, col, value)
         cell.fill = sample_fill
 
+    continuation = [''] * len(TEMPLATE_HEADERS)
+    continuation[TEMPLATE_HEADERS.index('Item Description')] = 'Splicing and termination'
+    continuation[TEMPLATE_HEADERS.index('Qty')] = '2'
+    continuation[TEMPLATE_HEADERS.index('Rate')] = '500.00'
+    for col, value in enumerate(continuation, 1):
+        cell = ws.cell(3, col, value)
+        cell.fill = sample_fill
+
     gst_dv = DataValidation(
         type='decimal',
         operator='equal',
@@ -183,12 +191,13 @@ def build_template_workbook():
         '1. Use the Invoices sheet. Do not rename header cells.',
         '2. Customer Name must already exist in IOMS (exact name, case-insensitive). Customers are never auto-created.',
         f'3. GST % must be {int(COMPANY_GST_RATE)} (company rate). Other rates are rejected.',
-        '4. Rows with the same Invoice Number are grouped into one invoice (multiple line items).',
-        '5. Blank Invoice Number rows are grouped by Customer Name + PO Number + dates, and a number is auto-generated on confirm.',
-        '6. Manual invoice numbers from Excel are kept as-is. Duplicate numbers already in IOMS are marked Already exists.',
-        '7. Maximum 500 data rows and 5 MB per file. Formats: .xlsx or .csv.',
-        '8. Review the preview, then Confirm. Confirm is all-or-nothing: a failure rolls back every invoice in the batch.',
-        '9. Confirmed invoices are created as Approved (PDF available) with source = Import and no order link.',
+        '4. Enter common invoice details once on the first row of each invoice (number, customer, PO, dates, GST). Extra particulars go on the rows below — leave Invoice Number and Customer Name blank and they inherit from the row above.',
+        '5. You may also repeat the same Invoice Number on every line. Rows with the same number become one invoice.',
+        '6. A new invoice with a blank Invoice Number and a filled Customer Name is grouped by Customer Name + PO Number + dates; a number is auto-generated on confirm.',
+        '7. Manual invoice numbers from Excel are kept as-is. Duplicate numbers already in IOMS are marked Already exists.',
+        '8. Maximum 500 data rows and 5 MB per file. Formats: .xlsx or .csv.',
+        '9. Review the preview, then Confirm. Confirm is all-or-nothing: a failure rolls back every invoice in the batch.',
+        '10. Confirmed invoices are created as Approved (PDF available) with source = Import and no order link.',
         '',
         'Required columns (maroon header): Customer Name, Item Description, Qty, Rate, GST %.',
         'Date formats: DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD.',
@@ -242,6 +251,7 @@ def parse_and_validate(uploaded_file, filename, user, title=''):
     if not parsed_rows:
         raise ImportFileError('The file has no data rows.')
 
+    _apply_continuation_carry_forward(parsed_rows)
     groups = _group_rows(parsed_rows)
     existing_numbers = _existing_invoice_numbers()
 
@@ -552,6 +562,48 @@ def _parse_source_row(raw, header_map, row_number):
         'gst_percent': gst_percent,
         'remarks': _cell_str(values.get('Remarks')),
     }
+
+
+_CARRY_FORWARD_FIELDS = (
+    'invoice_number',
+    'invoice_date',
+    'due_date',
+    'customer_name',
+    'po_number',
+    'po_date',
+    'billing_period_from',
+    'billing_period_to',
+    'service_title',
+    'hsn_sac',
+    'unit',
+    'gst_percent',
+)
+
+
+def _value_missing(value):
+    return value in (None, '')
+
+
+def _is_continuation_row(row):
+    """True when this row is extra particulars under the invoice above."""
+    return not (row.get('invoice_number') or '').strip() and not (row.get('customer_name') or '').strip()
+
+
+def _apply_continuation_carry_forward(parsed_rows):
+    """Copy invoice identity and blank header fields from the previous data row.
+
+    Common invoice details are entered once. Extra line-item rows leave Invoice
+    Number and Customer Name blank and inherit the invoice above. A new invoice
+    with an auto-generated number still starts with a filled Customer Name.
+    """
+    previous = None
+    for row in parsed_rows:
+        if previous is not None and _is_continuation_row(row):
+            for field in _CARRY_FORWARD_FIELDS:
+                if _value_missing(row.get(field)) and not _value_missing(previous.get(field)):
+                    row[field] = previous[field]
+        previous = row
+    return parsed_rows
 
 
 def _group_rows(parsed_rows):

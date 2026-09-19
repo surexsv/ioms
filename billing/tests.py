@@ -130,6 +130,26 @@ class InvoiceImportTestCase(TestCase):
         row.update(overrides)
         return row
 
+    def _continuation(self, **overrides):
+        """A line-item-only row that should inherit the previous invoice header."""
+        row = self._row(**{
+            'Invoice Number': '',
+            'Invoice Date': '',
+            'Due Date': '',
+            'Customer Name': '',
+            'PO Number': '',
+            'PO Date': '',
+            'Billing Period From': '',
+            'Billing Period To': '',
+            'Service Title': '',
+            'HSN/SAC': '',
+            'Unit': '',
+            'GST %': '',
+            'Remarks': '',
+        })
+        row.update(overrides)
+        return row
+
     def _parse(self, rows, filename='invoices.csv', title=''):
         uploaded = _csv_upload(rows, name=filename)
         return parse_and_validate(uploaded, filename, self.accounts, title=title)
@@ -176,6 +196,10 @@ class UploadValidationTests(InvoiceImportTestCase):
         workbook = build_template_workbook()
         header_row = [cell.value for cell in next(workbook.active.iter_rows(min_row=1, max_row=1))]
         self.assertEqual(header_row, list(TEMPLATE_HEADERS))
+        sample_rows = list(workbook.active.iter_rows(min_row=2, max_row=3, values_only=True))
+        self.assertTrue(sample_rows[0][0])
+        self.assertFalse(sample_rows[1][0])
+        self.assertEqual(sample_rows[1][TEMPLATE_HEADERS.index('Item Description')], 'Splicing and termination')
 
     def test_rejects_unsupported_extension(self):
         uploaded = SimpleUploadedFile('notes.txt', b'hello', content_type='text/plain')
@@ -301,6 +325,109 @@ class GroupingAndBulkTests(InvoiceImportTestCase):
         self.assertEqual(invoices[1].line_items.count(), 1)
         self.assertTrue(all(inv.number_mode == Invoice.NUMBER_MODE_AUTO for inv in invoices))
         self.assertTrue(all(inv.invoice_number.startswith('ITSPL') for inv in invoices))
+
+    def test_continuation_rows_inherit_header_and_invoice_number(self):
+        rows = [
+            self._row(**{
+                'Invoice Number': 'CONT-001',
+                'Item Description': 'Line 1',
+                'Rate': '100',
+            }),
+            self._continuation(**{'Item Description': 'Line 2', 'Qty': '2', 'Rate': '50'}),
+            self._continuation(**{'Item Description': 'Line 3', 'Qty': '1', 'Rate': '25'}),
+        ]
+        batch = self._parse(rows, title='Continuation')
+        self.assertEqual(batch.total_rows, 3)
+        self.assertEqual(batch.invoice_count, 1)
+        item = batch.items.get()
+        self.assertEqual(item.invoice_number, 'CONT-001')
+        self.assertEqual(item.client, self.client_a)
+        self.assertEqual(len(item.payload['lines']), 3)
+        self.assertEqual(item.payload['taxable'], '225.00')
+        self.assertEqual(
+            [line['description'] for line in item.payload['lines']],
+            ['Line 1', 'Line 2', 'Line 3'],
+        )
+        result = confirm_import_batch(batch, self.accounts)
+        self.assertTrue(result['ok'])
+        self.assertEqual(result['created'], 1)
+        invoice = Invoice.objects.get()
+        self.assertEqual(invoice.invoice_number, 'CONT-001')
+        self.assertEqual(invoice.client, self.client_a)
+        self.assertEqual(invoice.number_mode, Invoice.NUMBER_MODE_MANUAL)
+        self.assertEqual(invoice.line_items.count(), 3)
+        self.assertEqual(
+            list(invoice.line_items.order_by('sl_no').values_list('description', flat=True)),
+            ['Line 1', 'Line 2', 'Line 3'],
+        )
+        self.assertEqual(invoice.amount, Decimal('225.00'))
+        self.assertEqual(invoice.gst, Decimal('40.50'))
+        self.assertEqual(invoice.total, Decimal('265.50'))
+
+    def test_continuation_then_new_invoice_stays_separate(self):
+        rows = [
+            self._row(**{'Invoice Number': 'SPLIT-1', 'Item Description': 'A', 'Rate': '10'}),
+            self._continuation(**{'Item Description': 'B', 'Rate': '20'}),
+            self._row(**{
+                'Invoice Number': 'SPLIT-2',
+                'Customer Name': self.client_b.name,
+                'Item Description': 'C',
+                'Rate': '30',
+            }),
+        ]
+        batch = self._parse(rows)
+        self.assertEqual(batch.invoice_count, 2)
+        result = confirm_import_batch(batch, self.accounts)
+        self.assertTrue(result['ok'])
+        first = Invoice.objects.get(invoice_number='SPLIT-1')
+        second = Invoice.objects.get(invoice_number='SPLIT-2')
+        self.assertEqual(first.line_items.count(), 2)
+        self.assertEqual(second.line_items.count(), 1)
+        self.assertEqual(first.client, self.client_a)
+        self.assertEqual(second.client, self.client_b)
+        self.assertEqual(
+            list(first.line_items.order_by('sl_no').values_list('description', flat=True)),
+            ['A', 'B'],
+        )
+
+    def test_filled_customer_blank_number_does_not_attach_to_previous_numbered_invoice(self):
+        rows = [
+            self._row(**{'Invoice Number': 'KEEP-1', 'Item Description': 'A'}),
+            self._row(**{
+                'Invoice Number': '',
+                'Customer Name': self.client_a.name,
+                'PO Number': 'PO-NEW',
+                'Item Description': 'B',
+            }),
+        ]
+        batch = self._parse(rows)
+        self.assertEqual(batch.invoice_count, 2)
+        result = confirm_import_batch(batch, self.accounts)
+        self.assertTrue(result['ok'])
+        numbered = Invoice.objects.get(invoice_number='KEEP-1')
+        self.assertEqual(numbered.line_items.count(), 1)
+        auto = Invoice.objects.exclude(invoice_number='KEEP-1').get()
+        self.assertEqual(auto.number_mode, Invoice.NUMBER_MODE_AUTO)
+        self.assertEqual(auto.line_items.count(), 1)
+        self.assertTrue(auto.invoice_number.startswith('ITSPL'))
+
+    def test_auto_number_invoice_continuation_rows_group_together(self):
+        rows = [
+            self._row(**{'Invoice Number': '', 'Item Description': 'A', 'Rate': '10'}),
+            self._continuation(**{'Item Description': 'B', 'Rate': '20'}),
+        ]
+        batch = self._parse(rows)
+        self.assertEqual(batch.invoice_count, 1)
+        item = batch.items.get()
+        self.assertEqual(item.invoice_number, '')
+        self.assertEqual(len(item.payload['lines']), 2)
+        result = confirm_import_batch(batch, self.accounts)
+        self.assertTrue(result['ok'])
+        invoice = Invoice.objects.get()
+        self.assertEqual(invoice.number_mode, Invoice.NUMBER_MODE_AUTO)
+        self.assertTrue(invoice.invoice_number.startswith('ITSPL'))
+        self.assertEqual(invoice.line_items.count(), 2)
+        self.assertEqual(invoice.amount, Decimal('30.00'))
 
     def test_ten_invoices_created_from_ten_rows(self):
         rows = [

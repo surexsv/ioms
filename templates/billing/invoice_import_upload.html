@@ -18,8 +18,9 @@
         <li>Maximum <strong>500 rows</strong> and <strong>5 MB</strong></li>
         <li>Customer Name must already exist in IOMS (exact name, case-insensitive). Customers are never auto-created.</li>
         <li>GST % must be <strong>{{ gst_rate_percent }}%</strong> (company rate)</li>
-        <li>Rows with the same Invoice Number become one invoice with multiple line items</li>
-        <li>Blank Invoice Number rows are grouped by customer + PO + dates; a number is generated on confirm</li>
+        <li>Enter common invoice details once. Extra particulars on the next rows can leave Invoice Number and Customer Name blank — they attach to the invoice above</li>
+        <li>Repeating the same Invoice Number also groups those rows into one invoice</li>
+        <li>A new invoice with a blank Invoice Number and a filled Customer Name is grouped by customer + PO + dates; a number is generated on confirm</li>
         <li>Confirm is all-or-nothing — a failure rolls back every invoice in the batch</li>
     </ul>
 </div>
