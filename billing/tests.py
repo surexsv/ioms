@@ -495,7 +495,10 @@ class ExistingBillingRegressionTests(InvoiceImportTestCase):
     def test_create_invoice_still_requires_order(self):
         self.client.force_login(self.accounts)
         data = self._create_invoice_post_data(order=None)
-        self.client.post(reverse('create_invoice'), data, raise_request_exception=False)
+        try:
+            self.client.post(reverse('create_invoice'), data)
+        except Exception:
+            pass
         self.assertFalse(Invoice.objects.exists())
 
         order = self._make_order()
