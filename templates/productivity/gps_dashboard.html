@@ -25,7 +25,7 @@
 <div class="card ioms-dashboard-section">
     <h3>Today's Field Activity Map</h3>
     <div id="gpsMap"></div>
-    <p style="color:#6c757d;font-size:0.85rem;margin-top:8px;">Locations from GPS captures today. Addresses resolved via OpenStreetMap.</p>
+    <p style="color:#6c757d;font-size:0.85rem;margin-top:8px;">Locations from GPS captures today.</p>
 </div>
 
 <div class="ioms-charts-row ioms-charts-row-2">
@@ -92,9 +92,25 @@
 <script>
 const mapPoints = {{ map_points_json|safe }};
 const map = L.map('gpsMap').setView([10.0, 76.3], 7);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap'
-}).addTo(map);
+// OSM.org public tiles return HTTP 403 ("Access blocked") for app usage.
+// Carto (OSM data) is the primary basemap; Esri is a fallback if Carto fails.
+const cartoTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20
+});
+const esriTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri',
+    maxZoom: 19
+});
+let usedFallback = false;
+cartoTiles.on('tileerror', function () {
+    if (usedFallback) return;
+    usedFallback = true;
+    map.removeLayer(cartoTiles);
+    esriTiles.addTo(map);
+});
+cartoTiles.addTo(map);
 if (mapPoints.length) {
     const bounds = [];
     mapPoints.forEach(function (p) {

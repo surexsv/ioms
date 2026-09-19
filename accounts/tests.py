@@ -306,3 +306,12 @@ class RoleFeaturePermissionTests(TestCase):
         admin_menu = build_navigation_menu(self.superuser, allowed_dashboard_url_name(self.superuser))
         admin_visible = {item['label'] for section in admin_menu for item in section['items']}
         self.assertIn('Manual Invoice Import', admin_visible)
+
+    def test_gps_dashboard_does_not_use_blocked_osm_tiles(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse('gps_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertNotIn('tile.openstreetmap.org', content)
+        self.assertIn('basemaps.cartocdn.com', content)
+        self.assertIn('arcgisonline.com', content)
