@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Import Preview — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Import Preview</h1>
+    <div>
+        <a href="{% url 'invoice_import_upload' %}" class="btn btn-secondary">New Upload</a>
+        <a href="{% url 'invoice_import_history' %}" class="btn btn-secondary">History</a>
+        <a href="{% url 'invoice_list' %}" class="btn btn-secondary">Invoices</a>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+    <h3 style="margin-top:0;">{{ batch.title|default:batch.original_filename }}</h3>
+    <p><strong>File:</strong> {{ batch.original_filename }}</p>
+    <p><strong>Uploaded:</strong> {{ batch.uploaded_at|date:"d M Y H:i" }}{% if batch.uploaded_by %} by {{ batch.uploaded_by }}{% endif %}</p>
+    <p><strong>Status:</strong> {{ batch.get_status_display }}</p>
+    {% if batch.confirm_message %}<p><strong>Message:</strong> {{ batch.confirm_message }}</p>{% endif %}
+    <p>
+        Rows: {{ batch.total_rows }} &nbsp;|&nbsp;
+        Invoices: {{ batch.invoice_count }} &nbsp;|&nbsp;
+        Valid: {{ batch.valid_count }} &nbsp;|&nbsp;
+        Warnings: {{ batch.warning_count }} &nbsp;|&nbsp;
+        Errors: {{ batch.error_count }} &nbsp;|&nbsp;
+        Already exists: {{ batch.skipped_count }}
+        {% if batch.status == 'CONFIRMED' %}&nbsp;|&nbsp; Created: {{ batch.created_count }}{% endif %}
+    </p>
+    <p>
+        <strong>Batch taxable:</strong> ₹{{ totals.taxable }} &nbsp;|&nbsp;
+        <strong>GST:</strong> ₹{{ totals.gst }} &nbsp;|&nbsp;
+        <strong>Total:</strong> ₹{{ totals.total }}
+    </p>
+    {% if can_confirm %}
+    <p>Creatable invoices: {{ creatable_totals.count }} (₹{{ creatable_totals.total }}). GST rate must be {{ gst_rate_percent }}%.</p>
+    <form method="post" action="{% url 'invoice_import_confirm' batch.pk %}" style="margin-top:12px;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary" onclick="return confirm('Create all valid invoices in this batch? This cannot be undone.');">Confirm import</button>
+    </form>
+    {% elif batch.status == 'VALIDATED' and can_import %}
+    <p>There are no valid invoices to confirm. Correct the file and upload again.</p>
+    {% endif %}
+    {% if can_download_pdfs %}
+    <p style="margin-top:12px;">
+        <a href="{% url 'invoice_import_pdfs' batch.pk %}" class="btn btn-primary">Download PDFs (zip)</a>
+    </p>
+    {% endif %}
+</div>
+
+<div class="ioms-table-wrap">
+<table class="ioms-table">
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>Invoice</th>
+        <th>Customer</th>
+        <th>Lines</th>
+        <th>Taxable</th>
+        <th>GST</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th>Notes</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for item in items %}
+    <tr>
+        <td>{{ item.sort_order|add:1 }}</td>
+        <td>
+            {% if item.created_invoice %}
+            <a href="{% url 'invoice_detail' item.created_invoice.pk %}">{{ item.created_invoice.invoice_number }}</a>
+            {% else %}
+            {{ item.invoice_number|default:"(auto)" }}
+            {% endif %}
+        </td>
+        <td>{{ item.client.name|default:item.payload.customer_name|default:"—" }}</td>
+        <td>{{ item.payload.lines|length }}</td>
+        <td>₹{{ item.payload.taxable|default:"0.00" }}</td>
+        <td>₹{{ item.payload.gst|default:"0.00" }}</td>
+        <td><strong>₹{{ item.payload.total|default:"0.00" }}</strong></td>
+        <td><span class="badge">{{ item.get_status_display }}</span></td>
+        <td>
+            {% if item.errors %}<span style="color:#dc3545;">{{ item.errors|join:"; " }}</span>{% endif %}
+            {% if item.warnings %}<div style="color:#856404;">{{ item.warnings|join:"; " }}</div>{% endif %}
+        </td>
+        <td><a href="{% url 'invoice_import_item' batch.pk item.pk %}" class="btn btn-sm btn-secondary">View</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="10" class="empty-state">No grouped invoices in this file.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

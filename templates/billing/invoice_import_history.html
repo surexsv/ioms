@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Invoice Import History — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Invoice Import History</h1>
+    <div>
+        {% if can_import %}
+        <a href="{% url 'invoice_import_upload' %}" class="btn btn-primary">Import Invoices</a>
+        {% endif %}
+        <a href="{% url 'invoice_list' %}" class="btn btn-secondary">Back to Invoices</a>
+    </div>
+</div>
+
+<div class="ioms-table-wrap">
+<table class="ioms-table">
+    <thead>
+    <tr>
+        <th>Title</th>
+        <th>File</th>
+        <th>Uploaded</th>
+        <th>By</th>
+        <th>Status</th>
+        <th>Rows</th>
+        <th>Invoices</th>
+        <th>Created</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for batch in batches %}
+    <tr>
+        <td><a href="{% url 'invoice_import_preview' batch.pk %}">{{ batch.title|default:batch.original_filename }}</a></td>
+        <td>{{ batch.original_filename }}</td>
+        <td>{{ batch.uploaded_at|date:"d M Y H:i" }}</td>
+        <td>{{ batch.uploaded_by|default:"—" }}</td>
+        <td><span class="badge">{{ batch.get_status_display }}</span></td>
+        <td>{{ batch.total_rows }}</td>
+        <td>{{ batch.invoice_count }}</td>
+        <td>{{ batch.created_count }}</td>
+        <td>
+            <a href="{% url 'invoice_import_preview' batch.pk %}" class="btn btn-sm btn-secondary">View</a>
+            {% if batch.status == 'CONFIRMED' and batch.created_count %}
+            <a href="{% url 'invoice_import_pdfs' batch.pk %}" class="btn btn-sm btn-primary">PDFs</a>
+            {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="9" class="empty-state">No invoice imports yet.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Import Invoices — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Import Invoices</h1>
+    <div>
+        <a href="{% url 'invoice_import_template' %}" class="btn btn-secondary">Download Template</a>
+        <a href="{% url 'invoice_import_history' %}" class="btn btn-secondary">Import History</a>
+        <a href="{% url 'invoice_list' %}" class="btn btn-secondary">Back to Invoices</a>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+    <h3 style="margin-top:0;">Excel / CSV import</h3>
+    <p>Upload a file of invoices to validate, then confirm. Confirmed invoices are created as <strong>Approved</strong> (PDF available) without an order.</p>
+    <ul>
+        <li>Formats: <strong>.xlsx</strong> or <strong>.csv</strong></li>
+        <li>Maximum <strong>500 rows</strong> and <strong>5 MB</strong></li>
+        <li>Customer Name must already exist in IOMS (exact name, case-insensitive). Customers are never auto-created.</li>
+        <li>GST % must be <strong>{{ gst_rate_percent }}%</strong> (company rate)</li>
+        <li>Rows with the same Invoice Number become one invoice with multiple line items</li>
+        <li>Blank Invoice Number rows are grouped by customer + PO + dates; a number is generated on confirm</li>
+        <li>Confirm is all-or-nothing — a failure rolls back every invoice in the batch</li>
+    </ul>
+</div>
+
+<div class="card">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group" style="margin-bottom:16px;">
+            <label for="id_title">Batch title (optional)</label>
+            <input type="text" id="id_title" name="title" value="{{ title_value }}" maxlength="200" placeholder="e.g. March 2026 bulk invoices">
+        </div>
+        <div class="form-group" style="margin-bottom:16px;">
+            <label for="id_file">Invoice file</label>
+            <input type="file" id="id_file" name="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Validate file</button>
+        <a href="{% url 'invoice_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
