@@ -5,6 +5,10 @@
     <h1>Invoices</h1>
     {% if can_create_invoice %}
     <a href="{% url 'create_invoice' %}" class="btn btn-primary">+ Create Invoice</a>
+    {% if can_import_invoices %}
+    <a href="{% url 'invoice_import_upload' %}" class="btn btn-secondary">Manual Invoice Import</a>
+    <a href="{% url 'invoice_import_history' %}" class="btn btn-secondary">Import History</a>
+    {% endif %}
     {% endif %}
 </div>
 <div class="filter-bar">
@@ -36,8 +40,8 @@
     {% for inv in invoices %}
     <tr>
         <td><a href="{% url 'invoice_detail' inv.pk %}">{{ inv.invoice_number }}</a></td>
-        <td>#{{ inv.order.order_id }}</td>
-        <td>{{ inv.order.client.name }}</td>
+        <td>{% if inv.order %}#{{ inv.order.order_id }}{% else %}—{% endif %}</td>
+        <td>{% if inv.billing_client %}{{ inv.billing_client.name }}{% else %}—{% endif %}</td>
         <td><strong>₹{{ inv.total }}</strong></td>
         <td>{% include 'billing/_approval_badge.html' with status=inv.approval_status %}</td>
         <td>{% if inv.payment_status == 'RECEIVED' %}<span class="badge badge-approved">Paid</span>{% else %}<span class="badge badge-pending">Pending</span>{% endif %}</td>

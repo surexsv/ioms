@@ -76,7 +76,9 @@ def build_invoice_pdf(invoice):
     tiny = ParagraphStyle('T', parent=styles['Normal'], fontSize=7, leading=9)
 
     order = invoice.order
-    client = order.client
+    client = invoice.billing_client
+    if client is None:
+        raise ValueError('Invoice has no client to print.')
     elements = []
 
     # --- Header: logo only (company name is in logo) ---
@@ -141,7 +143,7 @@ def build_invoice_pdf(invoice):
         ('PO/SO No:', invoice.po_number or '—'),
         ('PO Date:', po_date),
         ('Circle:', COMPANY['state']),
-        ('Order Ref:', order.order_no or str(order.order_id)),
+        ('Order Ref:', (order.order_no or str(order.order_id)) if order else '—'),
     ]
     for i in range(4):
         l = meta_left[i]
@@ -161,8 +163,21 @@ def build_invoice_pdf(invoice):
     elements.append(meta_table)
     elements.append(Spacer(1, 6))
 
+    period_from = getattr(invoice, 'billing_period_from', None)
+    period_to = getattr(invoice, 'billing_period_to', None)
+    if period_from or period_to:
+        from_s = period_from.strftime('%d.%m.%Y') if period_from else '—'
+        to_s = period_to.strftime('%d.%m.%Y') if period_to else '—'
+        period_table = _styled_table(
+            [['Billing Period:', f'{from_s} to {to_s}']],
+            [label_w, content_w - label_w],
+            extra=[('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold')],
+        )
+        elements.append(period_table)
+        elements.append(Spacer(1, 6))
+
     # --- Service + client ---
-    service = invoice.service_title or order.get_order_type_display()
+    service = invoice.service_title or (order.get_order_type_display() if order else 'Services')
     service_table = Table(
         [[Paragraph(
             f"<b>Service — {service}</b><br/>{client.name}",
@@ -243,7 +258,9 @@ def build_invoice_pdf(invoice):
                 _fmt_money(item.line_amount),
             ])
     else:
-        desc = order.description or order.get_order_type_display()
+        desc = invoice.service_title or 'Services'
+        if order:
+            desc = order.description or order.get_order_type_display()
         line_rows.append([
             '1', Paragraph(desc[:400], tiny), COMPANY['default_hsn_sac'],
             'Nos', '1', _fmt_money(invoice.amount), _fmt_money(invoice.amount),

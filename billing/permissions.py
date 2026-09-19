@@ -15,6 +15,14 @@ def can_create_invoice(user):
     return can_manage_billing(user)
 
 
+def can_import_invoices(user):
+    return can_create_invoice(user)
+
+
+def can_view_invoice_imports(user):
+    return can_view_invoices(user)
+
+
 def can_edit_invoice(user, invoice=None):
     if not can_manage_billing(user):
         return False

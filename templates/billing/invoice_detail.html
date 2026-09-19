@@ -33,7 +33,7 @@
             <span class="badge badge-pending">Pending</span>
             {% endif %}
         </div>
-        <div><strong>Client:</strong> {{ invoice.order.client.name }}</div>
+        <div><strong>Client:</strong> {% if invoice.billing_client %}{{ invoice.billing_client.name }}{% else %}—{% endif %}</div>
         <div><strong>Total:</strong> ₹{{ invoice.total }}</div>
     </div>
 </div>
@@ -41,10 +41,15 @@
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
     <div class="card">
         <h3 style="margin-top:0;">Invoice Summary</h3>
-        <p><strong>Order:</strong> #{{ invoice.order.order_id }}</p>
+        <p><strong>Order:</strong> {% if invoice.order %}#{{ invoice.order.order_id }}{% else %}—{% endif %}</p>
+        {% if invoice.source == 'IMPORT' %}<p><strong>Source:</strong> Manual import</p>{% endif %}
         <p><strong>Taxable:</strong> ₹{{ invoice.amount }}</p>
         <p><strong>GST:</strong> ₹{{ invoice.gst }}</p>
         <p><strong>Due Date:</strong> {{ invoice.due_date }}</p>
+        {% if invoice.po_number %}<p><strong>PO/SO No:</strong> {{ invoice.po_number }}{% if invoice.po_date %} ({{ invoice.po_date }}){% endif %}</p>{% endif %}
+        {% if invoice.billing_period_from or invoice.billing_period_to %}
+        <p><strong>Billing Period:</strong> {{ invoice.billing_period_from|date:"d M Y"|default:"—" }} to {{ invoice.billing_period_to|date:"d M Y"|default:"—" }}</p>
+        {% endif %}
         {% if invoice.service_title %}<p><strong>Service:</strong> {{ invoice.service_title }}</p>{% endif %}
     </div>
     <div class="card">

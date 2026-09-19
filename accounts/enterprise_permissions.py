@@ -285,6 +285,8 @@ NAV_MENU_CATALOG = [
     ('Customers', 'clients', 'Clients', 'client_list', 'bi-people', 'clients', ''),
     ('Finance', 'quotation', 'Quotations', 'quotation_list', 'bi-file-earmark-ruled', 'quotations', ''),
     ('Finance', 'billing', 'Billing', 'invoice_list', 'bi-receipt', 'billing', ''),
+    ('Finance', 'billing', 'Manual Invoice Import', 'invoice_import_upload', 'bi-upload', 'invoice_import', ''),
+    ('Finance', 'billing', 'Invoice Import History', 'invoice_import_history', 'bi-clock-history', 'invoice_import_history', ''),
     ('Finance', 'payments', 'Payments', 'invoice_list', 'bi-cash-coin', 'payments', 'status=PENDING'),
     ('Masters', 'approval', 'Employees', 'user_approval_list', 'bi-person-badge', 'user_approvals', ''),
     ('Masters', 'masters', 'Doc Numbers', 'document_control_panel', 'bi-hash', 'document_numbers', ''),

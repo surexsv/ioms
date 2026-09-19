@@ -79,6 +79,8 @@ MENU_SEED = [
     ('Clients', 'client_list', 'bi-people', 'clients', 40),
     ('Quotations', 'quotation_list', 'bi-file-earmark-ruled', 'quotations', 50),
     ('Billing', 'invoice_list', 'bi-receipt', 'manage_billing', 60),
+    ('Manual Invoice Import', 'invoice_import_upload', 'bi-upload', 'manage_billing', 62),
+    ('Invoice Import History', 'invoice_import_history', 'bi-clock-history', 'manage_billing', 63),
     ('Payments', 'invoice_list', 'bi-cash-coin', 'manage_billing', 61),
     ('Attendance Management', 'attendance_dashboard', 'bi-calendar-check', 'attendance_manage', 90),
     ('My Attendance', 'my_attendance', 'bi-person-check', 'attendance_self', 91),

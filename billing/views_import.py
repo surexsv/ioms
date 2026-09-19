@@ -172,7 +172,12 @@ def invoice_import_confirm(request, pk):
 @can_view_invoice_imports_required
 def invoice_import_pdfs(request, pk):
     batch = get_object_or_404(
-        InvoiceImportBatch.objects.prefetch_related('created_invoices__line_items', 'created_invoices__client'),
+        InvoiceImportBatch.objects.prefetch_related(
+            'created_invoices__line_items',
+            'created_invoices__client',
+            'created_invoices__order',
+            'created_invoices__order__client',
+        ),
         pk=pk,
     )
     invoices = list(batch.created_invoices.all())

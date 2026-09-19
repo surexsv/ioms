@@ -208,11 +208,12 @@ def global_search(query, user, limit=25):
     # Invoices / payments
     if can_view_all_cases(user) or can_view_financial_cases(user):
         from billing.models import Invoice
-        iq = Invoice.objects.select_related('order', 'order__client').filter(
-            Q(invoice_number__icontains=q) | Q(order__client__name__icontains=q)
+        iq = Invoice.objects.select_related('order', 'order__client', 'client').filter(
+            Q(invoice_number__icontains=q) | Q(order__client__name__icontains=q) | Q(client__name__icontains=q)
         )[:limit]
         for inv in iq:
-            add('Invoice', inv.invoice_number, inv.order.client.name,
+            client_name = inv.billing_client.name if inv.billing_client else ''
+            add('Invoice', inv.invoice_number, client_name,
                 inv.get_approval_status_display(), inv.payment_status,
                 '', 'invoice_detail', inv.pk, MOD_INVOICE)
 
@@ -405,13 +406,16 @@ def client_case_history(client):
     enquiries = Enquiry.objects.filter(client=client).count()
     quotations = Quotation.objects.filter(client=client).count()
     orders = Order.objects.filter(client=client).count()
-    invoices = Invoice.objects.filter(order__client=client).count()
-    payments = Invoice.objects.filter(order__client=client, payment_status='RECEIVED').count()
+    invoices = Invoice.objects.filter(Q(client=client) | Q(order__client=client)).count()
+    payments = Invoice.objects.filter(
+        Q(client=client) | Q(order__client=client),
+        payment_status='RECEIVED',
+    ).count()
     outstanding = Invoice.objects.filter(
-        order__client=client,
+        Q(client=client) | Q(order__client=client),
         payment_status='PENDING',
         approval_status='APPROVED',
-    ).aggregate(t=Sum('total_amount'))['t'] or 0
+    ).aggregate(t=Sum('total'))['t'] or 0
     activities = CaseActivityLog.objects.filter(client=client).select_related('user').order_by('-activity_at')[:20]
     timeline = list(activities)
     return {

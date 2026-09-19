@@ -62,7 +62,7 @@ def billing_view_required(view_func):
 
 def _invoice_queryset():
     return Invoice.objects.select_related(
-        'order', 'order__client', 'boq',
+        'order', 'order__client', 'client', 'boq',
         'created_by', 'submitted_by', 'approved_by', 'rejected_by',
     )
 
@@ -86,8 +86,17 @@ def _save_invoice_from_form(request, form, formset, invoice=None):
             inv.created_by = request.user
             inv.approval_status = STATUS_DRAFT
 
-        client = form.cleaned_data['order'].client
-        client_gst_type = resolve_client_gst_type(client)
+        client = None
+        order = form.cleaned_data.get('order')
+        if order:
+            client = order.client
+            inv.client = client
+        elif inv.client_id:
+            client = inv.client
+        elif invoice and invoice.billing_client:
+            client = invoice.billing_client
+            inv.client = client
+        client_gst_type = resolve_client_gst_type(client) if client else inv.gst_type
         selected_gst_type = form.cleaned_data['gst_type']
         can_override_gst = can_override_invoice_gst(request.user)
         if selected_gst_type != client_gst_type and not can_override_gst:
@@ -150,6 +159,7 @@ def invoice_list(request):
         'current_approval': approval_status,
         'can_create_invoice': can_create_invoice(request.user),
         'can_approve_invoice': can_approve_invoice(request.user),
+        'can_import_invoices': can_create_invoice(request.user),
     })
 
 
@@ -339,7 +349,7 @@ def submit_invoice_view(request, pk):
         description='Invoice Submitted For Approval',
         previous_status='DRAFT',
         new_status=invoice.approval_status,
-        client=invoice.order.client,
+        client=invoice.billing_client,
         content_object=invoice,
     )
     messages.success(request, f'Invoice {invoice.invoice_number} submitted for approval.')
@@ -465,7 +475,7 @@ def mark_paid(request, pk):
 @billing_view_required
 def invoice_pdf(request, pk):
     invoice = get_object_or_404(
-        Invoice.objects.select_related('order', 'order__client', 'boq').prefetch_related('line_items'),
+        Invoice.objects.select_related('order', 'order__client', 'client', 'boq').prefetch_related('line_items'),
         pk=pk,
     )
     allowed, msg = can_download_invoice_pdf(request.user, invoice)

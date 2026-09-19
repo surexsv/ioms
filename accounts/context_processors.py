@@ -51,6 +51,10 @@ def _active_nav(request):
         return 'wcr'
     if path.startswith('/boq'):
         return 'boq'
+    if path.startswith('/billing/import/history'):
+        return 'invoice_import_history'
+    if path.startswith('/billing/import'):
+        return 'invoice_import'
     if path.startswith('/billing'):
         return 'billing'
     if path.startswith('/attendance'):

@@ -1,9 +1,16 @@
 from django.urls import path
-from . import views
+from . import views, views_import
 
 urlpatterns = [
     path('', views.invoice_list, name='invoice_list'),
     path('create/', views.create_invoice, name='create_invoice'),
+    path('import/', views_import.invoice_import_upload, name='invoice_import_upload'),
+    path('import/template/', views_import.invoice_import_template, name='invoice_import_template'),
+    path('import/history/', views_import.invoice_import_history, name='invoice_import_history'),
+    path('import/<int:pk>/', views_import.invoice_import_preview, name='invoice_import_preview'),
+    path('import/<int:pk>/item/<int:item_id>/', views_import.invoice_import_item, name='invoice_import_item'),
+    path('import/<int:pk>/confirm/', views_import.invoice_import_confirm, name='invoice_import_confirm'),
+    path('import/<int:pk>/pdfs/', views_import.invoice_import_pdfs, name='invoice_import_pdfs'),
     path('boq-lines/<int:boq_id>/', views.boq_lines_json, name='boq_lines_json'),
     path('order-gst/<int:order_id>/', views.order_gst_json, name='order_gst_json'),
     path('<int:pk>/', views.invoice_detail, name='invoice_detail'),

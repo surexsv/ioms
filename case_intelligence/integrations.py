@@ -155,7 +155,7 @@ def invoice_generated(user, invoice, remarks=''):
         user, module=MOD_INVOICE, document_type='Invoice',
         document_number=invoice.invoice_number,
         description='Invoice Generated', new_status=invoice.approval_status,
-        client=invoice.order.client, content_object=invoice, remarks=remarks,
+        client=invoice.billing_client, content_object=invoice, remarks=remarks,
     )
 
 
@@ -165,7 +165,7 @@ def invoice_approved(user, invoice, remarks=''):
         document_number=invoice.invoice_number,
         description='Invoice Approved', previous_status='SUBMITTED',
         new_status=invoice.approval_status,
-        client=invoice.order.client, content_object=invoice, remarks=remarks,
+        client=invoice.billing_client, content_object=invoice, remarks=remarks,
     )
 
 
@@ -174,7 +174,7 @@ def payment_received(user, invoice, remarks=''):
         user, module=MOD_PAYMENT, document_type='Payment',
         document_number=invoice.invoice_number,
         description='Payment Received', new_status='RECEIVED',
-        client=invoice.order.client, content_object=invoice, remarks=remarks,
+        client=invoice.billing_client, content_object=invoice, remarks=remarks,
     )
 
 

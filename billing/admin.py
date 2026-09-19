@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from .models import Invoice, InvoiceApprovalAuditLog, InvoiceGstAuditLog
+from .models import (
+    Invoice,
+    InvoiceApprovalAuditLog,
+    InvoiceGstAuditLog,
+    InvoiceImportBatch,
+    InvoiceImportItem,
+)
 
 
 class InvoiceGstAuditLogInline(admin.TabularInline):
@@ -25,16 +31,16 @@ class InvoiceApprovalAuditLogInline(admin.TabularInline):
 @admin.register(Invoice)
 class InvoiceAdmin(admin.ModelAdmin):
     list_display = (
-        'invoice_number', 'order', 'approval_status', 'gst_type',
+        'invoice_number', 'order', 'client', 'source', 'approval_status', 'gst_type',
         'amount', 'gst', 'total', 'invoice_date', 'payment_status',
     )
     list_filter = ('approval_status', 'payment_status', 'invoice_date')
-    search_fields = ('invoice_number', 'order__order_no', 'po_number')
+    search_fields = ('invoice_number', 'order__order_no', 'client__name', 'po_number')
     fieldsets = (
         (None, {
             'fields': (
-                'order', 'boq', 'invoice_number', 'number_mode', 'service_title',
-                'po_number', 'po_date', 'due_date', 'gst_type',
+                'order', 'client', 'source', 'import_batch', 'boq', 'invoice_number', 'number_mode', 'service_title',
+                'po_number', 'po_date', 'billing_period_from', 'billing_period_to', 'due_date', 'gst_type',
                 'amount', 'cgst_amount', 'sgst_amount', 'igst_amount', 'gst', 'total',
                 'payment_status', 'approval_status',
             ),
@@ -66,3 +72,27 @@ class InvoiceGstAuditLogAdmin(admin.ModelAdmin):
 class InvoiceApprovalAuditLogAdmin(admin.ModelAdmin):
     list_display = ('invoice', 'action', 'performed_by', 'previous_status', 'new_status', 'created_at')
     list_filter = ('action', 'new_status')
+
+
+class InvoiceImportItemInline(admin.TabularInline):
+    model = InvoiceImportItem
+    extra = 0
+    readonly_fields = (
+        'sort_order', 'invoice_number', 'status', 'client', 'created_invoice',
+    )
+
+
+@admin.register(InvoiceImportBatch)
+class InvoiceImportBatchAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'title', 'original_filename', 'uploaded_by', 'uploaded_at',
+        'status', 'invoice_count', 'created_count', 'error_count',
+    )
+    list_filter = ('status',)
+    inlines = [InvoiceImportItemInline]
+
+
+@admin.register(InvoiceImportItem)
+class InvoiceImportItemAdmin(admin.ModelAdmin):
+    list_display = ('batch', 'invoice_number', 'status', 'client', 'created_invoice')
+    list_filter = ('status',)

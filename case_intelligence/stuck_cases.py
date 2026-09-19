@@ -107,9 +107,11 @@ def _enrich_rows(rows):
 
 
 def _invoice_client_name(invoice):
-    """Safe client name — invoices should have an order, but guard against missing links."""
-    order = getattr(invoice, 'order', None)
-    client = getattr(order, 'client', None) if order else None
+    """Safe client name for order-linked and imported invoices."""
+    client = getattr(invoice, 'billing_client', None)
+    if client is None:
+        order = getattr(invoice, 'order', None)
+        client = getattr(order, 'client', None) if order else None
     if client:
         return client.name
     return 'Unknown Client'

@@ -88,6 +88,7 @@ class InvoiceForm(AuthorizedSignatoryFormMixin, forms.ModelForm):
             status__in=['APPROVED', 'WCR_SUBMITTED', 'BILLED']
 
         ).order_by('-order_id')
+        self.fields['order'].required = True
 
         self.fields['boq'].queryset = BOQ.objects.filter(status='VERIFIED')
 
@@ -100,7 +101,11 @@ class InvoiceForm(AuthorizedSignatoryFormMixin, forms.ModelForm):
         if self.instance.pk:
             self.fields['invoice_number'].widget.attrs['readonly'] = True
             self.fields['invoice_number_mode'].required = False
-            self.fields['order'].queryset = Order.objects.filter(pk=self.instance.order_id)
+            if self.instance.order_id:
+                self.fields['order'].queryset = Order.objects.filter(pk=self.instance.order_id)
+            else:
+                self.fields['order'].required = False
+                self.fields['order'].queryset = Order.objects.none()
 
         if not self.instance.pk:
 
@@ -151,9 +156,14 @@ class InvoiceForm(AuthorizedSignatoryFormMixin, forms.ModelForm):
         gst_type = cleaned.get('gst_type')
         if not gst_type and self.instance.pk:
             gst_type = self.instance.gst_type
+        client = None
         if order:
+            client = order.client
+        elif self.instance.pk:
+            client = self.instance.billing_client
+        if client:
             if not gst_type or not self._can_override_gst:
-                gst_type = resolve_client_gst_type(order.client)
+                gst_type = resolve_client_gst_type(client)
             cleaned['gst_type'] = gst_type
         elif not gst_type:
             cleaned['gst_type'] = GST_TYPE_INTRA
