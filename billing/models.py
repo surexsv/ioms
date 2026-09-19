@@ -1,7 +1,9 @@
+from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from billing.approval import (
     APPROVAL_STATUS_CHOICES,
@@ -12,8 +14,15 @@ from billing.approval import (
 )
 from billing.gst import GST_TYPE_CHOICES, GST_TYPE_INTRA, calculate_gst_breakdown
 from company_settings.mixins import AuthorizedSignatoryMixin
-from config.company import COMPANY
 from orders.models import Order
+
+
+def default_invoice_date():
+    return timezone.localdate()
+
+
+def default_invoice_due_date():
+    return timezone.localdate() + timedelta(days=30)
 
 
 class Invoice(AuthorizedSignatoryMixin, models.Model):
@@ -23,7 +32,27 @@ class Invoice(AuthorizedSignatoryMixin, models.Model):
         ('RECEIVED', 'Received'),
     )
 
-    order = models.OneToOneField(Order, on_delete=models.CASCADE)
+    SOURCE_ORDER = 'ORDER'
+    SOURCE_IMPORT = 'IMPORT'
+    SOURCE_CHOICES = (
+        (SOURCE_ORDER, 'Order workflow'),
+        (SOURCE_IMPORT, 'Manual import'),
+    )
+
+    order = models.OneToOneField(
+        Order,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='invoice',
+    )
+    client = models.ForeignKey(
+        'clients.Client',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='invoices',
+    )
     boq = models.ForeignKey(
         'boq.BOQ',
         on_delete=models.SET_NULL,
@@ -31,6 +60,12 @@ class Invoice(AuthorizedSignatoryMixin, models.Model):
         blank=True,
         related_name='invoices',
         limit_choices_to={'status': 'VERIFIED'},
+    )
+    source = models.CharField(
+        max_length=10,
+        choices=SOURCE_CHOICES,
+        default=SOURCE_ORDER,
+        db_index=True,
     )
     NUMBER_MODE_AUTO = 'AUTO'
     NUMBER_MODE_MANUAL = 'MANUAL'
@@ -57,10 +92,19 @@ class Invoice(AuthorizedSignatoryMixin, models.Model):
         verbose_name='GST Type',
     )
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    invoice_date = models.DateField(auto_now_add=True)
-    due_date = models.DateField()
+    invoice_date = models.DateField(default=default_invoice_date)
+    due_date = models.DateField(default=default_invoice_due_date)
     po_number = models.CharField(max_length=50, blank=True, verbose_name='PO/SO No')
     po_date = models.DateField(null=True, blank=True, verbose_name='PO Date')
+    billing_period_from = models.DateField(null=True, blank=True)
+    billing_period_to = models.DateField(null=True, blank=True)
+    import_batch = models.ForeignKey(
+        'billing.InvoiceImportBatch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_invoices',
+    )
     service_title = models.CharField(max_length=200, blank=True)
     payment_status = models.CharField(
         max_length=20,
@@ -127,6 +171,8 @@ class Invoice(AuthorizedSignatoryMixin, models.Model):
         self.total = self.amount + self.gst
 
     def _sync_order_billing_status(self):
+        if not self.order_id:
+            return
         if self.approval_status != STATUS_APPROVED:
             return
         if self.payment_status == 'RECEIVED':
@@ -136,10 +182,20 @@ class Invoice(AuthorizedSignatoryMixin, models.Model):
         self.order.save(update_fields=['status'])
 
     def save(self, *args, **kwargs):
+        if self.order_id and not self.client_id:
+            self.client_id = self.order.client_id
         if self.pk and self.line_items.exists():
             self.recalculate_totals()
         super().save(*args, **kwargs)
         self._sync_order_billing_status()
+
+    @property
+    def billing_client(self):
+        if self.client_id:
+            return self.client
+        if self.order_id:
+            return self.order.client
+        return None
 
     @property
     def is_pdf_available(self):
@@ -227,3 +283,100 @@ class InvoiceApprovalAuditLog(models.Model):
 
     def __str__(self):
         return f'{self.invoice.invoice_number}: {self.action}'
+
+
+class InvoiceImportBatch(models.Model):
+    STATUS_VALIDATED = 'VALIDATED'
+    STATUS_CONFIRMED = 'CONFIRMED'
+    STATUS_CANCELLED = 'CANCELLED'
+    STATUS_FAILED = 'FAILED'
+    STATUS_CHOICES = (
+        (STATUS_VALIDATED, 'Validated'),
+        (STATUS_CONFIRMED, 'Confirmed'),
+        (STATUS_CANCELLED, 'Cancelled'),
+        (STATUS_FAILED, 'Failed'),
+    )
+
+    title = models.CharField(max_length=200, blank=True)
+    original_filename = models.CharField(max_length=255)
+    file = models.FileField(upload_to='billing_imports/%Y/%m/', blank=True)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='invoice_import_batches',
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=15,
+        choices=STATUS_CHOICES,
+        default=STATUS_VALIDATED,
+        db_index=True,
+    )
+    total_rows = models.PositiveIntegerField(default=0)
+    invoice_count = models.PositiveIntegerField(default=0)
+    valid_count = models.PositiveIntegerField(default=0)
+    error_count = models.PositiveIntegerField(default=0)
+    warning_count = models.PositiveIntegerField(default=0)
+    skipped_count = models.PositiveIntegerField(default=0)
+    created_count = models.PositiveIntegerField(default=0)
+    failed_count = models.PositiveIntegerField(default=0)
+    confirm_message = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return self.title or self.original_filename
+
+
+class InvoiceImportItem(models.Model):
+    STATUS_VALID = 'VALID'
+    STATUS_WARNING = 'WARNING'
+    STATUS_ERROR = 'ERROR'
+    STATUS_ALREADY_EXISTS = 'ALREADY_EXISTS'
+    STATUS_CREATED = 'CREATED'
+    STATUS_FAILED = 'FAILED'
+    STATUS_SKIPPED = 'SKIPPED'
+    STATUS_CHOICES = (
+        (STATUS_VALID, 'Valid'),
+        (STATUS_WARNING, 'Warning'),
+        (STATUS_ERROR, 'Error'),
+        (STATUS_ALREADY_EXISTS, 'Already exists'),
+        (STATUS_CREATED, 'Created'),
+        (STATUS_FAILED, 'Failed'),
+        (STATUS_SKIPPED, 'Skipped'),
+    )
+
+    batch = models.ForeignKey(
+        InvoiceImportBatch,
+        on_delete=models.CASCADE,
+        related_name='items',
+    )
+    sort_order = models.PositiveIntegerField(default=0)
+    grouping_key = models.CharField(max_length=255)
+    invoice_number = models.CharField(max_length=50, blank=True)
+    number_mode = models.CharField(max_length=10, default=Invoice.NUMBER_MODE_MANUAL)
+    client = models.ForeignKey(
+        'clients.Client',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    payload = models.JSONField(default=dict)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_VALID)
+    errors = models.JSONField(default=list)
+    warnings = models.JSONField(default=list)
+    created_invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='import_items',
+    )
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return self.invoice_number or self.grouping_key

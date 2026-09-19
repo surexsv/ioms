@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Import Item — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ item.invoice_number|default:"Auto-numbered invoice" }}</h1>
+    <div>
+        <a href="{% url 'invoice_import_preview' batch.pk %}" class="btn btn-secondary">Back to Preview</a>
+        {% if item.created_invoice %}
+        <a href="{% url 'invoice_detail' item.created_invoice.pk %}" class="btn btn-primary">Open Invoice</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+    <p><strong>Status:</strong> {{ item.get_status_display }}</p>
+    <p><strong>Customer:</strong> {{ item.client.name|default:payload.customer_name|default:"—" }}</p>
+    <p><strong>Invoice date:</strong> {{ payload.invoice_date|default:"—" }} &nbsp;|&nbsp; <strong>Due:</strong> {{ payload.due_date|default:"—" }}</p>
+    <p><strong>PO:</strong> {{ payload.po_number|default:"—" }} {% if payload.po_date %}({{ payload.po_date }}){% endif %}</p>
+    <p><strong>Billing period:</strong> {{ payload.billing_period_from|default:"—" }} to {{ payload.billing_period_to|default:"—" }}</p>
+    <p><strong>Service:</strong> {{ payload.service_title|default:"—" }}</p>
+    <p><strong>GST type:</strong> {{ payload.gst_type|default:"—" }} &nbsp;|&nbsp; <strong>GST %:</strong> {{ payload.gst_percent|default:"—" }}</p>
+    <p><strong>Taxable:</strong> ₹{{ payload.taxable|default:"0.00" }} &nbsp;|&nbsp; <strong>GST:</strong> ₹{{ payload.gst|default:"0.00" }} &nbsp;|&nbsp; <strong>Total:</strong> ₹{{ payload.total|default:"0.00" }}</p>
+    <p><strong>Source rows:</strong> {{ payload.source_rows|join:", "|default:"—" }}</p>
+</div>
+
+{% if item.errors %}
+<div class="card" style="margin-bottom:16px;border:1px solid #dc3545;">
+    <h3 style="margin-top:0;color:#dc3545;">Errors</h3>
+    <ul>{% for err in item.errors %}<li>{{ err }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if item.warnings %}
+<div class="card" style="margin-bottom:16px;background:#fff3cd;border:1px solid #ffc107;">
+    <h3 style="margin-top:0;">Warnings</h3>
+    <ul>{% for warn in item.warnings %}<li>{{ warn }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3 style="margin-top:0;">Line items</h3>
+    <table class="ioms-table">
+        <thead>
+        <tr>
+            <th>Row</th>
+            <th>Description</th>
+            <th>HSN/SAC</th>
+            <th>Unit</th>
+            <th>Qty</th>
+            <th>Rate</th>
+            <th>Amount</th>
+            <th>Remarks</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for line in lines %}
+        <tr>
+            <td>{{ line.row }}</td>
+            <td>{{ line.description }}</td>
+            <td>{{ line.hsn_sac }}</td>
+            <td>{{ line.unit }}</td>
+            <td>{{ line.qty }}</td>
+            <td>₹{{ line.rate }}</td>
+            <td>₹{{ line.amount }}</td>
+            <td>{{ line.remarks|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="empty-state">No line items.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
