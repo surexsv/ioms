@@ -93,7 +93,8 @@ def enterprise_module_grants_access(user, module_key):
     # Transition: profiles that only have Orders still reach Phase-1 ops modules
     # until dedicated fleet / special_projects / project_expenses grants are assigned.
     if module_key in ('special_projects', 'fleet', 'project_expenses',
-                      'project_expenses_approve', 'project_expenses_manage'):
+                      'project_expenses_approve', 'project_expenses_manage',
+                      'preventive_maintenance', 'preventive_maintenance_approve'):
         if has_enterprise_permission(user, 'orders'):
             return True
 
@@ -247,6 +248,7 @@ ENTERPRISE_NAV_TO_MODULE = {
     'special_projects': 'special_projects',
     'fleet': 'fleet',
     'project_expenses': 'project_expenses',
+    'preventive_maintenance': 'preventive_maintenance',
     'boq': 'boq',
     'wcr': 'wcr',
     'clients': 'clients',
@@ -280,6 +282,7 @@ NAV_MENU_CATALOG = [
     ('Operations', 'special_projects', 'Special Projects', 'special_project_list', 'bi-kanban', 'special_projects', ''),
     ('Operations', 'fleet', 'Fleet & Fuel', 'fleet_dashboard', 'bi-fuel-pump', 'fleet', ''),
     ('Operations', 'project_expenses', 'Project Expenses', 'peams_dashboard', 'bi-cash-stack', 'project_expenses', ''),
+    ('Operations', 'preventive_maintenance', 'Preventive Maintenance', 'pm_dashboard', 'bi-tools', 'preventive_maintenance', ''),
     ('Operations', 'boq', 'BOQ', 'boq_list', 'bi-list-check', 'boq', ''),
     ('Operations', 'wcr', 'WCR', 'wcr_list', 'bi-file-earmark-text', 'wcr', ''),
     ('Customers', 'clients', 'Clients', 'client_list', 'bi-people', 'clients', ''),

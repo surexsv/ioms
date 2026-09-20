@@ -239,6 +239,17 @@ def order_detail(request, pk):
     can_open_special_project = (
         can_manage_special_projects(request.user) and can_view_special_projects(request.user)
     )
+    linked_pm = []
+    try:
+        from preventive_maintenance.permissions import can_view_pm
+        if can_view_pm(request.user):
+            linked_pm = list(order.pm_order_links.select_related('observation'))
+            related_visit = list(order.related_pm_observations.all())
+        else:
+            related_visit = []
+    except Exception:
+        linked_pm = []
+        related_visit = []
 
     return render(request, 'orders/order_detail.html', {
         'order': order,
@@ -254,5 +265,7 @@ def order_detail(request, pk):
         'can_site_attendance': can_site_attendance,
         'special_project': special_project,
         'can_open_special_project': can_open_special_project,
+        'linked_pm': linked_pm,
+        'related_pm_visits': related_visit,
         **case_ctx,
     })

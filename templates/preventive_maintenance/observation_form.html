@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}New Maintenance Observation — {{ ioms_product_name }}{% endblock %}
+{% block extra_css %}
+<style>
+.pm-capture-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width: 720px) {
+    .pm-capture-grid { grid-template-columns:1fr; }
+    .pm-form-card { max-width:100%; }
+}
+.pm-video { width:100%; max-height:240px; background:#111; border-radius:8px; }
+.pm-preview { width:100%; max-height:180px; display:none; border-radius:8px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>New Maintenance Observation</h1>
+    <a href="{% url 'pm_dashboard' %}" class="btn btn-secondary">Back</a>
+</div>
+<p style="color:#6c757d;margin-bottom:16px;">
+    Capture the observation only. Do not schedule or assign technicians here — that stays in the existing Order module after approval.
+</p>
+<div class="card pm-form-card" style="max-width:820px;">
+    <form method="post" enctype="multipart/form-data" id="pmObservationForm" data-gps-capture>
+        {% csrf_token %}
+        <input type="hidden" name="latitude" value="">
+        <input type="hidden" name="longitude" value="">
+        <input type="hidden" name="gps_accuracy" value="">
+
+        <div class="form-group">{{ form.client.label_tag }}{{ form.client }}</div>
+        <div class="form-group">{{ form.site_location.label_tag }}{{ form.site_location }}</div>
+        <div class="form-row">
+            <div class="form-group">{{ form.related_order.label_tag }}{{ form.related_order }}</div>
+            <div class="form-group">{{ form.related_project.label_tag }}{{ form.related_project }}</div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">{{ form.system_service.label_tag }}{{ form.system_service }}</div>
+            <div class="form-group">{{ form.equipment_asset.label_tag }}{{ form.equipment_asset }}</div>
+        </div>
+        <div class="form-group">{{ form.observation.label_tag }}{{ form.observation }}</div>
+        <div class="form-group">{{ form.recommended_work.label_tag }}{{ form.recommended_work }}</div>
+        <div class="form-row">
+            <div class="form-group">{{ form.maintenance_type.label_tag }}{{ form.maintenance_type }}</div>
+            <div class="form-group">{{ form.priority.label_tag }}{{ form.priority }}</div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">{{ form.current_condition.label_tag }}{{ form.current_condition }}</div>
+            <div class="form-group">{{ form.potential_impact.label_tag }}{{ form.potential_impact }}</div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">{{ form.suggested_due_date.label_tag }}{{ form.suggested_due_date }}</div>
+            <div class="form-group">{{ form.source.label_tag }}{{ form.source }}</div>
+        </div>
+        <div class="form-group">{{ form.remarks.label_tag }}{{ form.remarks }}</div>
+
+        <h3>GPS location</h3>
+        <p id="gpsStatus" class="attendance-status">Acquiring GPS…</p>
+        <p style="color:#6c757d;font-size:0.9rem;">Optional. Uses the existing IOMS browser GPS capture.</p>
+
+        <h3>Snapshots / photos</h3>
+        <div class="pm-capture-grid">
+            <div>
+                <video id="pmVideo" autoplay playsinline muted class="pm-video"></video>
+                <canvas id="pmCanvas" style="display:none;"></canvas>
+                <img id="pmPreview" class="pm-preview" alt="Captured snapshot">
+                <p id="cameraStatus" class="attendance-status">Starting camera…</p>
+                <button type="button" id="pmCaptureBtn" class="btn btn-secondary btn-sm">Capture snapshot</button>
+            </div>
+            <div>
+                <p style="color:#6c757d;font-size:0.9rem;">Capture from camera or upload a site photo / document. GPS is stored with each snapshot when available.</p>
+                {{ formset.management_form }}
+                {% for f in formset %}
+                <div class="form-group pm-snapshot-row">
+                    {{ f.id }}
+                    <label>Attachment {{ forloop.counter }}</label>
+                    {{ f.kind }}
+                    {{ f.file }}
+                    {{ f.caption }}
+                    {% if f.DELETE %}<label>{{ f.DELETE }} Remove</label>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if form.errors or formset.errors %}
+        <ul class="messages">
+            {% for field, errors in form.errors.items %}
+            {% for error in errors %}<li class="error">{{ field }}: {{ error }}</li>{% endfor %}
+            {% endfor %}
+            {% for err in formset.non_form_errors %}<li class="error">{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary">Save observation</button>
+        <a href="{% url 'pm_dashboard' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/ioms-gps.js' %}"></script>
+<script src="{% static 'js/ioms-pm-capture.js' %}"></script>
+{% endblock %}

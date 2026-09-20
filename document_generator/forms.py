@@ -20,6 +20,7 @@ class DocumentNumberSettingsForm(forms.ModelForm):
             'estimate_boq_prefix',
             'request_prefix',
             'special_project_prefix',
+            'pm_prefix',
             'serial_length',
             'year_format',
             'allow_editing',

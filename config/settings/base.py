@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'special_projects',
     'fleet',
     'project_expenses.apps.ProjectExpensesConfig',
+    'preventive_maintenance.apps.PreventiveMaintenanceConfig',
 ]
 
 MIDDLEWARE = [

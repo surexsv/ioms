@@ -7,6 +7,7 @@ from case_intelligence.constants import (
     MOD_INVOICE,
     MOD_ORDER,
     MOD_PAYMENT,
+    MOD_PM,
     MOD_QUOTATION,
     MOD_SCHEDULE,
     MOD_WCR,
@@ -185,4 +186,13 @@ def boq_created(user, boq, remarks=''):
         description='BOQ Created', new_status=boq.status,
         client=boq.order.client if boq.order_id else None,
         content_object=boq, remarks=remarks,
+    )
+
+
+def pm_observation_created(user, observation, remarks=''):
+    log_case_event(
+        user, module=MOD_PM, document_type='PM Observation',
+        document_number=observation.pm_number or str(observation.pk),
+        description='PM Observation Created', new_status=observation.admin_status,
+        client=observation.client, content_object=observation, remarks=remarks,
     )

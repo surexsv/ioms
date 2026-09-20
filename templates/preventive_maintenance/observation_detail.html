@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block title %}{{ observation.pm_number }} — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ observation.pm_number }}</h1>
+    <div>
+        <a href="{% url 'pm_observation_list' %}" class="btn btn-secondary">All Observations</a>
+        <a href="{% url 'pm_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>PM Reference</label><p>{{ observation.pm_number }}</p></div>
+        <div class="detail-item"><label>Customer</label><p>{{ observation.client.name }}</p></div>
+        <div class="detail-item"><label>Type</label><p>{{ observation.get_maintenance_type_display }}</p></div>
+        <div class="detail-item"><label>Priority</label><p>{{ observation.get_priority_display }}</p></div>
+        <div class="detail-item"><label>Admin status</label><p>{{ observation.get_admin_status_display }}</p></div>
+        <div class="detail-item"><label>Monitoring</label><p><strong>{{ monitoring_label }}</strong>{% if observation.is_overdue %} <span class="text-danger">OVERDUE</span>{% endif %}</p></div>
+        <div class="detail-item"><label>Condition</label><p>{{ observation.get_current_condition_display|default:"—" }}</p></div>
+        <div class="detail-item"><label>Impact</label><p>{{ observation.get_potential_impact_display|default:"—" }}</p></div>
+        <div class="detail-item"><label>Due date</label><p>{{ observation.suggested_due_date|date:"d-m-Y"|default:"—" }}</p></div>
+        <div class="detail-item"><label>Source</label><p>{{ observation.get_source_display }}</p></div>
+        <div class="detail-item"><label>Site / Location</label><p>{{ observation.site_location|default:"—" }}</p></div>
+        <div class="detail-item"><label>Equipment</label><p>{{ observation.equipment_asset|default:"—" }}</p></div>
+        <div class="detail-item"><label>System / Service</label><p>{{ observation.system_service|default:"—" }}</p></div>
+        <div class="detail-item"><label>Created by</label><p>{{ observation.created_by|default:"—" }} · {{ observation.created_at|date:"d M Y H:i" }}</p></div>
+    </div>
+    <div class="detail-item" style="margin-top:16px;"><label>Observation</label><p>{{ observation.observation|linebreaksbr }}</p></div>
+    {% if observation.recommended_work %}
+    <div class="detail-item"><label>Recommended work</label><p>{{ observation.recommended_work|linebreaksbr }}</p></div>
+    {% endif %}
+    {% if observation.remarks %}
+    <div class="detail-item"><label>Remarks</label><p>{{ observation.remarks|linebreaksbr }}</p></div>
+    {% endif %}
+    {% if observation.related_order %}
+    <p><strong>Related visit order:</strong> <a href="{% url 'order_detail' observation.related_order_id %}">{{ observation.related_order.order_no }}</a></p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">GPS location</h3>
+    {% if observation.has_gps %}
+    <p>{{ observation.latitude }}, {{ observation.longitude }}
+       {% if observation.gps_accuracy %} (±{{ observation.gps_accuracy }} m){% endif %}</p>
+    {% if observation.gps_address %}<p>{{ observation.gps_address }}</p>{% endif %}
+    <p><small>Captured {{ observation.gps_captured_at|date:"d M Y H:i" }}</small></p>
+    <p><a class="btn btn-secondary btn-sm" target="_blank" href="https://maps.google.com/?q={{ observation.latitude }},{{ observation.longitude }}">Open map</a></p>
+    {% else %}
+    <p style="color:#6c757d;">No GPS captured for this observation.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Snapshots / attachments</h3>
+    {% for snap in observation.snapshots.all %}
+    <p>
+        <a href="{{ snap.file.url }}" target="_blank">{{ snap.caption|default:snap.file.name }}</a>
+        — {{ snap.get_kind_display }}
+        {% if snap.latitude and snap.longitude %}
+        · GPS {{ snap.latitude }}, {{ snap.longitude }}
+        {% endif %}
+    </p>
+    {% empty %}
+    <p style="color:#6c757d;">No snapshots attached.</p>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Linked existing Orders</h3>
+    {% for row in links %}
+    <div class="card" style="margin-bottom:12px;">
+        <p>
+            <strong>Order:</strong> <a href="{% url 'order_detail' row.order.pk %}">{{ row.order.order_no }}</a>
+            {% if row.link.work_item %} — {{ row.link.work_item }}{% endif %}
+        </p>
+        <p>Order Status: {{ row.order_status }} · Assigned: {{ row.assigned }} · WCR: {{ row.wcr_status }}</p>
+        <p>Schedule: {{ row.schedule_status }}{% if row.schedule %} ({{ row.schedule.schedule_number }}){% endif %}</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a class="btn btn-secondary btn-sm" href="{% url 'order_detail' row.order.pk %}">View Order</a>
+            {% if row.schedule %}
+            <a class="btn btn-secondary btn-sm" href="{% url 'schedule_edit' row.schedule.pk %}">View Schedule</a>
+            {% endif %}
+            {% if row.wcr %}
+            <a class="btn btn-secondary btn-sm" href="{% url 'approve_wcr' row.wcr.pk %}">View WCR</a>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <p style="color:#6c757d;">No operational Order linked yet. After approval, create a normal IOMS Order.</p>
+    {% endfor %}
+</div>
+
+{% if can_approve or can_order or can_close %}
+<div class="card">
+    <h3 style="margin-top:0;">Monitoring actions</h3>
+    {% if can_approve and observation.admin_status == 'REPORTED' %}
+    <form method="post" style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="review">
+        <button type="submit" class="btn btn-secondary">Mark under review</button>
+    </form>
+    {% endif %}
+    {% if can_approve and observation.admin_status != 'APPROVED' and observation.admin_status != 'CLOSED' %}
+    <form method="post" style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="approve">
+        <button type="submit" class="btn btn-primary">Approve</button>
+    </form>
+    {% endif %}
+
+    {% if can_order and observation.admin_status == 'APPROVED' %}
+    <form method="post" style="margin-top:16px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_order">
+        <div class="form-group">{{ create_form.work_item.label_tag }}{{ create_form.work_item }}</div>
+        <button type="submit" class="btn btn-success">Create Order</button>
+        <p style="color:#6c757d;font-size:0.9rem;">Creates a normal existing IOMS Order. You will continue in the Order / Scheduling screens.</p>
+    </form>
+    <form method="post" style="margin-top:16px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="link_order">
+        <div class="form-group">{{ link_form.order.label_tag }}{{ link_form.order }}</div>
+        <div class="form-group">{{ link_form.work_item.label_tag }}{{ link_form.work_item }}</div>
+        <button type="submit" class="btn btn-secondary">Link existing Order</button>
+    </form>
+    {% endif %}
+
+    {% if can_close and observation.admin_status != 'CLOSED' %}
+    <form method="post" style="margin-top:16px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="close">
+        <div class="form-group"><label>Close remarks</label><input type="text" name="remarks"></div>
+        <button type="submit" class="btn btn-secondary">Close observation</button>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <h3 style="margin-top:0;">Audit trail</h3>
+    <table>
+        <tr><th>When</th><th>Action</th><th>Who</th><th>Change</th></tr>
+        {% for row in observation.history.all %}
+        <tr>
+            <td>{{ row.created_at|date:"d M Y H:i" }}</td>
+            <td>{{ row.get_action_display }}</td>
+            <td>{{ row.actor|default:"—" }}</td>
+            <td>{{ row.previous_value }} {% if row.new_value %}→ {{ row.new_value }}{% endif %} {{ row.remarks }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">No history yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

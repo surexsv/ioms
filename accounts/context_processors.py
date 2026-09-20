@@ -67,6 +67,8 @@ def _active_nav(request):
         return 'fleet'
     if path.startswith('/project-expenses'):
         return 'project_expenses'
+    if path.startswith('/preventive-maintenance'):
+        return 'preventive_maintenance'
     if path.startswith('/case-intelligence/reports'):
         return 'reports'
     if path.startswith('/case-intelligence'):

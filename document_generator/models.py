@@ -24,6 +24,7 @@ class DocumentNumberSettings(models.Model):
     estimate_boq_prefix = models.CharField(max_length=10, default='EBOQ')
     request_prefix = models.CharField(max_length=10, default='REQ')
     special_project_prefix = models.CharField(max_length=10, default='SP')
+    pm_prefix = models.CharField(max_length=10, default='PM')
     serial_length = models.PositiveSmallIntegerField(default=4)
     year_format = models.CharField(max_length=10, default='YYYY')
     allow_editing = models.BooleanField(default=True)

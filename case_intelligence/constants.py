@@ -9,6 +9,7 @@ MOD_WCR = 'WCR'
 MOD_INVOICE = 'INVOICE'
 MOD_PAYMENT = 'PAYMENT'
 MOD_BOQ = 'BOQ'
+MOD_PM = 'PM_OBSERVATION'
 
 MODULE_CHOICES = (
     (MOD_ENQUIRY, 'Enquiry'),
@@ -20,6 +21,7 @@ MODULE_CHOICES = (
     (MOD_INVOICE, 'Invoice'),
     (MOD_PAYMENT, 'Payment'),
     (MOD_BOQ, 'BOQ'),
+    (MOD_PM, 'PM Observation'),
 )
 
 HEALTH_GREEN = 'GREEN'
