@@ -9,8 +9,15 @@
     <div>
         <a href="{% url 'schedule_list' %}" class="btn btn-sm btn-secondary">My Schedules</a>
         <a href="{% url 'wcr_list' %}" class="btn btn-sm btn-secondary">My WCR</a>
+        {% if can_create_pm %}
+        <a href="{% url 'pm_observation_create' %}" class="btn btn-sm btn-primary">New Observation</a>
+        {% endif %}
+        {% if pm_summary %}
+        <a href="{% url 'pm_dashboard' %}" class="btn btn-sm btn-secondary">Preventive Maintenance</a>
+        {% endif %}
     </div>
 </div>
+{% include 'preventive_maintenance/_pm_monitoring.html' %}
 
 <div class="ioms-kpi-grid">
     <div class="ioms-kpi"><div class="value">{{ total_assigned }}</div><div class="label">Assigned Tasks</div></div>

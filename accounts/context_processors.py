@@ -22,6 +22,7 @@ from .permissions import (
     MODULE_SCHEDULING,
     MODULE_CASE_INTELLIGENCE,
     MODULE_ERMS,
+    MODULE_PREVENTIVE_MAINTENANCE,
     MODULE_ERMS_APPROVE,
     has_full_access,
     attendance_nav_url,
@@ -170,6 +171,10 @@ def oms_navigation(request):
         ),
         'show_nav_daily_meetings': 'daily_meetings' in nav_keys or can_access_daily_meetings(user),
         'show_nav_employee_requests': 'employee_requests' in nav_keys or can_access_erms(user),
+        'show_nav_preventive_maintenance': (
+            'preventive_maintenance' in nav_keys
+            or can_access(user, MODULE_PREVENTIVE_MAINTENANCE)
+        ),
         'show_nav_erms_pending': can_approve_requests(user),
         'erms_notification_count': erms_notification_count,
         'pending_approval_count': pending_approval_count,

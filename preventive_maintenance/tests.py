@@ -311,3 +311,16 @@ class PreventiveMaintenanceOrderIntegrationTests(PMTestMixin, TestCase):
         self.assertContains(dash, 'Preventive Maintenance')
         self.assertEqual(listing.status_code, 200)
         self.assertContains(listing, 'Fiber closure requires preventive maintenance.')
+
+    def test_pm_panel_visible_on_existing_role_dashboards(self):
+        self.make_observation(self.tech, client=self.client_obj)
+        self.client.login(username='tech2', password='test-pass')
+        field = self.client.get(reverse('field_team_dashboard'))
+        self.assertEqual(field.status_code, 200)
+        self.assertContains(field, 'Preventive Maintenance')
+        self.assertContains(field, 'New Observation')
+        self.client.login(username='tl2', password='test-pass')
+        supervisor = self.client.get(reverse('supervisor_dashboard'))
+        self.assertEqual(supervisor.status_code, 200)
+        self.assertContains(supervisor, 'Preventive Maintenance')
+        self.assertContains(supervisor, 'Open PM Module')
