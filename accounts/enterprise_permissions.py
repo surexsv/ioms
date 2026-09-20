@@ -84,7 +84,15 @@ def legacy_module_grants_access(user, module_key):
 def enterprise_module_grants_access(user, module_key):
     """Map legacy MODULE_* keys to enterprise permission codenames."""
     if module_key.startswith('dashboard_'):
-        return has_enterprise_permission(user, 'dashboard')
+        if has_enterprise_permission(user, 'dashboard'):
+            return True
+        # Field home is the landing page for technicians who already work Orders/WCR.
+        if module_key == 'dashboard_engineer' and (
+            has_enterprise_permission(user, 'orders')
+            or has_enterprise_permission(user, 'wcr')
+        ):
+            return True
+        return False
 
     codename = LEGACY_MODULE_TO_PERMISSION.get(module_key)
     if codename and has_enterprise_permission(user, codename):
@@ -93,9 +101,21 @@ def enterprise_module_grants_access(user, module_key):
     # Transition: profiles that only have Orders still reach Phase-1 ops modules
     # until dedicated fleet / special_projects / project_expenses grants are assigned.
     if module_key in ('special_projects', 'fleet', 'project_expenses',
-                      'project_expenses_approve', 'project_expenses_manage',
-                      'preventive_maintenance', 'preventive_maintenance_approve'):
+                      'project_expenses_approve', 'project_expenses_manage'):
         if has_enterprise_permission(user, 'orders'):
+            return True
+
+    # PM is an observation layer on top of existing field operations.
+    # Users who already work Orders / Scheduling / WCR should see it
+    # even before a dedicated enterprise grant is assigned.
+    if module_key in ('preventive_maintenance', 'preventive_maintenance_approve'):
+        if has_enterprise_permission(user, 'preventive_maintenance'):
+            return True
+        if has_enterprise_permission(user, 'orders'):
+            return True
+        if has_enterprise_permission(user, 'scheduling'):
+            return True
+        if has_enterprise_permission(user, 'wcr'):
             return True
 
     if codename:
@@ -278,11 +298,11 @@ NAV_MENU_CATALOG = [
     # section_label, permission, label, url_name, icon, nav_key, query_string
     ('', 'dashboard', 'Dashboard', '__dashboard__', 'bi-speedometer2', 'dashboard', ''),
     ('Operations', 'orders', 'Orders', 'order_list', 'bi-clipboard-check', 'orders', ''),
+    ('Operations', 'preventive_maintenance', 'Preventive Maintenance', 'pm_dashboard', 'bi-tools', 'preventive_maintenance', ''),
     ('Operations', 'scheduling', 'Scheduling', 'schedule_list', 'bi-calendar-event', 'schedules', ''),
     ('Operations', 'special_projects', 'Special Projects', 'special_project_list', 'bi-kanban', 'special_projects', ''),
     ('Operations', 'fleet', 'Fleet & Fuel', 'fleet_dashboard', 'bi-fuel-pump', 'fleet', ''),
     ('Operations', 'project_expenses', 'Project Expenses', 'peams_dashboard', 'bi-cash-stack', 'project_expenses', ''),
-    ('Operations', 'preventive_maintenance', 'Preventive Maintenance', 'pm_dashboard', 'bi-tools', 'preventive_maintenance', ''),
     ('Operations', 'boq', 'BOQ', 'boq_list', 'bi-list-check', 'boq', ''),
     ('Operations', 'wcr', 'WCR', 'wcr_list', 'bi-file-earmark-text', 'wcr', ''),
     ('Customers', 'clients', 'Clients', 'client_list', 'bi-people', 'clients', ''),
@@ -349,6 +369,9 @@ def _nav_item_visible(user, permission, nav_key):
     if nav_key == 'daily_meetings':
         from daily_meetings.permissions import can_access_daily_meetings
         return can_access_daily_meetings(user)
+    if nav_key == 'preventive_maintenance':
+        from preventive_maintenance.permissions import can_view_pm
+        return can_view_pm(user) or _can_access_nav_permission(user, permission)
 
     return _can_access_nav_permission(user, permission)
 
@@ -413,6 +436,38 @@ def build_navigation_menu(user, dashboard_url_name='director_dashboard'):
     if section_items:
         sections.append({'label': current_section, 'items': section_items})
 
+    return _ensure_pm_nav_item(sections, user)
+
+
+def _ensure_pm_nav_item(sections, user):
+    """Always place Preventive Maintenance under Operations for eligible field/ops users."""
+    from preventive_maintenance.permissions import can_view_pm
+
+    if not can_view_pm(user):
+        return sections
+    for section in sections:
+        if any(item.get('nav_key') == 'preventive_maintenance' for item in section.get('items', [])):
+            return sections
+
+    pm_item = {
+        'label': 'Preventive Maintenance',
+        'url_name': 'pm_dashboard',
+        'icon': 'bi-tools',
+        'nav_key': 'preventive_maintenance',
+        'query': '',
+        'badge': None,
+    }
+    for section in sections:
+        if section.get('label') == 'Operations':
+            items = section['items']
+            insert_at = 0
+            for index, item in enumerate(items):
+                if item.get('nav_key') == 'orders':
+                    insert_at = index + 1
+                    break
+            items.insert(insert_at, pm_item)
+            return sections
+    sections.append({'label': 'Operations', 'items': [pm_item]})
     return sections
 
 

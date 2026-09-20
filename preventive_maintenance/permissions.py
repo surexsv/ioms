@@ -30,7 +30,19 @@ _APPROVE_ROLES = (
 
 
 def can_view_pm(user):
-    return can_access(user, MODULE_PREVENTIVE_MAINTENANCE)
+    if not user or not user.is_authenticated:
+        return False
+    if can_access(user, MODULE_PREVENTIVE_MAINTENANCE):
+        return True
+    # Existing field/ops users already have Order/Schedule/WCR access.
+    from accounts.permissions import MODULE_ORDERS, MODULE_SCHEDULING, MODULE_WCR
+    if user_role(user) in _CREATE_ROLES and (
+        can_access(user, MODULE_ORDERS)
+        or can_access(user, MODULE_SCHEDULING)
+        or can_access(user, MODULE_WCR)
+    ):
+        return True
+    return False
 
 
 def can_create_pm(user):

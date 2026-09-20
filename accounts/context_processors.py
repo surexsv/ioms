@@ -95,6 +95,13 @@ def _nav_keys_from_sections(sections):
     return keys
 
 
+def _show_pm_nav(user, nav_keys):
+    if 'preventive_maintenance' in nav_keys:
+        return True
+    from preventive_maintenance.permissions import can_view_pm
+    return can_view_pm(user)
+
+
 def oms_navigation(request):
     user = request.user
     if not user.is_authenticated:
@@ -171,10 +178,7 @@ def oms_navigation(request):
         ),
         'show_nav_daily_meetings': 'daily_meetings' in nav_keys or can_access_daily_meetings(user),
         'show_nav_employee_requests': 'employee_requests' in nav_keys or can_access_erms(user),
-        'show_nav_preventive_maintenance': (
-            'preventive_maintenance' in nav_keys
-            or can_access(user, MODULE_PREVENTIVE_MAINTENANCE)
-        ),
+        'show_nav_preventive_maintenance': _show_pm_nav(user, nav_keys),
         'show_nav_erms_pending': can_approve_requests(user),
         'erms_notification_count': erms_notification_count,
         'pending_approval_count': pending_approval_count,

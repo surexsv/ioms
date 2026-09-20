@@ -145,6 +145,106 @@ class PreventiveMaintenanceRBACTests(PMTestMixin, TestCase):
         self.assertIn('/access-denied', create['Location'])
         self.assertEqual(Order.objects.count(), 0)
 
+    def test_enterprise_technician_sees_pm_in_sidebar(self):
+        from accounts.enterprise_migration import seed_masters
+        from accounts.enterprise_models import (
+            Branch,
+            Department,
+            Designation,
+            Employee,
+            EmployeePermissionGrant,
+            ModulePermission,
+        )
+        from accounts.enterprise_permissions import build_navigation_menu
+        from django.apps import apps
+
+        seed_masters(apps, None)
+        grants = {}
+        for codename, name in (
+            ('orders', 'Orders'),
+            ('scheduling', 'Scheduling'),
+            ('wcr', 'WCR'),
+            ('dashboard', 'Dashboard'),
+        ):
+            grants[codename] = ModulePermission.objects.get_or_create(
+                codename=codename,
+                defaults={'name': name, 'category': 'operations', 'is_active': True},
+            )[0]
+        dept = Department.objects.get(code='OPERATIONS')
+        desig = Designation.objects.get(code='TECHNICIAN')
+        branch = Branch.objects.filter(is_head_office=True).first() or Branch.objects.first()
+        employee = Employee.objects.create(
+            user=self.tech,
+            employee_code='TECH-NAV-1',
+            department=dept,
+            designation=desig,
+            branch=branch,
+        )
+        for perm in grants.values():
+            EmployeePermissionGrant.objects.create(employee=employee, permission=perm, is_active=True)
+
+        nav_keys = {
+            item['nav_key']
+            for section in build_navigation_menu(self.tech, 'field_team_dashboard')
+            for item in section.get('items', [])
+        }
+        self.assertIn('preventive_maintenance', nav_keys)
+
+        self.client.login(username='tech1', password='test-pass')
+        field = self.client.get(reverse('field_team_dashboard'))
+        self.assertEqual(field.status_code, 200)
+        self.assertContains(field, 'Preventive Maintenance')
+        self.assertContains(field, reverse('pm_dashboard'))
+        orders = self.client.get(reverse('order_list'))
+        self.assertEqual(orders.status_code, 200)
+        self.assertContains(orders, 'Preventive Maintenance')
+        self.assertContains(orders, reverse('pm_dashboard'))
+
+    def test_enterprise_technician_without_dashboard_grant_still_sees_pm(self):
+        from accounts.enterprise_migration import seed_masters
+        from accounts.enterprise_models import (
+            Branch,
+            Department,
+            Designation,
+            Employee,
+            EmployeePermissionGrant,
+            ModulePermission,
+        )
+        from accounts.enterprise_permissions import build_navigation_menu
+        from django.apps import apps
+
+        seed_masters(apps, None)
+        orders = ModulePermission.objects.get_or_create(
+            codename='orders',
+            defaults={'name': 'Orders', 'category': 'operations', 'is_active': True},
+        )[0]
+        wcr = ModulePermission.objects.get_or_create(
+            codename='wcr',
+            defaults={'name': 'WCR', 'category': 'operations', 'is_active': True},
+        )[0]
+        dept = Department.objects.get(code='OPERATIONS')
+        desig = Designation.objects.get(code='TECHNICIAN')
+        branch = Branch.objects.filter(is_head_office=True).first() or Branch.objects.first()
+        employee = Employee.objects.create(
+            user=self.tech,
+            employee_code='TECH-NAV-2',
+            department=dept,
+            designation=desig,
+            branch=branch,
+        )
+        EmployeePermissionGrant.objects.create(employee=employee, permission=orders, is_active=True)
+        EmployeePermissionGrant.objects.create(employee=employee, permission=wcr, is_active=True)
+        nav_keys = {
+            item['nav_key']
+            for section in build_navigation_menu(self.tech, 'field_team_dashboard')
+            for item in section.get('items', [])
+        }
+        self.assertIn('preventive_maintenance', nav_keys)
+        self.client.login(username='tech1', password='test-pass')
+        resp = self.client.get(reverse('field_team_dashboard'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Preventive Maintenance')
+
     def test_accounts_and_office_cannot_access_pm(self):
         self.client.login(username='acc1', password='test-pass')
         resp = self.client.get(reverse('pm_dashboard'))

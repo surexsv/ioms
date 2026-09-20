@@ -30,6 +30,8 @@ def normalize_role(role):
     """Map legacy role strings to canonical v1.1 keys."""
     if role == LEGACY_SUPERVISOR:
         return ROLE_SUPERVISOR
+    if role == 'TECHNICIAN':
+        return ROLE_TECHNICIAN
     return role
 
 
