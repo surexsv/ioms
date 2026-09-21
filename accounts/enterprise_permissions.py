@@ -144,9 +144,11 @@ def can_access_via_enterprise(user, module_key):
         if user_requires_attendance(user):
             return True
 
-    if has_employee_profile(user):
-        return enterprise_module_grants_access(user, module_key)
+    if has_employee_profile(user) and enterprise_module_grants_access(user, module_key):
+        return True
 
+    # Live employees such as Tech1 often have a profile with incomplete grants.
+    # Keep the role matrix so Orders / field dashboard still work.
     return legacy_module_grants_access(user, module_key)
 
 

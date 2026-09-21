@@ -315,3 +315,27 @@ class RoleFeaturePermissionTests(TestCase):
         self.assertNotIn('tile.openstreetmap.org', content)
         self.assertIn('basemaps.cartocdn.com', content)
         self.assertIn('arcgisonline.com', content)
+
+    def test_technician_with_empty_employee_profile_still_opens_orders(self):
+        from accounts.enterprise_models import Branch, Department, Designation, Employee
+        from accounts.enterprise_permissions import invalidate_enterprise_permission_cache
+
+        tech = self.users[ROLE_TECHNICIAN]
+        dept, _ = Department.objects.get_or_create(code='OPS', defaults={'name': 'Operations'})
+        designation, _ = Designation.objects.get_or_create(code='TECHNICIAN', defaults={'name': 'Technician'})
+        branch, _ = Branch.objects.get_or_create(code='HO', defaults={'name': 'Head Office'})
+        Employee.objects.create(
+            user=tech,
+            employee_code='TECH1',
+            department=dept,
+            designation=designation,
+            branch=branch,
+        )
+        invalidate_enterprise_permission_cache(tech.pk)
+        self.client.force_login(tech)
+        orders = self.client.get(reverse('order_list'))
+        dashboard = self.client.get(reverse('field_team_dashboard'))
+        billing = self.client.get(reverse('invoice_list'))
+        self.assertFalse(_denied(orders), msg=orders.url if _denied(orders) else '')
+        self.assertFalse(_denied(dashboard), msg=dashboard.url if _denied(dashboard) else '')
+        self.assertTrue(_denied(billing))
