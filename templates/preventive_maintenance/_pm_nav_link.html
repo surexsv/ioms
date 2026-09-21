@@ -1,0 +1,8 @@
+{% if show_nav_preventive_maintenance or is_field_staff or show_nav_orders %}
+<a href="{% url 'pm_dashboard' %}"
+   class="{% if nav_active == 'preventive_maintenance' %}active{% endif %}"
+   data-nav="preventive-maintenance">
+    <i class="bi bi-tools" aria-hidden="true"></i>
+    Preventive Maintenance
+</a>
+{% endif %}

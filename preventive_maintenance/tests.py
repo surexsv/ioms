@@ -245,6 +245,65 @@ class PreventiveMaintenanceRBACTests(PMTestMixin, TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'Preventive Maintenance')
 
+    def test_technician_order_list_html_renders_pm_after_orders(self):
+        self.client.login(username='tech1', password='test-pass')
+        resp = self.client.get(reverse('order_list'))
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+        self.assertIn('data-nav="preventive-maintenance"', html)
+        self.assertIn('Preventive Maintenance', html)
+        self.assertLess(html.find('My Orders'), html.find('Preventive Maintenance'))
+        self.assertEqual(html.count('data-nav="preventive-maintenance"'), 1)
+
+    def test_pm_nav_injected_when_catalog_omits_it(self):
+        from accounts import enterprise_permissions as ep
+        from accounts.enterprise_permissions import build_navigation_menu
+
+        original = ep.NAV_MENU_CATALOG
+        ep.NAV_MENU_CATALOG = [
+            item for item in original if item[5] != 'preventive_maintenance'
+        ]
+        try:
+            nav_keys = {
+                item['nav_key']
+                for section in build_navigation_menu(self.tech, 'field_team_dashboard')
+                for item in section.get('items', [])
+            }
+            self.assertIn('preventive_maintenance', nav_keys)
+        finally:
+            ep.NAV_MENU_CATALOG = original
+
+        self.client.login(username='tech1', password='test-pass')
+        resp = self.client.get(reverse('order_list'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'data-nav="preventive-maintenance"')
+
+    def test_field_technician_without_any_enterprise_grants_still_sees_pm(self):
+        from accounts.enterprise_migration import seed_masters
+        from accounts.enterprise_models import Branch, Department, Designation, Employee
+        from accounts.enterprise_permissions import build_navigation_menu
+        from django.apps import apps
+        from preventive_maintenance.permissions import can_view_pm
+
+        seed_masters(apps, None)
+        dept = Department.objects.get(code='OPERATIONS')
+        desig = Designation.objects.get(code='TECHNICIAN')
+        branch = Branch.objects.filter(is_head_office=True).first() or Branch.objects.first()
+        Employee.objects.create(
+            user=self.tech,
+            employee_code='TECH-NAV-3',
+            department=dept,
+            designation=desig,
+            branch=branch,
+        )
+        self.assertTrue(can_view_pm(self.tech))
+        nav_keys = {
+            item['nav_key']
+            for section in build_navigation_menu(self.tech, 'field_team_dashboard')
+            for item in section.get('items', [])
+        }
+        self.assertIn('preventive_maintenance', nav_keys)
+
     def test_accounts_and_office_cannot_access_pm(self):
         self.client.login(username='acc1', password='test-pass')
         resp = self.client.get(reverse('pm_dashboard'))

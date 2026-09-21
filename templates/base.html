@@ -1,4 +1,4 @@
-{% load static %}
+{% load static ioms_nav %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,7 +29,7 @@
                 {% for section in enterprise_nav_sections %}
                 {% if section.label %}<div class="ioms-nav-section">{{ section.label }}</div>{% endif %}
                 {% for item in section.items %}
-                {% if item.nav_key != 'dashboard' %}
+                {% if item.nav_key != 'dashboard' and item.nav_key != 'preventive_maintenance' %}
                 <a href="{% url item.url_name %}{% if item.query %}?{{ item.query }}{% endif %}"
                    class="{% if nav_active == item.nav_key %}active{% endif %}">
                     <i class="bi {{ item.icon }}" aria-hidden="true"></i>
@@ -37,7 +37,13 @@
                     {% if item.badge %}<span class="badge">{{ item.badge }}</span>{% endif %}
                 </a>
                 {% endif %}
+                {% if item.nav_key == 'orders' %}
+                {% include 'preventive_maintenance/_pm_nav_link.html' %}
+                {% endif %}
                 {% endfor %}
+                {% if section.label == 'Operations' and not section.items|has_nav_key:'orders' %}
+                {% include 'preventive_maintenance/_pm_nav_link.html' %}
+                {% endif %}
                 {% endfor %}
             </nav>
             <div class="ioms-sidebar-footer">

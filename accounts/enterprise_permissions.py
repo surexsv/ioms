@@ -117,6 +117,10 @@ def enterprise_module_grants_access(user, module_key):
             return True
         if has_enterprise_permission(user, 'wcr'):
             return True
+        if module_key == 'preventive_maintenance':
+            from accounts.roles import is_field_staff
+            if is_field_staff(getattr(user, 'role', None)):
+                return True
 
     if codename:
         return False

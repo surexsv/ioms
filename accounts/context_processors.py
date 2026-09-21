@@ -178,9 +178,10 @@ def oms_navigation(request):
         ),
         'show_nav_daily_meetings': 'daily_meetings' in nav_keys or can_access_daily_meetings(user),
         'show_nav_employee_requests': 'employee_requests' in nav_keys or can_access_erms(user),
-        'show_nav_preventive_maintenance': _show_pm_nav(user, nav_keys),
         'show_nav_erms_pending': can_approve_requests(user),
         'erms_notification_count': erms_notification_count,
         'pending_approval_count': pending_approval_count,
         **widget_flags,
+        # Keep after widget_flags so a dashboard flag cannot hide the sidebar item.
+        'show_nav_preventive_maintenance': _show_pm_nav(user, nav_keys),
     }

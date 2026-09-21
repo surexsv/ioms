@@ -1,4 +1,4 @@
-{% if pm_summary %}
+{% if pm_summary or show_nav_preventive_maintenance or is_field_staff %}
 <div class="card pm-monitoring-panel" style="margin-bottom:20px;border-left:4px solid #2C5282;">
     <div class="case-monitoring-header">
         <div>
@@ -6,7 +6,7 @@
             <p class="case-dashboard-subtitle">Observation and monitoring. Execution stays on the existing Order workflow.</p>
         </div>
         <div class="case-dashboard-actions">
-            {% if can_create_pm %}
+            {% if can_create_pm or is_field_staff %}
             <a href="{% url 'pm_observation_create' %}" class="btn btn-primary btn-sm">New Observation</a>
             {% endif %}
             <a href="{% url 'pm_dashboard' %}" class="btn btn-secondary btn-sm">Open PM Module</a>

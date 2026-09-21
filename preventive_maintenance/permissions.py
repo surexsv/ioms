@@ -34,8 +34,15 @@ def can_view_pm(user):
         return False
     if can_access(user, MODULE_PREVENTIVE_MAINTENANCE):
         return True
-    # Existing field/ops users already have Order/Schedule/WCR access.
     from accounts.permissions import MODULE_ORDERS, MODULE_SCHEDULING, MODULE_WCR
+    from accounts.roles import is_field_staff
+
+    # Technicians / engineers always see the module, even if enterprise grants
+    # were seeded before Preventive Maintenance existed.
+    if is_field_staff(getattr(user, 'role', None)):
+        return True
+
+    # Existing field/ops users already have Order/Schedule/WCR access.
     if user_role(user) in _CREATE_ROLES and (
         can_access(user, MODULE_ORDERS)
         or can_access(user, MODULE_SCHEDULING)
