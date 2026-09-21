@@ -68,12 +68,15 @@ PERMISSION_LABELS = {
     'erms_approve': 'Approve Employee Requests',
     'erms_view_all': 'View All Employee Requests',
     'erms_financial_approve': 'Approve Financial Employee Requests',
+    'preventive_maintenance': 'Preventive Maintenance',
+    'preventive_maintenance_approve': 'Approve Preventive Maintenance',
 }
 
 MENU_SEED = [
     ('Dashboard', 'dashboard', 'bi-speedometer2', None, 10),
     ('Orders', 'order_list', 'bi-clipboard-check', 'orders', 20),
     ('Scheduling', 'schedule_list', 'bi-calendar-event', 'scheduling', 25),
+    ('Preventive Maintenance', 'pm_dashboard', 'bi-tools', 'preventive_maintenance', 26),
     ('BOQ', 'boq_list', 'bi-list-check', 'boq', 30),
     ('WCR', 'wcr_list', 'bi-file-earmark-text', 'wcr', 35),
     ('Clients', 'client_list', 'bi-people', 'clients', 40),

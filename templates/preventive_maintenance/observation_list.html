@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% block title %}Maintenance Observations — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Maintenance Observations</h1>
+    <div>
+        {% if can_create %}
+        <a href="{% url 'pm_observation_create' %}" class="btn btn-primary">New Observation</a>
+        {% endif %}
+        <a href="{% url 'pm_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+    </div>
+</div>
+
+<form method="get" class="card" style="margin-bottom:16px;">
+    <input type="hidden" name="view" value="{{ view }}">
+    <div class="detail-grid">
+        <div class="form-group">
+            <label>Customer</label>
+            <select name="client">
+                <option value="">All</option>
+                {% for c in clients %}
+                <option value="{{ c.pk }}" {% if filters.client == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Location</label>
+            <input type="text" name="location" value="{{ filters.location }}">
+        </div>
+        <div class="form-group">
+            <label>System</label>
+            <input type="text" name="system" value="{{ filters.system }}">
+        </div>
+        <div class="form-group">
+            <label>Equipment</label>
+            <input type="text" name="equipment" value="{{ filters.equipment }}">
+        </div>
+        <div class="form-group">
+            <label>Maintenance Type</label>
+            <select name="maintenance_type">
+                <option value="">All</option>
+                {% for code, label in type_choices %}
+                <option value="{{ code }}" {% if filters.maintenance_type == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Priority</label>
+            <select name="priority">
+                <option value="">All</option>
+                {% for code, label in priority_choices %}
+                <option value="{{ code }}" {% if filters.priority == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Status</label>
+            <select name="status">
+                <option value="">All</option>
+                {% for code, label in status_choices %}
+                <option value="{{ code }}" {% if filters.status == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Source</label>
+            <select name="source">
+                <option value="">All</option>
+                {% for code, label in source_choices %}
+                <option value="{{ code }}" {% if filters.source == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Assigned user</label>
+            <input type="text" name="assigned" value="{{ filters.assigned }}">
+        </div>
+        <div class="form-group">
+            <label>Linked Order</label>
+            <input type="text" name="linked_order" value="{{ filters.linked_order }}">
+        </div>
+        <div class="form-group">
+            <label>From</label>
+            <input type="date" name="date_from" value="{{ filters.date_from }}">
+        </div>
+        <div class="form-group">
+            <label>To</label>
+            <input type="date" name="date_to" value="{{ filters.date_to }}">
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Apply filters</button>
+    <a href="{% url 'pm_observation_list' %}" class="btn btn-secondary btn-sm">Reset</a>
+</form>
+
+<div class="card" style="overflow-x:auto;">
+    <table>
+        <tr>
+            <th>PM Ref</th>
+            <th>Customer</th>
+            <th>Observation</th>
+            <th>Type</th>
+            <th>Priority</th>
+            <th>Linked Order</th>
+            <th>Order Status</th>
+            <th>Schedule</th>
+            <th>Assigned</th>
+            <th>WCR</th>
+            <th>Due</th>
+        </tr>
+        {% for item in observations %}
+        {% with row=item.primary_order_row %}
+        <tr>
+            <td><a href="{% url 'pm_observation_detail' item.pk %}">{{ item.pm_number }}</a></td>
+            <td>{{ item.client.name }}</td>
+            <td>{{ item.observation|truncatechars:80 }}</td>
+            <td>{{ item.get_maintenance_type_display }}</td>
+            <td>{{ item.get_priority_display }}</td>
+            <td>
+                {% if row %}
+                <a href="{% url 'order_detail' row.order.pk %}">{{ row.order.order_no }}</a>
+                {% else %}—
+                {% endif %}
+            </td>
+            <td>{% if row %}{{ row.order_status }}{% else %}{{ item.monitoring_status_label }}{% endif %}</td>
+            <td>{% if row %}{{ row.schedule_status }}{% else %}—{% endif %}</td>
+            <td>{% if row %}{{ row.assigned }}{% else %}—{% endif %}</td>
+            <td>
+                {% if row %}{{ row.wcr_status }}{% else %}—{% endif %}
+            </td>
+            <td>
+                {% if item.is_overdue %}<strong class="text-danger">OVERDUE</strong><br>{% endif %}
+                {{ item.suggested_due_date|date:"d-m-Y"|default:"—" }}
+            </td>
+        </tr>
+        {% endwith %}
+        {% empty %}
+        <tr><td colspan="11">No observations match these filters.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

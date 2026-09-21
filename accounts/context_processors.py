@@ -22,6 +22,7 @@ from .permissions import (
     MODULE_SCHEDULING,
     MODULE_CASE_INTELLIGENCE,
     MODULE_ERMS,
+    MODULE_PREVENTIVE_MAINTENANCE,
     MODULE_ERMS_APPROVE,
     has_full_access,
     attendance_nav_url,
@@ -71,6 +72,8 @@ def _active_nav(request):
         return 'fleet'
     if path.startswith('/project-expenses'):
         return 'project_expenses'
+    if path.startswith('/preventive-maintenance'):
+        return 'preventive_maintenance'
     if path.startswith('/case-intelligence/reports'):
         return 'reports'
     if path.startswith('/case-intelligence'):
@@ -94,6 +97,13 @@ def _nav_keys_from_sections(sections):
         for item in section.get('items', []):
             keys.add(item.get('nav_key'))
     return keys
+
+
+def _show_pm_nav(user, nav_keys):
+    if 'preventive_maintenance' in nav_keys:
+        return True
+    from preventive_maintenance.permissions import can_view_pm
+    return can_view_pm(user)
 
 
 def oms_navigation(request):
@@ -176,4 +186,6 @@ def oms_navigation(request):
         'erms_notification_count': erms_notification_count,
         'pending_approval_count': pending_approval_count,
         **widget_flags,
+        # Keep after widget_flags so a dashboard flag cannot hide the sidebar item.
+        'show_nav_preventive_maintenance': _show_pm_nav(user, nav_keys),
     }

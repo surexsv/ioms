@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Preventive Maintenance — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Preventive Maintenance</h1>
+    <div>
+        {% if can_create %}
+        <a href="{% url 'pm_observation_create' %}" class="btn btn-primary">New Observation</a>
+        {% endif %}
+        <a href="{% url 'pm_observation_list' %}" class="btn btn-secondary">All Observations</a>
+        <a href="{% url 'pm_observation_list' %}?view=mine" class="btn btn-secondary">My Observations</a>
+    </div>
+</div>
+<p style="color:#555;margin-bottom:16px;">
+    Observation and monitoring only. Execution continues through the existing Order → Schedule → WCR workflow.
+</p>
+
+<div class="ioms-kpi-grid">
+    <a class="ioms-kpi ioms-kpi-link" href="{% url 'pm_observation_list' %}">
+        <div class="value">{{ stats.new_observations }}</div>
+        <div class="label">New Observations</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link ioms-kpi-warn" href="{% url 'pm_observation_list' %}?view=pending_review">
+        <div class="value">{{ stats.pending_review }}</div>
+        <div class="label">Pending Review</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link" href="{% url 'pm_observation_list' %}?view=order_not_created">
+        <div class="value">{{ stats.order_not_created }}</div>
+        <div class="label">Order Not Created</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link" href="{% url 'pm_observation_list' %}?view=scheduled">
+        <div class="value">{{ stats.scheduled }}</div>
+        <div class="label">Scheduled</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link" href="{% url 'pm_observation_list' %}?view=in_progress">
+        <div class="value">{{ stats.in_progress }}</div>
+        <div class="label">In Progress</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link" href="{% url 'pm_observation_list' %}?view=wcr_pending">
+        <div class="value">{{ stats.wcr_pending }}</div>
+        <div class="label">WCR Pending</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link" href="{% url 'pm_observation_list' %}?view=verification_pending">
+        <div class="value">{{ stats.verification_pending }}</div>
+        <div class="label">Verification Pending</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link ioms-kpi-danger" href="{% url 'pm_observation_list' %}?view=overdue">
+        <div class="value text-danger">{{ stats.overdue }}</div>
+        <div class="label">Overdue</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link" href="{% url 'pm_observation_list' %}?view=closed">
+        <div class="value">{{ stats.closed }}</div>
+        <div class="label">Closed</div>
+    </a>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Recent observations</h3>
+    <table>
+        <tr>
+            <th>PM Ref</th>
+            <th>Client</th>
+            <th>Type</th>
+            <th>Priority</th>
+            <th>Monitoring</th>
+            <th>Due</th>
+        </tr>
+        {% for item in recent %}
+        <tr>
+            <td><a href="{% url 'pm_observation_detail' item.pk %}">{{ item.pm_number }}</a></td>
+            <td>{{ item.client.name }}</td>
+            <td>{{ item.get_maintenance_type_display }}</td>
+            <td>{{ item.get_priority_display }}</td>
+            <td>{{ item.monitoring_status_label }}</td>
+            <td>{% if item.is_overdue %}<span class="text-danger">{{ item.suggested_due_date|date:"d-m-Y" }} OVERDUE</span>{% else %}{{ item.suggested_due_date|date:"d-m-Y"|default:"—" }}{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">No maintenance observations yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

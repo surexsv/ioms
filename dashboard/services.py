@@ -551,3 +551,20 @@ def merge_erms_widget(context, user):
     return context
 
 
+def merge_pm_widget(context, user):
+    """Show PM observation monitoring on existing role dashboards."""
+    from preventive_maintenance.permissions import can_approve_pm, can_create_pm, can_view_pm
+    if not can_view_pm(user):
+        return context
+    from preventive_maintenance.services import dashboard_stats, filter_mine, observations_for_user
+    qs = observations_for_user(user)
+    stats = dashboard_stats(qs)
+    context['pm_summary'] = {
+        **stats,
+        'my_observations': filter_mine(qs, user).count(),
+    }
+    context['can_create_pm'] = can_create_pm(user)
+    context['can_approve_pm'] = can_approve_pm(user)
+    return context
+
+

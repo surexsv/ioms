@@ -1,0 +1,27 @@
+{% if pm_summary or show_nav_preventive_maintenance or is_field_staff %}
+<div class="card pm-monitoring-panel" style="margin-bottom:20px;border-left:4px solid #2C5282;">
+    <div class="case-monitoring-header">
+        <div>
+            <h3 style="margin:0;">Preventive Maintenance</h3>
+            <p class="case-dashboard-subtitle">Observation and monitoring. Execution stays on the existing Order workflow.</p>
+        </div>
+        <div class="case-dashboard-actions">
+            {% if can_create_pm or is_field_staff %}
+            <a href="{% url 'pm_observation_create' %}" class="btn btn-primary btn-sm">New Observation</a>
+            {% endif %}
+            <a href="{% url 'pm_dashboard' %}" class="btn btn-secondary btn-sm">Open PM Module</a>
+            <a href="{% url 'pm_observation_list' %}?view=mine" class="btn btn-secondary btn-sm">My Observations</a>
+            {% if can_approve_pm and pm_summary.pending_review %}
+            <a href="{% url 'pm_observation_list' %}?view=pending_review" class="btn btn-warning btn-sm">Pending Review ({{ pm_summary.pending_review }})</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="ioms-kpi-grid" style="margin-top:12px;">
+        <div class="ioms-kpi"><div class="value">{{ pm_summary.my_observations }}</div><div class="label">My Observations</div></div>
+        <div class="ioms-kpi"><div class="value text-warning">{{ pm_summary.pending_review }}</div><div class="label">Pending Review</div></div>
+        <div class="ioms-kpi"><div class="value">{{ pm_summary.order_not_created }}</div><div class="label">Order Not Created</div></div>
+        <div class="ioms-kpi"><div class="value">{{ pm_summary.in_progress }}</div><div class="label">In Progress</div></div>
+        <div class="ioms-kpi"><div class="value text-danger">{{ pm_summary.overdue }}</div><div class="label">Overdue</div></div>
+    </div>
+</div>
+{% endif %}

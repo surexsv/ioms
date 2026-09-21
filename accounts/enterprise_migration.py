@@ -98,8 +98,10 @@ def _legacy_permissions_for_role(role):
             codenames.add(mapped)
     if role in ('ENGINEER', 'Technician', 'TECHNICIAN'):
         codenames.add('gps_tracking')
+        codenames.add('preventive_maintenance')
     if role in ('DIRECTOR', 'OPERATIONS', 'PROJECT_MANAGER', 'SUPERVISOR'):
         codenames.add('gps_tracking')
+        codenames.add('preventive_maintenance')
     return codenames
 
 

@@ -9,6 +9,7 @@
 {% include 'case_intelligence/_case_monitoring.html' %}
 {% include 'daily_meetings/_dom_monitoring.html' %}
 {% include 'employee_requests/_erms_monitoring.html' %}
+{% include 'preventive_maintenance/_pm_monitoring.html' %}
 
 <div class="ioms-kpi-grid">
     {% if show_nav_clients %}<div class="ioms-kpi"><div class="value">{{ total_clients }}</div><div class="label">Clients</div></div>{% endif %}
@@ -85,6 +86,7 @@
 {% endif %}
 
 <p class="ioms-action-row">
+    {% if show_nav_preventive_maintenance %}<a href="{% url 'pm_dashboard' %}" class="btn btn-sm btn-primary">Preventive Maintenance</a>{% endif %}
     {% if show_nav_quotations %}<a href="{% url 'quotation_list' %}" class="btn btn-sm btn-primary">Quotations</a>{% endif %}
     {% if show_nav_billing %}<a href="{% url 'invoice_list' %}" class="btn btn-sm btn-primary">Billing</a>{% endif %}
     {% if is_management_attendance %}<a href="{% url 'attendance_dashboard' %}" class="btn btn-sm btn-secondary">Attendance Management</a>{% elif show_nav_team_attendance %}<a href="{% url 'attendance_team' %}" class="btn btn-sm btn-secondary">Team Attendance</a>{% endif %}

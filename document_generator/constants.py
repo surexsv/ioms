@@ -9,6 +9,7 @@ DOC_ENQUIRY = 'ENQUIRY'
 DOC_ESTIMATE_BOQ = 'ESTIMATE_BOQ'
 DOC_REQUEST = 'REQUEST'
 DOC_SPECIAL_PROJECT = 'SPECIAL_PROJECT'
+DOC_PM = 'PM_OBSERVATION'
 
 DOCUMENT_TYPES = (
     (DOC_ORDER, 'Order'),
@@ -22,6 +23,7 @@ DOCUMENT_TYPES = (
     (DOC_ESTIMATE_BOQ, 'Estimate BOQ'),
     (DOC_REQUEST, 'Employee Request'),
     (DOC_SPECIAL_PROJECT, 'Special Project'),
+    (DOC_PM, 'PM Observation'),
 )
 
 DOCUMENT_TYPE_LABELS = dict(DOCUMENT_TYPES)
@@ -38,4 +40,5 @@ PREFIX_FIELD_MAP = {
     DOC_ESTIMATE_BOQ: 'estimate_boq_prefix',
     DOC_REQUEST: 'request_prefix',
     DOC_SPECIAL_PROJECT: 'special_project_prefix',
+    DOC_PM: 'pm_prefix',
 }

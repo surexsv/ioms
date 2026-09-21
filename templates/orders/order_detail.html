@@ -98,6 +98,19 @@
 </div>
 {% endif %}
 
+{% if linked_pm or related_pm_visits %}
+<div class="card">
+    <h3 style="margin-top:0;">Preventive Maintenance</h3>
+    {% for row in linked_pm %}
+    <p>Created from <a href="{% url 'pm_observation_detail' row.observation_id %}">{{ row.observation.pm_number }}</a>
+       {% if row.work_item %} — {{ row.work_item }}{% endif %}</p>
+    {% endfor %}
+    {% for obs in related_pm_visits %}
+    <p>Related visit observation: <a href="{% url 'pm_observation_detail' obs.pk %}">{{ obs.pm_number }}</a></p>
+    {% endfor %}
+</div>
+{% endif %}
+
 <div class="card">
     <h3 style="margin-top:0;">Special Project</h3>
     {% if special_project %}

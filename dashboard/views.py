@@ -16,7 +16,13 @@ from accounts.roles import ROLE_SUPERVISOR, ROLE_TECHNICIAN, ROLE_ENGINEER
 
 from orders.models import Order
 from scheduling.models import WorkSchedule
-from .services import build_dashboard_context, build_project_manager_context, merge_attendance_widget, merge_erms_widget
+from .services import (
+    build_dashboard_context,
+    build_project_manager_context,
+    merge_attendance_widget,
+    merge_erms_widget,
+    merge_pm_widget,
+)
 
 
 def _widget_context(user):
@@ -57,6 +63,7 @@ def director_dashboard(request):
         context['dom_summary'] = dashboard_summary()
     merge_attendance_widget(context, request.user)
     merge_erms_widget(context, request.user)
+    merge_pm_widget(context, request.user)
     return render(request, 'dashboard/dashboard.html', context)
 
 
@@ -94,6 +101,7 @@ def operations_dashboard(request):
         context['dom_summary'] = dashboard_summary()
     merge_attendance_widget(context, request.user)
     merge_erms_widget(context, request.user)
+    merge_pm_widget(context, request.user)
     return render(request, 'dashboard/dashboard.html', context)
 
 
@@ -180,7 +188,9 @@ def _build_field_team_context(user):
 @module_required(MODULE_DASHBOARD_ENGINEER)
 def field_team_dashboard(request):
     """Unified dashboard for Engineers and Technicians."""
-    return render(request, 'dashboard/field_team_dashboard.html', _build_field_team_context(request.user))
+    context = _build_field_team_context(request.user)
+    merge_pm_widget(context, request.user)
+    return render(request, 'dashboard/field_team_dashboard.html', context)
 
 
 def engineer_dashboard(request):
@@ -196,6 +206,7 @@ def project_manager_dashboard(request):
     context['dashboard_title'] = 'Project Manager Dashboard'
     merge_attendance_widget(context, request.user)
     merge_erms_widget(context, request.user)
+    merge_pm_widget(context, request.user)
     return render(request, 'dashboard/project_manager_dashboard.html', context)
 
 
@@ -278,4 +289,5 @@ def supervisor_dashboard(request):
     }
     merge_attendance_widget(context, user)
     merge_erms_widget(context, user)
+    merge_pm_widget(context, user)
     return render(request, 'dashboard/supervisor_dashboard.html', context)

@@ -11,6 +11,7 @@ from .constants import (
     DOC_QUOTATION,
     DOC_REQUEST,
     DOC_SCHEDULE,
+    DOC_PM,
     DOC_SPECIAL_PROJECT,
     DOC_WCR,
     DOCUMENT_TYPE_LABELS,
@@ -96,6 +97,12 @@ def _number_exists(document_number):
     try:
         from special_projects.models import SpecialProject
         if SpecialProject.objects.filter(project_number=document_number).exists():
+            return True
+    except Exception:
+        pass
+    try:
+        from preventive_maintenance.models import PMObservation
+        if PMObservation.objects.filter(pm_number=document_number).exists():
             return True
     except Exception:
         pass
@@ -213,6 +220,13 @@ def _collect_existing_numbers(document_type):
         ).values_list('project_number', flat=True)
     except Exception:
         field_map[DOC_SPECIAL_PROJECT] = []
+    try:
+        from preventive_maintenance.models import PMObservation
+        field_map[DOC_PM] = PMObservation.objects.exclude(
+            pm_number='',
+        ).values_list('pm_number', flat=True)
+    except Exception:
+        field_map[DOC_PM] = []
     return list(field_map.get(document_type, []))
 
 
@@ -233,6 +247,7 @@ def seed_counters_from_existing():
         (DOC_ESTIMATE_BOQ, 'Estimate BOQ'),
         (DOC_REQUEST, 'Employee Request'),
         (DOC_SPECIAL_PROJECT, 'Special Project'),
+        (DOC_PM, 'PM Observation'),
     ):
         max_by_series = {}
         for number in _collect_existing_numbers(document_type):

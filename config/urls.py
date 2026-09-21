@@ -32,6 +32,7 @@ urlpatterns = [
     path('special-projects/', include('special_projects.urls')),
     path('fleet/', include('fleet.urls')),
     path('project-expenses/', include('project_expenses.urls')),
+    path('preventive-maintenance/', include('preventive_maintenance.urls')),
 ]
 
 if settings.DEBUG:
