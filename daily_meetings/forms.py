@@ -35,6 +35,25 @@ class DailyMeetingForm(forms.ModelForm):
         ).order_by('username')
 
 
+class ParticipantMeetingDetailsForm(forms.ModelForm):
+    """Field staff enter topic and remarks without managing the meeting."""
+
+    class Meta:
+        model = DailyMeeting
+        fields = ['topic_of_day', 'remarks']
+        widgets = {
+            'topic_of_day': forms.TextInput(attrs={'class': 'form-control'}),
+            'remarks': forms.Textarea(attrs={'rows': 3}),
+        }
+
+
+class ParticipantUpdateForm(forms.Form):
+    discussion_notes = forms.CharField(
+        label='My update',
+        widget=forms.Textarea(attrs={'rows': 3}),
+    )
+
+
 class MeetingAttendanceForm(forms.ModelForm):
     class Meta:
         model = MeetingAttendance
