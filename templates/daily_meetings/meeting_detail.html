@@ -30,7 +30,7 @@
     <h3 style="margin-top:0;">Attendance ({{ att_stats.present_pct }}% present, {{ att_stats.late_pct }}% late)</h3>
     <div class="ioms-table-wrap">
         <table class="ioms-table">
-            <thead><tr><th>Employee</th><th>Role</th><th>Status</th><th>Join Time</th><th>Remarks</th>{% if can_sync_attendance %}<th></th>{% endif %}</tr></thead>
+            <thead><tr><th>Employee</th><th>Role</th><th>Status</th><th>Join Time</th><th>Remarks</th><th></th></tr></thead>
             <tbody>
             {% for a in meeting.attendees.all %}
             <tr>
@@ -39,9 +39,11 @@
                 <td>{{ a.get_status_display }}{% if a.is_manual_override %} <span class="badge">Manual</span>{% endif %}</td>
                 <td>{{ a.join_time|default:"—" }}</td>
                 <td>{{ a.remarks|truncatewords:8|default:"—" }}</td>
-                {% if can_sync_attendance %}
-                <td><a href="{% url 'dom_meeting_attendance_edit' meeting.pk a.pk %}" class="btn btn-sm btn-secondary">Edit</a></td>
-                {% endif %}
+                <td>
+                    {% if can_sync_attendance or a.employee_id == request.user.pk %}
+                    <a href="{% url 'dom_meeting_attendance_edit' meeting.pk a.pk %}" class="btn btn-sm btn-secondary">{% if a.employee_id == request.user.pk and not can_sync_attendance %}Enter my details{% else %}Edit{% endif %}</a>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
             </tbody>
@@ -69,10 +71,21 @@
 <div class="card">
     <div class="page-header" style="margin-bottom:8px;"><h3 style="margin:0;">Action Items</h3>{% if can_edit %}<a href="{% url 'dom_action_add_meeting' meeting.pk %}" class="btn btn-sm btn-primary">+ Add</a>{% endif %}</div>
     <table class="ioms-table">
-        <thead><tr><th>#</th><th>Description</th><th>Assigned</th><th>Target</th><th>Status</th></tr></thead>
+        <thead><tr><th>#</th><th>Description</th><th>Assigned</th><th>Target</th><th>Status</th><th></th></tr></thead>
         <tbody>{% for a in meeting.action_items.all %}
-        <tr><td>{{ a.action_number }}</td><td>{{ a.description|truncatechars:50 }}</td><td>{{ a.assigned_to|default:"—" }}</td><td>{{ a.target_date|default:"—" }}</td><td>{{ a.get_status_display }}</td></tr>
-        {% empty %}<tr><td colspan="5">No actions.</td></tr>{% endfor %}</tbody>
+        <tr>
+            <td>{{ a.action_number }}</td>
+            <td>{{ a.description|truncatechars:50 }}</td>
+            <td>{{ a.assigned_to|default:"—" }}</td>
+            <td>{{ a.target_date|default:"—" }}</td>
+            <td>{{ a.get_status_display }}</td>
+            <td>
+                {% if can_edit or a.assigned_to_id == request.user.pk %}
+                <a href="{% url 'dom_action_edit' a.pk %}" class="btn btn-sm btn-secondary">Update</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}<tr><td colspan="6">No actions.</td></tr>{% endfor %}</tbody>
     </table>
 </div>
 

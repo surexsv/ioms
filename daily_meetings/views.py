@@ -18,9 +18,10 @@ from .models import (
     MeetingActionItem, MeetingAttendance, MeetingDiscussion, OpenItemRegister,
 )
 from .permissions import (
-    can_access_daily_meetings, can_create_meeting, can_edit_meeting,
-    can_manage_agenda_template, can_manage_meetings, can_manage_open_items,
-    can_update_actions, can_view_action, can_view_all_meetings, field_team_action_only,
+    can_access_daily_meetings, can_create_meeting, can_edit_attendance_row,
+    can_edit_meeting, can_manage_agenda_template, can_manage_meetings,
+    can_manage_open_items, can_update_actions, can_update_assigned_action,
+    can_view_all_meetings, can_view_meeting, field_team_action_only,
 )
 from .pdf import build_mom_pdf
 from .services import (
@@ -35,25 +36,43 @@ def _deny(request):
     return access_denied_response(request, module_key='daily_meetings')
 
 
+def _dom_page_ctx(user, extra=None):
+    ctx = {
+        'dom_field_only': field_team_action_only(user),
+        'can_manage_meetings': can_manage_meetings(user),
+    }
+    if extra:
+        ctx.update(extra)
+    return ctx
+
+
+def _ensure_own_attendance(meeting, user):
+    attendance, _ = MeetingAttendance.objects.get_or_create(
+        meeting=meeting,
+        employee=user,
+        defaults={
+            'role_snapshot': getattr(user, 'role', '') or '',
+            'status': MeetingAttendance.STATUS_ABSENT,
+        },
+    )
+    return attendance
+
+
 @module_required(MODULE_DAILY_MEETINGS)
 def dom_dashboard(request):
     if not can_access_daily_meetings(request.user):
         return _deny(request)
-    if field_team_action_only(request.user):
-        return redirect('dom_action_tracker')
     summary = dashboard_summary()
     recent = DailyMeeting.objects.select_related('conducted_by').order_by('-meeting_date')[:8]
-    return render(request, 'daily_meetings/dashboard.html', {
+    return render(request, 'daily_meetings/dashboard.html', _dom_page_ctx(request.user, {
         'summary': summary,
         'recent_meetings': recent,
         'can_create_meeting': can_create_meeting(request.user),
-    })
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS)
 def meeting_list(request):
-    if field_team_action_only(request.user):
-        return redirect('dom_action_tracker')
     qs = DailyMeeting.objects.select_related('conducted_by', 'created_by').order_by('-meeting_date')
     form = MeetingFilterForm(request.GET)
     if form.is_valid():
@@ -65,11 +84,11 @@ def meeting_list(request):
             qs = qs.filter(status=form.cleaned_data['status'])
         if form.cleaned_data.get('meeting_type'):
             qs = qs.filter(meeting_type=form.cleaned_data['meeting_type'])
-    return render(request, 'daily_meetings/meeting_list.html', {
+    return render(request, 'daily_meetings/meeting_list.html', _dom_page_ctx(request.user, {
         'meetings': qs[:100],
         'filter_form': form,
         'can_create': can_create_meeting(request.user),
-    })
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS_MANAGE)
@@ -96,9 +115,9 @@ def meeting_create(request):
             'conducted_by': request.user,
             'status': DailyMeeting.STATUS_DRAFT,
         })
-    return render(request, 'daily_meetings/meeting_form.html', {
+    return render(request, 'daily_meetings/meeting_form.html', _dom_page_ctx(request.user, {
         'form': form, 'title': 'Create Daily Meeting',
-    })
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS)
@@ -119,17 +138,19 @@ def meeting_detail(request, pk):
         DailyMeeting.objects.select_related('conducted_by', 'created_by'),
         pk=pk,
     )
-    if field_team_action_only(request.user):
-        return redirect('dom_action_tracker')
-    if not can_view_all_meetings(request.user) and not can_manage_meetings(request.user):
+    if not can_view_meeting(request.user, meeting):
         return _deny(request)
+    own_attendance = None
+    if not can_manage_meetings(request.user) and not request.user.is_superuser:
+        own_attendance = _ensure_own_attendance(meeting, request.user)
     att_stats = meeting_attendance_stats(meeting)
-    return render(request, 'daily_meetings/meeting_detail.html', {
+    return render(request, 'daily_meetings/meeting_detail.html', _dom_page_ctx(request.user, {
         'meeting': meeting,
         'att_stats': att_stats,
+        'own_attendance': own_attendance,
         'can_edit': can_edit_meeting(request.user, meeting),
         'can_sync_attendance': can_manage_meetings(request.user),
-    })
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS_MANAGE)
@@ -145,9 +166,9 @@ def meeting_edit(request, pk):
             return redirect('dom_meeting_detail', pk=pk)
     else:
         form = DailyMeetingForm(instance=meeting)
-    return render(request, 'daily_meetings/meeting_form.html', {
+    return render(request, 'daily_meetings/meeting_form.html', _dom_page_ctx(request.user, {
         'form': form, 'title': 'Edit Meeting', 'meeting': meeting,
-    })
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS_MANAGE)
@@ -175,7 +196,7 @@ def meeting_complete(request, pk):
 def meeting_attendance_edit(request, pk, att_pk):
     meeting = get_object_or_404(DailyMeeting, pk=pk)
     att = get_object_or_404(MeetingAttendance, pk=att_pk, meeting=meeting)
-    if not can_manage_meetings(request.user):
+    if not can_edit_attendance_row(request.user, att):
         return _deny(request)
     if request.method == 'POST':
         form = MeetingAttendanceForm(request.POST, instance=att)
@@ -185,9 +206,9 @@ def meeting_attendance_edit(request, pk, att_pk):
             return redirect('dom_meeting_detail', pk=pk)
     else:
         form = MeetingAttendanceForm(instance=att)
-    return render(request, 'daily_meetings/attendance_edit.html', {
+    return render(request, 'daily_meetings/attendance_edit.html', _dom_page_ctx(request.user, {
         'form': form, 'meeting': meeting, 'attendance': att,
-    })
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS_MANAGE)
@@ -205,9 +226,9 @@ def discussion_add(request, pk):
             return redirect('dom_meeting_detail', pk=pk)
     else:
         form = MeetingDiscussionForm()
-    return render(request, 'daily_meetings/discussion_form.html', {
+    return render(request, 'daily_meetings/discussion_form.html', _dom_page_ctx(request.user, {
         'form': form, 'meeting': meeting, 'title': 'Add Discussion',
-    })
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS_MANAGE)
@@ -226,9 +247,9 @@ def message_add(request, pk):
             return redirect('dom_meeting_detail', pk=pk)
     else:
         form = ManagementMessageForm(initial={'message_date': meeting.meeting_date})
-    return render(request, 'daily_meetings/message_form.html', {
+    return render(request, 'daily_meetings/message_form.html', _dom_page_ctx(request.user, {
         'form': form, 'meeting': meeting,
-    })
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS)
@@ -251,27 +272,31 @@ def action_add(request, pk=None):
             return redirect('dom_action_tracker')
     else:
         form = MeetingActionItemForm()
-    return render(request, 'daily_meetings/action_form.html', {
+    return render(request, 'daily_meetings/action_form.html', _dom_page_ctx(request.user, {
         'form': form, 'meeting': meeting, 'title': 'Add Action Item',
-    })
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS)
 def action_edit(request, pk):
     action = get_object_or_404(MeetingActionItem, pk=pk)
-    if not can_update_actions(request.user) and not can_view_action(request.user, action):
+    if not can_update_assigned_action(request.user, action):
         return _deny(request)
+    participant_only = field_team_action_only(request.user) and not can_update_actions(request.user)
     if request.method == 'POST':
-        form = MeetingActionItemForm(request.POST, instance=action)
+        form = MeetingActionItemForm(request.POST, instance=action, participant_only=participant_only)
         if form.is_valid():
             form.save()
             messages.success(request, 'Action item updated.')
+            if action.meeting_id:
+                return redirect('dom_meeting_detail', pk=action.meeting_id)
             return redirect('dom_action_tracker')
     else:
-        form = MeetingActionItemForm(instance=action)
-    return render(request, 'daily_meetings/action_form.html', {
+        form = MeetingActionItemForm(instance=action, participant_only=participant_only)
+    return render(request, 'daily_meetings/action_form.html', _dom_page_ctx(request.user, {
         'form': form, 'meeting': action.meeting, 'action': action, 'title': 'Update Action',
-    })
+        'participant_only': participant_only,
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS)
@@ -290,11 +315,11 @@ def action_tracker(request):
             qs = qs.filter(assigned_to=form.cleaned_data['assigned_to'])
         if form.cleaned_data.get('priority'):
             qs = qs.filter(priority=form.cleaned_data['priority'])
-    return render(request, 'daily_meetings/action_tracker.html', {
+    return render(request, 'daily_meetings/action_tracker.html', _dom_page_ctx(request.user, {
         'actions': qs[:200],
         'filter_form': form,
         'can_add': can_manage_meetings(request.user),
-    })
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS)
@@ -302,10 +327,10 @@ def open_items_list(request):
     if field_team_action_only(request.user):
         return _deny(request)
     items = OpenItemRegister.objects.select_related('owner').order_by('status', 'title')
-    return render(request, 'daily_meetings/open_items.html', {
+    return render(request, 'daily_meetings/open_items.html', _dom_page_ctx(request.user, {
         'items': items,
         'can_manage': can_manage_open_items(request.user),
-    })
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS_MANAGE)
@@ -347,8 +372,6 @@ def open_item_edit(request, pk):
 
 @module_required(MODULE_DAILY_MEETINGS)
 def meeting_calendar(request):
-    if field_team_action_only(request.user):
-        return redirect('dom_action_tracker')
     year = int(request.GET.get('year', timezone.localdate().year))
     month = int(request.GET.get('month', timezone.localdate().month))
     meetings = DailyMeeting.objects.filter(
@@ -358,24 +381,25 @@ def meeting_calendar(request):
     for m in meetings:
         by_date.setdefault(m.meeting_date, []).append(m)
     calendar_rows = sorted(by_date.items(), key=lambda x: x[0])
-    return render(request, 'daily_meetings/calendar.html', {
+    return render(request, 'daily_meetings/calendar.html', _dom_page_ctx(request.user, {
         'year': year, 'month': month, 'calendar_rows': calendar_rows,
-    })
+    }))
 
 
 @module_required(MODULE_DAILY_MEETINGS)
 def mom_print(request, pk):
     meeting = get_object_or_404(DailyMeeting, pk=pk)
-    if not can_view_all_meetings(request.user) and not can_manage_meetings(request.user):
+    if not can_view_meeting(request.user, meeting):
         return _deny(request)
     ctx = mom_context(meeting)
+    ctx.update(_dom_page_ctx(request.user))
     return render(request, 'daily_meetings/mom_print.html', ctx)
 
 
 @module_required(MODULE_DAILY_MEETINGS)
 def mom_pdf(request, pk):
     meeting = get_object_or_404(DailyMeeting, pk=pk)
-    if not can_view_all_meetings(request.user) and not can_manage_meetings(request.user):
+    if not can_view_meeting(request.user, meeting):
         return _deny(request)
     ctx = mom_context(meeting)
     buffer = build_mom_pdf(ctx)

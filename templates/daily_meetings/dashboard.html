@@ -11,6 +11,9 @@
         {% endif %}
     </div>
 </div>
+{% if not can_create_meeting %}
+<p class="dom-hint">Open today's meeting to enter your attendance and update your assigned actions. Operations or a Project Manager creates the meeting.</p>
+{% endif %}
 
 <div class="ioms-kpi-grid">
     <div class="ioms-kpi">
