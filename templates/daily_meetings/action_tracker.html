@@ -4,8 +4,16 @@
 {% include 'daily_meetings/_subnav.html' with dom_nav='actions' %}
 <div class="page-header">
     <h1>Action Tracker</h1>
-    {% if can_add %}<a href="{% url 'dom_action_add' %}" class="btn btn-primary">+ Add Action</a>{% endif %}
+    <div>
+        {% if can_open_todays_meeting %}
+        <a href="{% url 'dom_meeting_today' %}" class="btn btn-success">Enter meeting details</a>
+        {% endif %}
+        {% if can_add %}<a href="{% url 'dom_action_add' %}" class="btn btn-primary">+ Add Action</a>{% endif %}
+    </div>
 </div>
+{% if can_open_todays_meeting %}
+<p class="dom-hint">Action Tracker lists work assigned to you. Click <strong>Enter meeting details</strong> to open today's meeting and record your attendance.</p>
+{% endif %}
 <div class="card" style="margin-bottom:16px;">
     <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
         {{ filter_form.status }} {{ filter_form.assigned_to }} {{ filter_form.priority }}

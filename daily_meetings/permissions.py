@@ -44,6 +44,11 @@ def can_create_meeting(user):
     return can_manage_meetings(user)
 
 
+def can_open_todays_meeting(user):
+    """Any Daily Meetings participant can open or start today's meeting."""
+    return can_access_daily_meetings(user)
+
+
 def can_edit_meeting(user, meeting=None):
     if has_full_access(user):
         return True

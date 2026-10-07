@@ -424,7 +424,6 @@ def resolve_path_module(path):
     if path.startswith('/daily-meetings/'):
         manage_paths = (
             '/daily-meetings/meetings/create/',
-            '/daily-meetings/meetings/today/',
             '/daily-meetings/agenda-template/',
             '/daily-meetings/open-items/create/',
             '/daily-meetings/actions/add/',

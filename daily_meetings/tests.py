@@ -56,7 +56,7 @@ class DailyMeetingParticipantTests(TestCase):
         dashboard = self.client.get(reverse('dom_dashboard'))
         self.assertEqual(dashboard.status_code, 200)
         self.assertContains(dashboard, 'Daily Operations Meeting')
-        self.assertContains(dashboard, 'enter your attendance')
+        self.assertContains(dashboard, 'Enter meeting details')
         self.assertNotContains(dashboard, '+ New Meeting')
 
         listing = self.client.get(reverse('dom_meeting_list'))
@@ -72,12 +72,22 @@ class DailyMeetingParticipantTests(TestCase):
         self.client.force_login(self.tech)
         create = self.client.get(reverse('dom_meeting_create'))
         self.assertIn(create.status_code, {302, 403})
-        today = self.client.get(reverse('dom_meeting_today'))
-        self.assertIn(today.status_code, {302, 403})
-        if today.status_code in {301, 302, 303}:
-            self.assertIn('access-denied', today.url)
+        if create.status_code in {301, 302, 303}:
+            self.assertIn('access-denied', create.url)
         edit = self.client.get(reverse('dom_meeting_edit', args=[self.meeting.pk]))
         self.assertIn(edit.status_code, {302, 403})
+
+    def test_technician_can_open_todays_meeting_from_action_tracker(self):
+        self.client.force_login(self.tech)
+        tracker = self.client.get(reverse('dom_action_tracker'))
+        self.assertEqual(tracker.status_code, 200)
+        self.assertContains(tracker, 'Enter meeting details')
+        today = self.client.get(reverse('dom_meeting_today'))
+        self.assertEqual(today.status_code, 302)
+        self.assertIn(f'/daily-meetings/meetings/{self.meeting.pk}/', today.url)
+        detail = self.client.get(today.url)
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, 'Enter my details')
 
     def test_technician_enters_own_attendance(self):
         self.client.force_login(self.tech)
@@ -140,6 +150,10 @@ class DailyMeetingParticipantTests(TestCase):
         self.assertEqual(
             resolve_path_module('/daily-meetings/meetings/create/'),
             MODULE_DAILY_MEETINGS_MANAGE,
+        )
+        self.assertEqual(
+            resolve_path_module('/daily-meetings/meetings/today/'),
+            MODULE_DAILY_MEETINGS,
         )
 
     def test_supervisor_without_module_cannot_open_daily_meetings(self):

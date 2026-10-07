@@ -20,8 +20,9 @@ from .models import (
 from .permissions import (
     can_access_daily_meetings, can_create_meeting, can_edit_attendance_row,
     can_edit_meeting, can_manage_agenda_template, can_manage_meetings,
-    can_manage_open_items, can_update_actions, can_update_assigned_action,
-    can_view_all_meetings, can_view_meeting, field_team_action_only,
+    can_manage_open_items, can_open_todays_meeting, can_update_actions,
+    can_update_assigned_action, can_view_all_meetings, can_view_meeting,
+    field_team_action_only,
 )
 from .pdf import build_mom_pdf
 from .services import (
@@ -40,6 +41,7 @@ def _dom_page_ctx(user, extra=None):
     ctx = {
         'dom_field_only': field_team_action_only(user),
         'can_manage_meetings': can_manage_meetings(user),
+        'can_open_todays_meeting': can_open_todays_meeting(user),
     }
     if extra:
         ctx.update(extra)
@@ -122,7 +124,7 @@ def meeting_create(request):
 
 @module_required(MODULE_DAILY_MEETINGS)
 def meeting_today(request):
-    if not can_manage_meetings(request.user):
+    if not can_open_todays_meeting(request.user):
         return _deny(request)
     meeting, created = create_daily_meeting(request.user)
     if created:

@@ -5,14 +5,16 @@
 <div class="page-header">
     <h1>Daily Operations Meeting</h1>
     <div>
+        {% if can_open_todays_meeting %}
+        <a href="{% url 'dom_meeting_today' %}" class="btn btn-success">Enter meeting details</a>
+        {% endif %}
         {% if can_create_meeting %}
-        <a href="{% url 'dom_meeting_today' %}" class="btn btn-success">Today's Meeting</a>
         <a href="{% url 'dom_meeting_create' %}" class="btn btn-primary">+ New Meeting</a>
         {% endif %}
     </div>
 </div>
 {% if not can_create_meeting %}
-<p class="dom-hint">Open today's meeting to enter your attendance and update your assigned actions. Operations or a Project Manager creates the meeting.</p>
+<p class="dom-hint">Use <strong>Enter meeting details</strong> to open today's meeting, mark your attendance, and update your assigned actions.</p>
 {% endif %}
 
 <div class="ioms-kpi-grid">
