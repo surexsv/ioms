@@ -8,6 +8,8 @@ from accounts.models import User
 from accounts.roles import ROLE_OPERATIONS, ROLE_SUPERVISOR, ROLE_TECHNICIAN
 from attendance.permissions import default_attendance_required_for_role
 
+from accounts.permissions import MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MANAGE, resolve_path_module
+
 from .models import DailyMeeting, MeetingActionItem, MeetingAttendance
 from .services import create_daily_meeting
 
@@ -121,6 +123,24 @@ class DailyMeetingParticipantTests(TestCase):
         self.assertEqual(self.action.status, MeetingActionItem.STATUS_COMPLETED)
         self.assertEqual(self.action.assigned_to, self.tech)
         self.assertEqual(self.action.description, 'Check site toolbox')
+
+    def test_participant_edit_urls_are_not_mapped_to_manage_module(self):
+        self.assertEqual(
+            resolve_path_module('/daily-meetings/actions/1/edit/'),
+            MODULE_DAILY_MEETINGS,
+        )
+        self.assertEqual(
+            resolve_path_module('/daily-meetings/meetings/1/attendance/3/edit/'),
+            MODULE_DAILY_MEETINGS,
+        )
+        self.assertEqual(
+            resolve_path_module('/daily-meetings/meetings/1/edit/'),
+            MODULE_DAILY_MEETINGS_MANAGE,
+        )
+        self.assertEqual(
+            resolve_path_module('/daily-meetings/meetings/create/'),
+            MODULE_DAILY_MEETINGS_MANAGE,
+        )
 
     def test_supervisor_without_module_cannot_open_daily_meetings(self):
         self.client.force_login(self.supervisor)

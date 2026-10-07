@@ -427,8 +427,26 @@ def resolve_path_module(path):
             '/daily-meetings/meetings/today/',
             '/daily-meetings/agenda-template/',
             '/daily-meetings/open-items/create/',
+            '/daily-meetings/actions/add/',
         )
-        if any(path.startswith(p) for p in manage_paths) or '/edit/' in path:
+        if any(path.startswith(p) for p in manage_paths):
+            return MODULE_DAILY_MEETINGS_MANAGE
+        # Meeting-management URLs. Participant attendance/action edits stay view-level.
+        if path.startswith('/daily-meetings/meetings/') and any(
+            token in path
+            for token in (
+                '/complete/',
+                '/sync-attendance/',
+                '/discussion/',
+                '/message/',
+                '/action/add/',
+            )
+        ):
+            return MODULE_DAILY_MEETINGS_MANAGE
+        import re
+        if re.match(r'^/daily-meetings/meetings/\d+/edit/?$', path):
+            return MODULE_DAILY_MEETINGS_MANAGE
+        if re.match(r'^/daily-meetings/open-items/\d+/edit/?$', path):
             return MODULE_DAILY_MEETINGS_MANAGE
         return MODULE_DAILY_MEETINGS
     if path.startswith('/requests/'):
