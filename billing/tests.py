@@ -683,3 +683,29 @@ class ExistingBillingRegressionTests(InvoiceImportTestCase):
         self.assertEqual(pdfs['Content-Type'], 'application/zip')
         with ZipFile(BytesIO(pdfs.content)) as archive:
             self.assertTrue(any(name.endswith('.pdf') for name in archive.namelist()))
+
+
+class OpenpyxlIsolationTests(TestCase):
+    def test_import_service_does_not_import_openpyxl_at_module_level(self):
+        import billing.import_service as svc
+        self.assertFalse(hasattr(svc, 'Workbook'))
+        self.assertFalse(hasattr(svc, 'load_workbook'))
+
+    def test_missing_openpyxl_raises_import_file_error_not_importerror(self):
+        from billing.import_service import ImportFileError, _load_openpyxl
+
+        real_import = __import__
+
+        def blocker(name, *args, **kwargs):
+            if name == 'openpyxl' or str(name).startswith('openpyxl.'):
+                raise ImportError('openpyxl missing')
+            return real_import(name, *args, **kwargs)
+
+        with patch('builtins.__import__', side_effect=blocker):
+            with self.assertRaises(ImportFileError):
+                _load_openpyxl()
+
+    def test_dashboard_url_resolves_even_if_excel_helpers_are_unavailable(self):
+        reverse('director_dashboard')
+        reverse('invoice_list')
+        reverse('invoice_import_upload')

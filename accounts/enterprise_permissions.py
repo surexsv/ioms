@@ -5,6 +5,7 @@ Legacy role/_ACCESS is fallback only when no employee profile exists.
 """
 
 from django.core.cache import cache
+from django.urls import NoReverseMatch, reverse
 
 from accounts.enterprise_constants import LEGACY_MODULE_TO_PERMISSION, SUPERUSER_ONLY_PERMISSIONS
 
@@ -409,6 +410,11 @@ def build_navigation_menu(user, dashboard_url_name='director_dashboard'):
             from daily_meetings.permissions import field_team_action_only
             if field_team_action_only(user):
                 resolved_url = 'dom_meeting_today'
+
+        try:
+            reverse(resolved_url)
+        except NoReverseMatch:
+            continue
 
         item = {
             'label': label,

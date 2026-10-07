@@ -1,6 +1,8 @@
-from django.shortcuts import redirect, render
-from django.db.models import Q
+import logging
 from datetime import date, timedelta
+
+from django.db.models import Q
+from django.shortcuts import redirect, render
 
 from accounts.decorators import module_required
 from accounts.permissions import (
@@ -24,6 +26,8 @@ from .services import (
     merge_pm_widget,
 )
 
+logger = logging.getLogger('ioms.security')
+
 
 def _widget_context(user):
     from accounts.enterprise_permissions import dashboard_widget_flags
@@ -40,27 +44,32 @@ def director_dashboard(request):
     )
     context.update(flags)
     context['dashboard_title'] = 'Director Dashboard'
-    from case_intelligence.stuck_cases import director_monitoring_summary
-    from django.urls import reverse
-    summary = director_monitoring_summary()
-    c = summary['counts']
-    context['case_monitoring'] = {
-        'title': 'Case Monitoring',
-        'cards': [
-            {'label': 'Total Open Cases', 'value': summary['total_open_cases'],
-             'url': reverse('case_stuck_dashboard')},
-            {'label': 'Cases Awaiting Action', 'value': summary['cases_awaiting_action'],
-             'url': reverse('case_stuck_dashboard') + '?category=stuck_total', 'warn': True},
-            {'label': 'Stuck Cases', 'value': summary['stuck_cases'],
-             'url': reverse('case_stuck_dashboard') + '?category=stuck_total', 'warn': True},
-            {'label': 'Overdue Cases', 'value': summary['overdue_cases'],
-             'url': reverse('case_stuck_dashboard') + '?category=pending_payments', 'danger': True},
-        ],
-    }
-    from daily_meetings.services import dashboard_summary
-    from daily_meetings.permissions import can_access_daily_meetings
-    if can_access_daily_meetings(request.user):
-        context['dom_summary'] = dashboard_summary()
+    try:
+        from case_intelligence.stuck_cases import director_monitoring_summary
+        from django.urls import reverse
+        summary = director_monitoring_summary()
+        context['case_monitoring'] = {
+            'title': 'Case Monitoring',
+            'cards': [
+                {'label': 'Total Open Cases', 'value': summary['total_open_cases'],
+                 'url': reverse('case_stuck_dashboard')},
+                {'label': 'Cases Awaiting Action', 'value': summary['cases_awaiting_action'],
+                 'url': reverse('case_stuck_dashboard') + '?category=stuck_total', 'warn': True},
+                {'label': 'Stuck Cases', 'value': summary['stuck_cases'],
+                 'url': reverse('case_stuck_dashboard') + '?category=stuck_total', 'warn': True},
+                {'label': 'Overdue Cases', 'value': summary['overdue_cases'],
+                 'url': reverse('case_stuck_dashboard') + '?category=pending_payments', 'danger': True},
+            ],
+        }
+    except Exception:
+        logger.exception('Director case monitoring failed')
+    try:
+        from daily_meetings.services import dashboard_summary
+        from daily_meetings.permissions import can_access_daily_meetings
+        if can_access_daily_meetings(request.user):
+            context['dom_summary'] = dashboard_summary()
+    except Exception:
+        logger.exception('Director daily meeting widget failed')
     merge_attendance_widget(context, request.user)
     merge_erms_widget(context, request.user)
     merge_pm_widget(context, request.user)
@@ -77,28 +86,34 @@ def operations_dashboard(request):
     )
     context.update(flags)
     context['dashboard_title'] = 'Operations Dashboard'
-    from case_intelligence.stuck_cases import operations_monitoring_summary
-    from django.urls import reverse
-    summary = operations_monitoring_summary()
-    context['case_monitoring'] = {
-        'title': 'Operational Monitoring',
-        'cards': [
-            {'label': 'Pending Surveys', 'value': summary['pending_surveys'],
-             'url': reverse('case_stuck_dashboard') + '?category=delayed_surveys', 'warn': True},
-            {'label': 'Pending Quotations', 'value': summary['pending_quotations'],
-             'url': reverse('case_stuck_dashboard') + '?category=quotation_followup', 'warn': True},
-            {'label': 'Pending Orders', 'value': summary['pending_orders'],
-             'url': reverse('case_stuck_dashboard') + '?category=delayed_orders', 'warn': True},
-            {'label': 'Pending WCR', 'value': summary['pending_wcr'],
-             'url': reverse('case_stuck_dashboard') + '?category=pending_wcr', 'warn': True},
-            {'label': 'Delayed Cases', 'value': summary['delayed_cases'],
-             'url': reverse('case_stuck_dashboard') + '?category=stuck_total', 'danger': True},
-        ],
-    }
-    from daily_meetings.services import dashboard_summary
-    from daily_meetings.permissions import can_access_daily_meetings
-    if can_access_daily_meetings(request.user):
-        context['dom_summary'] = dashboard_summary()
+    try:
+        from case_intelligence.stuck_cases import operations_monitoring_summary
+        from django.urls import reverse
+        summary = operations_monitoring_summary()
+        context['case_monitoring'] = {
+            'title': 'Operational Monitoring',
+            'cards': [
+                {'label': 'Pending Surveys', 'value': summary['pending_surveys'],
+                 'url': reverse('case_stuck_dashboard') + '?category=delayed_surveys', 'warn': True},
+                {'label': 'Pending Quotations', 'value': summary['pending_quotations'],
+                 'url': reverse('case_stuck_dashboard') + '?category=quotation_followup', 'warn': True},
+                {'label': 'Pending Orders', 'value': summary['pending_orders'],
+                 'url': reverse('case_stuck_dashboard') + '?category=delayed_orders', 'warn': True},
+                {'label': 'Pending WCR', 'value': summary['pending_wcr'],
+                 'url': reverse('case_stuck_dashboard') + '?category=pending_wcr', 'warn': True},
+                {'label': 'Delayed Cases', 'value': summary['delayed_cases'],
+                 'url': reverse('case_stuck_dashboard') + '?category=stuck_total', 'danger': True},
+            ],
+        }
+    except Exception:
+        logger.exception('Operations case monitoring failed')
+    try:
+        from daily_meetings.services import dashboard_summary
+        from daily_meetings.permissions import can_access_daily_meetings
+        if can_access_daily_meetings(request.user):
+            context['dom_summary'] = dashboard_summary()
+    except Exception:
+        logger.exception('Operations daily meeting widget failed')
     merge_attendance_widget(context, request.user)
     merge_erms_widget(context, request.user)
     merge_pm_widget(context, request.user)
