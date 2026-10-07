@@ -82,9 +82,12 @@ class MeetingActionItemForm(forms.ModelForm):
             'remarks': forms.Textarea(attrs={'rows': 2}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, participant_only=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['assigned_to'].queryset = User.objects.filter(is_active=True).order_by('username')
+        if participant_only:
+            for name in ('description', 'assigned_to', 'target_date', 'priority'):
+                self.fields.pop(name, None)
 
 
 class ManagementMessageForm(forms.ModelForm):

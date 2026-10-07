@@ -44,6 +44,11 @@ def can_create_meeting(user):
     return can_manage_meetings(user)
 
 
+def can_open_todays_meeting(user):
+    """Any Daily Meetings participant can open or start today's meeting."""
+    return can_access_daily_meetings(user)
+
+
 def can_edit_meeting(user, meeting=None):
     if has_full_access(user):
         return True
@@ -61,6 +66,11 @@ def can_update_actions(user):
     return can_manage_meetings(user) or role == ROLE_SUPERVISOR
 
 
+def can_view_meeting(user, meeting=None):
+    """Participants can open meeting pages; they cannot create or manage them."""
+    return can_access_daily_meetings(user)
+
+
 def can_view_action(user, action):
     if has_full_access(user) or can_view_all_meetings(user):
         return True
@@ -74,8 +84,20 @@ def can_view_action(user, action):
     return False
 
 
+def can_edit_attendance_row(user, attendance):
+    if has_full_access(user) or can_manage_meetings(user):
+        return True
+    return bool(attendance and attendance.employee_id == user.pk)
+
+
+def can_update_assigned_action(user, action):
+    if can_update_actions(user):
+        return True
+    return bool(action and action.assigned_to_id == user.pk)
+
+
 def field_team_action_only(user):
-    """Field engineers/technicians see action tracker only."""
+    """Field engineers/technicians participate; they do not manage meetings."""
     if has_full_access(user):
         return False
     return user_role(user) in (ROLE_ENGINEER, ROLE_TECHNICIAN)
