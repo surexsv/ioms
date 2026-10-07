@@ -131,5 +131,8 @@ class WorkScheduleForm(forms.ModelForm):
         start = cleaned.get('scheduled_start_date')
         end = cleaned.get('scheduled_end_date')
         if start and end and end < start:
-            raise forms.ValidationError('Scheduled end date cannot be before start date.')
+            self.add_error(
+                'scheduled_end_date',
+                'Scheduled end date cannot be before start date.',
+            )
         return cleaned

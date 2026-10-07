@@ -60,34 +60,29 @@ class WorkSchedule(models.Model):
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='schedules_as_pm',
-        limit_choices_to={'role': 'PROJECT_MANAGER'},
     )
     supervisor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='schedules_as_supervisor',
-        limit_choices_to={'role__in': ['SUPERVISOR', 'Supervisor']},
     )
     lead_engineer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='schedules_as_lead_engineer',
-        limit_choices_to={'role': 'ENGINEER'},
         verbose_name='Engineer',
     )
     supporting_engineers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         related_name='schedules_as_supporting_engineer',
         blank=True,
-        limit_choices_to={'role': 'ENGINEER'},
     )
     technicians = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         related_name='schedules_as_technician',
         blank=True,
-        limit_choices_to={'role': 'Technician'},
     )
     assigned_engineers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -127,7 +122,9 @@ class WorkSchedule(models.Model):
         return f'{self.schedule_number or "Schedule"} — {ref}'
 
     def clean(self):
-        if bool(self.order_id) == bool(self.enquiry_id):
+        has_order = bool(self.order_id or getattr(self, 'order', None))
+        has_enquiry = bool(self.enquiry_id or getattr(self, 'enquiry', None))
+        if has_order == has_enquiry:
             raise ValidationError('Schedule must be linked to exactly one enquiry or order.')
 
     @property

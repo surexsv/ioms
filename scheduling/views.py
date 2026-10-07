@@ -105,12 +105,10 @@ def schedule_create(request, order_pk):
             'scheduled_start_date': today,
             **order_team_initial(order),
         }
-        if order.expected_completion_date:
-            initial['scheduled_end_date'] = order.expected_completion_date
-        elif order.order_date:
-            initial['scheduled_end_date'] = order.order_date
-        else:
-            initial['scheduled_end_date'] = today
+        end = order.expected_completion_date or today
+        if end < today:
+            end = today
+        initial['scheduled_end_date'] = end
         form = WorkScheduleForm(initial=initial, order=order)
 
     return render(request, 'scheduling/schedule_form.html', {

@@ -57,8 +57,20 @@
         <input type="hidden" name="latitude" value="">
         <input type="hidden" name="longitude" value="">
 
-        {% if form.non_field_errors %}
-        <div class="alert alert-warning" style="margin-bottom:16px;">{{ form.non_field_errors }}</div>
+        {% if form.errors %}
+        <div class="alert alert-danger" style="margin-bottom:16px;">
+            <strong>Please correct the following:</strong>
+            <ul class="errorlist" style="margin:8px 0 0 18px;">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
         {% endif %}
 
         {% if can_field_edit and not can_edit %}
@@ -67,17 +79,6 @@
         <div class="form-group">{{ form.field_work_remarks.label_tag }}{{ form.field_work_remarks }}</div>
         <button type="submit" class="btn btn-primary">Save Progress</button>
         {% else %}
-        <h3 style="margin-top:20px;">Team Assignment</h3>
-        <div class="form-row">
-            <div class="form-group">{{ form.project_manager.label_tag }}{{ form.project_manager }}</div>
-            <div class="form-group">{{ form.supervisor.label_tag }}{{ form.supervisor }}</div>
-        </div>
-        <div class="form-group">{{ form.lead_engineer.label_tag }}{{ form.lead_engineer }}</div>
-        <div class="form-row">
-            <div class="form-group">{{ form.supporting_engineers.label_tag }}{{ form.supporting_engineers }}<small class="text-muted">Hold Ctrl/Cmd to select multiple</small></div>
-            <div class="form-group">{{ form.technicians.label_tag }}{{ form.technicians }}<small class="text-muted">Hold Ctrl/Cmd to select multiple</small></div>
-        </div>
-
         <h3 style="margin-top:20px;">Schedule Details</h3>
         <div class="form-row">
             <div class="form-group">{{ form.scheduled_start_date.label_tag }}{{ form.scheduled_start_date }}{% if form.scheduled_start_date.errors %}<span class="field-error">{{ form.scheduled_start_date.errors.0 }}</span>{% endif %}</div>
@@ -85,17 +86,28 @@
             <div class="form-group">{{ form.scheduled_time.label_tag }}{{ form.scheduled_time }}{% if form.scheduled_time.errors %}<span class="field-error">{{ form.scheduled_time.errors.0 }}</span>{% endif %}</div>
         </div>
         <div class="form-row">
-            <div class="form-group">{{ form.expected_duration_hours.label_tag }}{{ form.expected_duration_hours }}</div>
-            <div class="form-group">{{ form.expected_man_days.label_tag }}{{ form.expected_man_days }}</div>
+            <div class="form-group">{{ form.expected_duration_hours.label_tag }}{{ form.expected_duration_hours }}{% if form.expected_duration_hours.errors %}<span class="field-error">{{ form.expected_duration_hours.errors.0 }}</span>{% endif %}</div>
+            <div class="form-group">{{ form.expected_man_days.label_tag }}{{ form.expected_man_days }}{% if form.expected_man_days.errors %}<span class="field-error">{{ form.expected_man_days.errors.0 }}</span>{% endif %}</div>
+        </div>
+
+        <h3 style="margin-top:20px;">Team Assignment</h3>
+        <div class="form-row">
+            <div class="form-group">{{ form.project_manager.label_tag }}{{ form.project_manager }}{% if form.project_manager.errors %}<span class="field-error">{{ form.project_manager.errors.0 }}</span>{% endif %}</div>
+            <div class="form-group">{{ form.supervisor.label_tag }}{{ form.supervisor }}{% if form.supervisor.errors %}<span class="field-error">{{ form.supervisor.errors.0 }}</span>{% endif %}</div>
+        </div>
+        <div class="form-group">{{ form.lead_engineer.label_tag }}{{ form.lead_engineer }}{% if form.lead_engineer.errors %}<span class="field-error">{{ form.lead_engineer.errors.0 }}</span>{% endif %}</div>
+        <div class="form-row">
+            <div class="form-group">{{ form.supporting_engineers.label_tag }}{{ form.supporting_engineers }}<small class="text-muted">Hold Ctrl/Cmd to select multiple</small>{% if form.supporting_engineers.errors %}<span class="field-error">{{ form.supporting_engineers.errors.0 }}</span>{% endif %}</div>
+            <div class="form-group">{{ form.technicians.label_tag }}{{ form.technicians }}<small class="text-muted">Hold Ctrl/Cmd to select multiple</small>{% if form.technicians.errors %}<span class="field-error">{{ form.technicians.errors.0 }}</span>{% endif %}</div>
         </div>
 
         <h3 style="margin-top:20px;">Resources</h3>
-        <div class="form-group">{{ form.assigned_engineers.label_tag }}{{ form.assigned_engineers }}</div>
-        <div class="form-group">{{ form.team_leader.label_tag }}{{ form.team_leader }}</div>
-        <div class="form-group">{{ form.vehicle_assigned.label_tag }}{{ form.vehicle_assigned }}</div>
+        <div class="form-group">{{ form.assigned_engineers.label_tag }}{{ form.assigned_engineers }}{% if form.assigned_engineers.errors %}<span class="field-error">{{ form.assigned_engineers.errors.0 }}</span>{% endif %}</div>
+        <div class="form-group">{{ form.team_leader.label_tag }}{{ form.team_leader }}{% if form.team_leader.errors %}<span class="field-error">{{ form.team_leader.errors.0 }}</span>{% endif %}</div>
+        <div class="form-group">{{ form.vehicle_assigned.label_tag }}{{ form.vehicle_assigned }}{% if form.vehicle_assigned.errors %}<span class="field-error">{{ form.vehicle_assigned.errors.0 }}</span>{% endif %}</div>
         <div class="form-group">{{ form.resource_requirements.label_tag }}{{ form.resource_requirements }}</div>
         <div class="form-group">{{ form.work_instructions.label_tag }}{{ form.work_instructions }}</div>
-        <div class="form-group">{{ form.status.label_tag }}{{ form.status }}</div>
+        <div class="form-group">{{ form.status.label_tag }}{{ form.status }}{% if form.status.errors %}<span class="field-error">{{ form.status.errors.0 }}</span>{% endif %}</div>
         {% if can_edit or not schedule %}
         <button type="submit" class="btn btn-primary">{% if schedule %}Save Schedule{% else %}Create Schedule{% endif %}</button>
         {% endif %}
