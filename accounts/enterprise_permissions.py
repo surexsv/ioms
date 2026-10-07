@@ -405,6 +405,10 @@ def build_navigation_menu(user, dashboard_url_name='director_dashboard'):
         else:
             resolved_url = url_name
             resolved_query = query
+        if nav_key == 'daily_meetings':
+            from daily_meetings.permissions import field_team_action_only
+            if field_team_action_only(user):
+                resolved_url = 'dom_meeting_today'
 
         item = {
             'label': label,

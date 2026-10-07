@@ -15,6 +15,40 @@
     </div>
 </div>
 
+{% if show_participant_entry %}
+<div class="card">
+    <h2 style="margin-top:0;">Enter meeting details</h2>
+    <form method="post" style="margin-bottom:20px;">
+        {% csrf_token %}
+        <input type="hidden" name="participant_action" value="save_details">
+        {% for field in details_form %}
+        <div class="form-group">{{ field.label_tag }}{{ field }}</div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Save meeting details</button>
+    </form>
+    {% if attendance_form %}
+    <h3>My attendance</h3>
+    <form method="post" style="margin-bottom:20px;">
+        {% csrf_token %}
+        <input type="hidden" name="participant_action" value="save_attendance">
+        {% for field in attendance_form %}
+        <div class="form-group">{{ field.label_tag }}{{ field }}</div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Save attendance</button>
+    </form>
+    {% endif %}
+    <h3>My update</h3>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="participant_action" value="add_update">
+        {% for field in update_form %}
+        <div class="form-group">{{ field.label_tag }}{{ field }}</div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Save update</button>
+    </form>
+</div>
+{% endif %}
+
 <div class="card">
     <div class="detail-grid">
         <div class="detail-item"><label>Date</label><p>{{ meeting.meeting_date|date:"d-M-Y" }} {{ meeting.meeting_time|time:"H:i" }}</p></div>

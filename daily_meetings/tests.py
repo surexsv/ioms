@@ -8,9 +8,15 @@ from accounts.models import User
 from accounts.roles import ROLE_OPERATIONS, ROLE_SUPERVISOR, ROLE_TECHNICIAN
 from attendance.permissions import default_attendance_required_for_role
 
-from accounts.permissions import MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MANAGE, resolve_path_module
+from accounts.enterprise_permissions import build_navigation_menu
+from accounts.permissions import (
+    MODULE_DAILY_MEETINGS,
+    MODULE_DAILY_MEETINGS_MANAGE,
+    allowed_dashboard_url_name,
+    resolve_path_module,
+)
 
-from .models import DailyMeeting, MeetingActionItem, MeetingAttendance
+from .models import MeetingActionItem, MeetingAttendance, MeetingDiscussion
 from .services import create_daily_meeting
 
 PASSWORD = 'testpass123'
@@ -54,10 +60,11 @@ class DailyMeetingParticipantTests(TestCase):
     def test_technician_opens_dashboard_and_meeting_not_action_tracker(self):
         self.client.force_login(self.tech)
         dashboard = self.client.get(reverse('dom_dashboard'))
-        self.assertEqual(dashboard.status_code, 200)
-        self.assertContains(dashboard, 'Daily Operations Meeting')
-        self.assertContains(dashboard, 'Enter meeting details')
-        self.assertNotContains(dashboard, '+ New Meeting')
+        self.assertEqual(dashboard.status_code, 302)
+        self.assertEqual(dashboard.url, reverse('dom_meeting_today'))
+        today = self.client.get(dashboard.url)
+        self.assertEqual(today.status_code, 302)
+        self.assertIn(f'/daily-meetings/meetings/{self.meeting.pk}/', today.url)
 
         listing = self.client.get(reverse('dom_meeting_list'))
         self.assertEqual(listing.status_code, 200)
@@ -65,8 +72,13 @@ class DailyMeetingParticipantTests(TestCase):
 
         detail = self.client.get(reverse('dom_meeting_detail', args=[self.meeting.pk]))
         self.assertEqual(detail.status_code, 200)
-        self.assertContains(detail, 'Enter my details')
+        self.assertContains(detail, 'Enter meeting details')
+        self.assertContains(detail, 'Save meeting details')
         self.assertContains(detail, 'Check site toolbox')
+        menu = build_navigation_menu(self.tech, allowed_dashboard_url_name(self.tech))
+        urls = {item['url_name'] for section in menu for item in section['items']}
+        self.assertIn('dom_meeting_today', urls)
+        self.assertNotIn('dom_dashboard', urls)
 
     def test_technician_cannot_create_or_manage_meeting(self):
         self.client.force_login(self.tech)
@@ -87,7 +99,44 @@ class DailyMeetingParticipantTests(TestCase):
         self.assertIn(f'/daily-meetings/meetings/{self.meeting.pk}/', today.url)
         detail = self.client.get(today.url)
         self.assertEqual(detail.status_code, 200)
-        self.assertContains(detail, 'Enter my details')
+        self.assertContains(detail, 'Enter meeting details')
+        self.assertContains(detail, 'Save meeting details')
+
+    def test_technician_saves_meeting_details_on_the_meeting_page(self):
+        self.client.force_login(self.tech)
+        url = reverse('dom_meeting_detail', args=[self.meeting.pk])
+        response = self.client.post(url, {
+            'participant_action': 'save_details',
+            'topic_of_day': 'Site safety',
+            'remarks': 'Checked toolbox and PPE',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.meeting.refresh_from_db()
+        self.assertEqual(self.meeting.topic_of_day, 'Site safety')
+        self.assertEqual(self.meeting.remarks, 'Checked toolbox and PPE')
+
+        att = MeetingAttendance.objects.get(meeting=self.meeting, employee=self.tech)
+        response = self.client.post(url, {
+            'participant_action': 'save_attendance',
+            'status': MeetingAttendance.STATUS_PRESENT,
+            'join_time': '09:05',
+            'remarks': 'Joined from site',
+        })
+        self.assertEqual(response.status_code, 302)
+        att.refresh_from_db()
+        self.assertEqual(att.status, MeetingAttendance.STATUS_PRESENT)
+
+        response = self.client.post(url, {
+            'participant_action': 'add_update',
+            'discussion_notes': 'Fiber splicing completed on span 12',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            MeetingDiscussion.objects.filter(
+                meeting=self.meeting,
+                discussion_notes='Fiber splicing completed on span 12',
+            ).exists()
+        )
 
     def test_technician_enters_own_attendance(self):
         self.client.force_login(self.tech)

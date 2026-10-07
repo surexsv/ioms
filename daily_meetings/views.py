@@ -11,7 +11,8 @@ from accounts.permissions import MODULE_DAILY_MEETINGS, MODULE_DAILY_MEETINGS_MA
 from .forms import (
     ActionFilterForm, AgendaTemplateItemForm, DailyMeetingForm,
     ManagementMessageForm, MeetingActionItemForm, MeetingAttendanceForm,
-    MeetingDiscussionForm, MeetingFilterForm, OpenItemRegisterForm, ReportMonthForm,
+    MeetingDiscussionForm, MeetingFilterForm, OpenItemRegisterForm,
+    ParticipantMeetingDetailsForm, ParticipantUpdateForm, ReportMonthForm,
 )
 from .models import (
     AgendaTemplateItem, DailyMeeting, ManagementMessage,
@@ -64,6 +65,8 @@ def _ensure_own_attendance(meeting, user):
 def dom_dashboard(request):
     if not can_access_daily_meetings(request.user):
         return _deny(request)
+    if field_team_action_only(request.user) and can_open_todays_meeting(request.user):
+        return redirect('dom_meeting_today')
     summary = dashboard_summary()
     recent = DailyMeeting.objects.select_related('conducted_by').order_by('-meeting_date')[:8]
     return render(request, 'daily_meetings/dashboard.html', _dom_page_ctx(request.user, {
@@ -143,13 +146,53 @@ def meeting_detail(request, pk):
     if not can_view_meeting(request.user, meeting):
         return _deny(request)
     own_attendance = None
-    if not can_manage_meetings(request.user) and not request.user.is_superuser:
+    show_participant_entry = (
+        field_team_action_only(request.user)
+        and meeting.status != DailyMeeting.STATUS_COMPLETED
+    )
+    if show_participant_entry:
         own_attendance = _ensure_own_attendance(meeting, request.user)
+    elif not can_manage_meetings(request.user) and not request.user.is_superuser:
+        own_attendance = _ensure_own_attendance(meeting, request.user)
+
+    details_form = ParticipantMeetingDetailsForm(instance=meeting)
+    attendance_form = MeetingAttendanceForm(instance=own_attendance) if own_attendance else None
+    update_form = ParticipantUpdateForm()
+
+    if request.method == 'POST' and show_participant_entry:
+        action = request.POST.get('participant_action')
+        if action == 'save_details':
+            details_form = ParticipantMeetingDetailsForm(request.POST, instance=meeting)
+            if details_form.is_valid():
+                details_form.save()
+                messages.success(request, 'Meeting details saved.')
+                return redirect('dom_meeting_detail', pk=pk)
+        elif action == 'save_attendance' and own_attendance:
+            attendance_form = MeetingAttendanceForm(request.POST, instance=own_attendance)
+            if attendance_form.is_valid():
+                attendance_form.save()
+                messages.success(request, 'Your attendance was saved.')
+                return redirect('dom_meeting_detail', pk=pk)
+        elif action == 'add_update':
+            update_form = ParticipantUpdateForm(request.POST)
+            if update_form.is_valid():
+                MeetingDiscussion.objects.create(
+                    meeting=meeting,
+                    agenda_title=f'{request.user.get_full_name() or request.user.username} update',
+                    discussion_notes=update_form.cleaned_data['discussion_notes'],
+                )
+                messages.success(request, 'Your meeting update was recorded.')
+                return redirect('dom_meeting_detail', pk=pk)
+
     att_stats = meeting_attendance_stats(meeting)
     return render(request, 'daily_meetings/meeting_detail.html', _dom_page_ctx(request.user, {
         'meeting': meeting,
         'att_stats': att_stats,
         'own_attendance': own_attendance,
+        'show_participant_entry': show_participant_entry,
+        'details_form': details_form,
+        'attendance_form': attendance_form,
+        'update_form': update_form,
         'can_edit': can_edit_meeting(request.user, meeting),
         'can_sync_attendance': can_manage_meetings(request.user),
     }))
