@@ -64,9 +64,13 @@ def resolve_reference_display(schedule):
 
 def resolve_client_name(schedule):
     if schedule.order_id:
-        return schedule.order.client.name
+        client = getattr(schedule.order, 'client', None)
+        if client:
+            return client.name
     if schedule.enquiry_id:
-        return schedule.enquiry.client.name
+        client = getattr(schedule.enquiry, 'client', None)
+        if client:
+            return client.name
     return '—'
 
 

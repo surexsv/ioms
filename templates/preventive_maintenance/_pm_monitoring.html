@@ -17,11 +17,11 @@
         </div>
     </div>
     <div class="ioms-kpi-grid" style="margin-top:12px;">
-        <div class="ioms-kpi"><div class="value">{{ pm_summary.my_observations }}</div><div class="label">My Observations</div></div>
-        <div class="ioms-kpi"><div class="value text-warning">{{ pm_summary.pending_review }}</div><div class="label">Pending Review</div></div>
-        <div class="ioms-kpi"><div class="value">{{ pm_summary.order_not_created }}</div><div class="label">Order Not Created</div></div>
-        <div class="ioms-kpi"><div class="value">{{ pm_summary.in_progress }}</div><div class="label">In Progress</div></div>
-        <div class="ioms-kpi"><div class="value text-danger">{{ pm_summary.overdue }}</div><div class="label">Overdue</div></div>
+        <div class="ioms-kpi"><div class="value">{{ pm_summary.my_observations|default:0 }}</div><div class="label">My Observations</div></div>
+        <div class="ioms-kpi"><div class="value text-warning">{{ pm_summary.pending_review|default:0 }}</div><div class="label">Pending Review</div></div>
+        <div class="ioms-kpi"><div class="value">{{ pm_summary.order_not_created|default:0 }}</div><div class="label">Order Not Created</div></div>
+        <div class="ioms-kpi"><div class="value">{{ pm_summary.in_progress|default:0 }}</div><div class="label">In Progress</div></div>
+        <div class="ioms-kpi"><div class="value text-danger">{{ pm_summary.overdue|default:0 }}</div><div class="label">Overdue</div></div>
     </div>
 </div>
 {% endif %}

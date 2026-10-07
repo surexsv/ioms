@@ -12,10 +12,6 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.utils import timezone
-from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Alignment, Font, PatternFill, Protection
-from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.datavalidation import DataValidation
 
 from billing.approval import (
     ACTION_APPROVED,
@@ -120,24 +116,53 @@ class ImportFileError(Exception):
     """Raised when the uploaded file cannot be parsed as an import batch."""
 
 
+def _load_openpyxl():
+    """Import Excel helpers only when a workbook is read or written.
+
+    Billing URLs import this module at startup. A missing openpyxl package
+    must not take down the rest of IOMS (including the Director Dashboard).
+    """
+    try:
+        from openpyxl import Workbook, load_workbook
+        from openpyxl.styles import Alignment, Font, PatternFill, Protection
+        from openpyxl.utils import get_column_letter
+        from openpyxl.worksheet.datavalidation import DataValidation
+    except ImportError as exc:
+        raise ImportFileError(
+            'Excel import requires openpyxl. On the server run: '
+            'pip install "openpyxl>=3.1" && sudo systemctl restart ioms'
+        ) from exc
+    return {
+        'Workbook': Workbook,
+        'load_workbook': load_workbook,
+        'Alignment': Alignment,
+        'Font': Font,
+        'PatternFill': PatternFill,
+        'Protection': Protection,
+        'get_column_letter': get_column_letter,
+        'DataValidation': DataValidation,
+    }
+
+
 def build_template_workbook():
     """Return an openpyxl workbook with the official invoice import template."""
-    wb = Workbook()
+    xl = _load_openpyxl()
+    wb = xl['Workbook']()
     ws = wb.active
     ws.title = 'Invoices'
 
-    header_font = Font(bold=True, color='FFFFFF')
-    header_fill = PatternFill('solid', fgColor='0F2D52')
-    required_fill = PatternFill('solid', fgColor='8B1E3F')
-    sample_fill = PatternFill('solid', fgColor='F4F7FB')
+    header_font = xl['Font'](bold=True, color='FFFFFF')
+    header_fill = xl['PatternFill']('solid', fgColor='0F2D52')
+    required_fill = xl['PatternFill']('solid', fgColor='8B1E3F')
+    sample_fill = xl['PatternFill']('solid', fgColor='F4F7FB')
 
     for col, header in enumerate(TEMPLATE_HEADERS, 1):
         cell = ws.cell(1, col, header)
         cell.font = header_font
         cell.fill = required_fill if header in REQUIRED_HEADERS else header_fill
-        cell.alignment = Alignment(horizontal='center', wrap_text=True)
-        cell.protection = Protection(locked=True)
-        ws.column_dimensions[get_column_letter(col)].width = max(16, len(header) + 4)
+        cell.alignment = xl['Alignment'](horizontal='center', wrap_text=True)
+        cell.protection = xl['Protection'](locked=True)
+        ws.column_dimensions[xl['get_column_letter'](col)].width = max(16, len(header) + 4)
 
     sample = [
         'ITSPL26270001',
@@ -169,7 +194,7 @@ def build_template_workbook():
         cell = ws.cell(3, col, value)
         cell.fill = sample_fill
 
-    gst_dv = DataValidation(
+    gst_dv = xl['DataValidation'](
         type='decimal',
         operator='equal',
         formula1=str(int(COMPANY_GST_RATE)),
@@ -179,10 +204,12 @@ def build_template_workbook():
         error=f'GST % must be {int(COMPANY_GST_RATE)} as per company configuration.',
     )
     gst_col = TEMPLATE_HEADERS.index('GST %') + 1
-    gst_dv.add(f'{get_column_letter(gst_col)}2:{get_column_letter(gst_col)}501')
+    gst_dv.add(
+        f'{xl["get_column_letter"](gst_col)}2:{xl["get_column_letter"](gst_col)}501'
+    )
     ws.add_data_validation(gst_dv)
     ws.freeze_panes = 'A2'
-    ws.auto_filter.ref = f'A1:{get_column_letter(len(TEMPLATE_HEADERS))}1'
+    ws.auto_filter.ref = f'A1:{xl["get_column_letter"](len(TEMPLATE_HEADERS))}1'
 
     instructions = wb.create_sheet('Instructions')
     lines = [
@@ -203,7 +230,7 @@ def build_template_workbook():
         'Date formats: DD-MM-YYYY, DD/MM/YYYY, YYYY-MM-DD.',
     ]
     instructions.column_dimensions['A'].width = 120
-    title_font = Font(bold=True, size=14, color='0F2D52')
+    title_font = xl['Font'](bold=True, size=14, color='0F2D52')
     for i, line in enumerate(lines, 1):
         cell = instructions.cell(i, 1, line)
         if i == 1:
@@ -420,6 +447,7 @@ def _load_rows(content, ext):
         reader = csv.reader(io.StringIO(text), dialect)
         return [list(row) for row in reader]
 
+    load_workbook = _load_openpyxl()['load_workbook']
     workbook = load_workbook(io.BytesIO(content), read_only=True, data_only=False)
     try:
         sheet = workbook.active

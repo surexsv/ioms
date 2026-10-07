@@ -1,12 +1,12 @@
 import json
+import logging
 
 from datetime import date
 
-
-
 from django.db.models import Q, Sum
-
 from django.db.models.functions import TruncMonth
+
+logger = logging.getLogger('ioms.security')
 
 
 
@@ -113,85 +113,57 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
 
 
 
+    financial_defaults = {
+        'total_invoices': 0,
+        'payment_pending': 0,
+        'invoice_pending_approval': 0,
+        'invoice_approved_count': 0,
+        'invoice_rejected_count': 0,
+        'total_revenue': 0,
+        'months': json.dumps([]),
+        'revenues': json.dumps([]),
+    }
     if show_financial:
-
-        total_invoices = Invoice.objects.count()
-
-        payment_pending = Invoice.objects.filter(payment_status='PENDING').count()
-
-        invoice_pending_approval = Invoice.objects.filter(
-            approval_status__in=['SUBMITTED', 'UNDER_REVIEW'],
-        ).count()
-        invoice_approved_count = Invoice.objects.filter(approval_status='APPROVED').count()
-        invoice_rejected_count = Invoice.objects.filter(approval_status='REJECTED').count()
-
-        total_revenue = Invoice.objects.filter(
-            approval_status='APPROVED',
-        ).aggregate(Sum('total'))['total__sum'] or 0
-
-        monthly_revenue = (
-
-            Invoice.objects
-
-            .annotate(month=TruncMonth('invoice_date'))
-
-            .values('month')
-
-            .annotate(total=Sum('total'))
-
-            .order_by('month')
-
-        )
-
-        months, revenues = [], []
-
-        for entry in monthly_revenue:
-
-            months.append(entry['month'].strftime("%b %Y"))
-
-            revenues.append(float(entry['total']))
-
-        context.update({
-
-            'total_invoices': total_invoices,
-
-            'payment_pending': payment_pending,
-
-            'invoice_pending_approval': invoice_pending_approval,
-
-            'invoice_approved_count': invoice_approved_count,
-
-            'invoice_rejected_count': invoice_rejected_count,
-
-            'total_revenue': total_revenue,
-
-            'months': json.dumps(months),
-
-            'revenues': json.dumps(revenues),
-
-        })
-
+        try:
+            total_invoices = Invoice.objects.count()
+            payment_pending = Invoice.objects.filter(payment_status='PENDING').count()
+            invoice_pending_approval = Invoice.objects.filter(
+                approval_status__in=['SUBMITTED', 'UNDER_REVIEW'],
+            ).count()
+            invoice_approved_count = Invoice.objects.filter(approval_status='APPROVED').count()
+            invoice_rejected_count = Invoice.objects.filter(approval_status='REJECTED').count()
+            total_revenue = Invoice.objects.filter(
+                approval_status='APPROVED',
+            ).aggregate(Sum('total'))['total__sum'] or 0
+            monthly_revenue = (
+                Invoice.objects
+                .annotate(month=TruncMonth('invoice_date'))
+                .values('month')
+                .annotate(total=Sum('total'))
+                .order_by('month')
+            )
+            months, revenues = [], []
+            for entry in monthly_revenue:
+                month = entry['month']
+                if not month:
+                    continue
+                months.append(month.strftime("%b %Y"))
+                revenues.append(float(entry['total'] or 0))
+            context.update({
+                'total_invoices': total_invoices,
+                'payment_pending': payment_pending,
+                'invoice_pending_approval': invoice_pending_approval,
+                'invoice_approved_count': invoice_approved_count,
+                'invoice_rejected_count': invoice_rejected_count,
+                'total_revenue': total_revenue,
+                'months': json.dumps(months),
+                'revenues': json.dumps(revenues),
+            })
+        except Exception:
+            logger.exception('Dashboard financial stats failed')
+            context.update(financial_defaults)
     else:
-
-        context.update({
-
-            'total_invoices': 0,
-
-            'payment_pending': 0,
-
-            'invoice_pending_approval': 0,
-
-            'invoice_approved_count': 0,
-
-            'invoice_rejected_count': 0,
-
-            'total_revenue': 0,
-
-            'months': json.dumps([]),
-
-            'revenues': json.dumps([]),
-
-        })
+        context.update(financial_defaults)
 
 
 
@@ -553,18 +525,36 @@ def merge_erms_widget(context, user):
 
 def merge_pm_widget(context, user):
     """Show PM observation monitoring on existing role dashboards."""
-    from preventive_maintenance.permissions import can_approve_pm, can_create_pm, can_view_pm
-    if not can_view_pm(user):
-        return context
-    from preventive_maintenance.services import dashboard_stats, filter_mine, observations_for_user
-    qs = observations_for_user(user)
-    stats = dashboard_stats(qs)
-    context['pm_summary'] = {
-        **stats,
-        'my_observations': filter_mine(qs, user).count(),
+    empty = {
+        'new_observations': 0,
+        'pending_review': 0,
+        'order_not_created': 0,
+        'scheduled': 0,
+        'in_progress': 0,
+        'wcr_pending': 0,
+        'verification_pending': 0,
+        'overdue': 0,
+        'closed': 0,
+        'my_observations': 0,
     }
-    context['can_create_pm'] = can_create_pm(user)
-    context['can_approve_pm'] = can_approve_pm(user)
+    try:
+        from preventive_maintenance.permissions import can_approve_pm, can_create_pm, can_view_pm
+        if not can_view_pm(user):
+            return context
+        from preventive_maintenance.services import dashboard_stats, filter_mine, observations_for_user
+        qs = observations_for_user(user)
+        stats = dashboard_stats(qs)
+        context['pm_summary'] = {
+            **stats,
+            'my_observations': filter_mine(qs, user).count(),
+        }
+        context['can_create_pm'] = can_create_pm(user)
+        context['can_approve_pm'] = can_approve_pm(user)
+    except Exception:
+        logger.exception('PM dashboard widget failed')
+        context.setdefault('pm_summary', empty)
+        context.setdefault('can_create_pm', False)
+        context.setdefault('can_approve_pm', False)
     return context
 
 
