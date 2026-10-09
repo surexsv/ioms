@@ -303,6 +303,7 @@ _DASHBOARD_MODULES = (
 NAV_MENU_CATALOG = [
     # section_label, permission, label, url_name, icon, nav_key, query_string
     ('', 'dashboard', 'Dashboard', '__dashboard__', 'bi-speedometer2', 'dashboard', ''),
+    ('Operations', 'reports', 'Scoreboard', 'productivity_dashboard', 'bi-graph-up-arrow', 'productivity', ''),
     ('Operations', 'orders', 'Orders', 'order_list', 'bi-clipboard-check', 'orders', ''),
     ('Operations', 'preventive_maintenance', 'Preventive Maintenance', 'pm_dashboard', 'bi-tools', 'preventive_maintenance', ''),
     ('Operations', 'scheduling', 'Scheduling', 'schedule_list', 'bi-calendar-event', 'schedules', ''),
@@ -311,7 +312,6 @@ NAV_MENU_CATALOG = [
     ('Operations', 'project_expenses', 'Project Expenses', 'peams_dashboard', 'bi-cash-stack', 'project_expenses', ''),
     ('Operations', 'boq', 'BOQ', 'boq_list', 'bi-list-check', 'boq', ''),
     ('Operations', 'wcr', 'WCR', 'wcr_list', 'bi-file-earmark-text', 'wcr', ''),
-    ('Operations', 'reports', 'Scoreboard', 'productivity_dashboard', 'bi-graph-up-arrow', 'productivity', ''),
     ('Customers', 'clients', 'Clients', 'client_list', 'bi-people', 'clients', ''),
     ('Finance', 'quotation', 'Quotations', 'quotation_list', 'bi-file-earmark-ruled', 'quotations', ''),
     ('Finance', 'billing', 'Billing', 'invoice_list', 'bi-receipt', 'billing', ''),

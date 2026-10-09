@@ -299,3 +299,14 @@ class ScoreboardTests(TestCase):
         self.assertContains(response, 'Performance Scoreboard')
         self.assertContains(response, 'Pat Manager')
         self.assertNotContains(response, 'Save director marks')
+
+    def test_director_dashboard_shows_the_scoreboard(self):
+        self.client.force_login(self.director)
+        response = self.client.get(reverse('director_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Performance Scoreboard')
+        self.assertContains(response, 'Open Scoreboard')
+        self.assertContains(response, '>Scoreboard<')
+        menu = build_navigation_menu(self.director, allowed_dashboard_url_name(self.director))
+        operations = next(section for section in menu if section['label'] == 'Operations')
+        self.assertEqual(operations['items'][0]['label'], 'Scoreboard')

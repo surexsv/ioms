@@ -316,6 +316,7 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
                 'prod_trend': monthly_trend(),
                 'prod_eng_rank': prod['engineer_ranking'][:5],
                 'prod_tech_rank': prod['technician_ranking'][:5],
+                'prod_scoreboard': prod.get('scoreboard', [])[:10],
             })
         except Exception:
             context.update({
@@ -330,6 +331,7 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
                 'prod_trend': [],
                 'prod_eng_rank': [],
                 'prod_tech_rank': [],
+                'prod_scoreboard': [],
             })
 
     else:
