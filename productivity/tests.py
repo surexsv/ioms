@@ -13,7 +13,9 @@ from accounts.roles import (
     ROLE_ACCOUNTS,
     ROLE_DIRECTOR,
     ROLE_ENGINEER,
+    ROLE_OPERATIONS,
     ROLE_PROJECT_MANAGER,
+    ROLE_SUPERVISOR,
     ROLE_TECHNICIAN,
 )
 from attendance.models import Attendance
@@ -301,12 +303,41 @@ class ScoreboardTests(TestCase):
         self.assertNotContains(response, 'Save director marks')
 
     def test_director_dashboard_shows_the_scoreboard(self):
+        self._log_activities(self.manager, 4)
         self.client.force_login(self.director)
         response = self.client.get(reverse('director_dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Performance Scoreboard')
-        self.assertContains(response, 'Open Scoreboard')
-        self.assertContains(response, '>Scoreboard<')
+        html = response.content.decode()
+        self.assertIn('Performance Scoreboard', html)
+        self.assertIn('Open Scoreboard', html)
+        self.assertIn('>Scoreboard<', html)
+        self.assertIn('Pat Manager', html)
+        self.assertLess(html.index('id="performance-scoreboard"'), html.index('Case Monitoring'))
         menu = build_navigation_menu(self.director, allowed_dashboard_url_name(self.director))
         operations = next(section for section in menu if section['label'] == 'Operations')
         self.assertEqual(operations['items'][0]['label'], 'Scoreboard')
+
+    def test_every_role_dashboard_opens_with_the_scoreboard(self):
+        supervisor = self._user('sup', ROLE_SUPERVISOR, 'Sam', 'Supervisor')
+        operations = self._user('ops', ROLE_OPERATIONS, 'Olive', 'Ops')
+        pages = (
+            (self.director, 'director_dashboard'),
+            (operations, 'operations_dashboard'),
+            (self.accounts, 'accounts_dashboard'),
+            (self.manager, 'project_manager_dashboard'),
+            (supervisor, 'supervisor_dashboard'),
+            (self.engineer, 'field_team_dashboard'),
+            (self.tech, 'field_team_dashboard'),
+        )
+        for user, url_name in pages:
+            self.client.force_login(user)
+            response = self.client.get(reverse(url_name))
+            self.assertEqual(response.status_code, 200, url_name)
+            html = response.content.decode()
+            self.assertIn('id="performance-scoreboard"', html, url_name)
+            self.assertIn('Performance Scoreboard', html, url_name)
+            self.assertLess(
+                html.index('id="performance-scoreboard"'),
+                html.index('ioms-kpi-grid'),
+                url_name,
+            )

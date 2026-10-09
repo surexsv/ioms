@@ -316,7 +316,6 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
                 'prod_trend': monthly_trend(),
                 'prod_eng_rank': prod['engineer_ranking'][:5],
                 'prod_tech_rank': prod['technician_ranking'][:5],
-                'prod_scoreboard': prod.get('scoreboard', [])[:10],
             })
         except Exception:
             context.update({
@@ -331,7 +330,6 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
                 'prod_trend': [],
                 'prod_eng_rank': [],
                 'prod_tech_rank': [],
-                'prod_scoreboard': [],
             })
 
     else:
@@ -453,6 +451,7 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
 
 
     context.update(_order_workflow_stats())
+    attach_scoreboard(context)
     return context
 
 
@@ -536,6 +535,22 @@ def build_project_manager_context(user):
         'team_stats': team_stats,
         'recent_orders': my_orders.order_by('-order_date')[:8],
     }
+
+
+def scoreboard_rows(limit=10):
+    """This month's performance board, shortened for dashboard cards."""
+    try:
+        from productivity.services import performance_scoreboard
+        return list(performance_scoreboard()[:limit])
+    except Exception:
+        return []
+
+
+def attach_scoreboard(context, limit=10):
+    """Put the scoreboard on a dashboard even when operations widgets are hidden."""
+    context['show_scoreboard'] = True
+    context['prod_scoreboard'] = scoreboard_rows(limit)
+    return context
 
 
 def merge_attendance_widget(context, user):

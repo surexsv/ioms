@@ -9,6 +9,8 @@
     <a href="{% url 'site_progress_create' %}" class="btn btn-sm btn-primary">+ Daily Site Update</a>
 </div>
 
+{% include 'dashboard/_scoreboard_card.html' %}
+
 {% include 'attendance/_dashboard_widget.html' %}
 {% include 'employee_requests/_erms_monitoring.html' %}
 {% include 'preventive_maintenance/_pm_monitoring.html' %}

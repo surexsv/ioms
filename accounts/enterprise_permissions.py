@@ -448,7 +448,34 @@ def build_navigation_menu(user, dashboard_url_name='director_dashboard'):
     if section_items:
         sections.append({'label': current_section, 'items': section_items})
 
-    return _ensure_pm_nav_item(sections, user)
+    return _ensure_scoreboard_nav_item(_ensure_pm_nav_item(sections, user), user)
+
+
+def _ensure_scoreboard_nav_item(sections, user):
+    """Keep Scoreboard as the first Operations link for every role that can open it."""
+    from productivity.permissions import can_view_productivity
+
+    if not can_view_productivity(user):
+        return sections
+    for section in sections:
+        if any(item.get('nav_key') == 'productivity' for item in section.get('items', [])):
+            return sections
+
+    item = {
+        'label': 'Scoreboard',
+        'url_name': 'productivity_dashboard',
+        'icon': 'bi-graph-up-arrow',
+        'nav_key': 'productivity',
+        'query': '',
+        'badge': None,
+    }
+    for section in sections:
+        if section.get('label') == 'Operations':
+            section['items'].insert(0, item)
+            return sections
+    insert_at = 1 if sections and not sections[0].get('label') else 0
+    sections.insert(insert_at, {'label': 'Operations', 'items': [item]})
+    return sections
 
 
 def _ensure_pm_nav_item(sections, user):
