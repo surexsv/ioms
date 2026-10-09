@@ -5,9 +5,11 @@
     <h1>{{ detail.employee.get_full_name|default:detail.employee.username }}</h1>
     <a href="{% url 'productivity_dashboard' %}?year={{ year }}&month={{ month }}" class="btn btn-secondary">Back</a>
 </div>
-<p style="color:#6c757d;">Role: {{ detail.role }} — Period: {{ month }}/{{ year }}</p>
+<p style="color:#6c757d;">Role: {{ detail.role_label|default:detail.role }} — Period: {{ month }}/{{ year }}</p>
 
 <div class="ioms-kpi-grid">
+    <div class="ioms-kpi"><div class="value">{{ detail.score }}</div><div class="label">Performance Score</div></div>
+    <div class="ioms-kpi"><div class="value">{% if detail.rank %}{{ detail.rank }}{% else %}—{% endif %}</div><div class="label">Scoreboard Rank</div></div>
     <div class="ioms-kpi"><div class="value">{{ detail.jobs_attended }}</div><div class="label">Jobs Attended</div></div>
     <div class="ioms-kpi"><div class="value">{{ detail.wcr_submitted }}</div><div class="label">WCR Submitted</div></div>
     <div class="ioms-kpi"><div class="value">{{ detail.hours_worked }}</div><div class="label">Hours Worked</div></div>

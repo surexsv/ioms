@@ -26,6 +26,7 @@ from productivity.services import (
     activity_report,
     employee_productivity_detail,
     monthly_trend,
+    performance_scoreboard,
     personal_monthly_trend,
     productivity_dashboard_kpis,
 )
@@ -56,11 +57,16 @@ def productivity_dashboard(request):
     kpis = productivity_dashboard_kpis(year, month)
     trend = monthly_trend(year)
     scope_users = productivity_scope_users(request.user)
+    scoreboard_chart = [
+        {'name': row['name'], 'score': float(row['score'])}
+        for row in kpis['scoreboard'][:10]
+    ]
     return render(request, 'productivity/dashboard.html', {
         'kpis': kpis,
         'trend': trend,
         'year': year,
         'month': month,
+        'scoreboard_chart': scoreboard_chart,
         'can_full': can_view_full_productivity(request.user),
         'can_team': can_view_team_productivity(request.user),
         'can_activity_log': can_view_activity_log(request.user),
@@ -130,15 +136,23 @@ def export_csv(request):
                 log.remarks,
             ])
     else:
-        writer.writerow(['Employee', 'Role', 'Man-Days', 'Hours', 'Jobs Attended'])
-        from productivity.calculator import field_productivity_ranking
-        for row in field_productivity_ranking(year, month):
+        writer.writerow([
+            'Rank', 'Employee', 'Role', 'Score', 'Completion %', 'Attendance %',
+            'Jobs Completed', 'Activities', 'Reports Submitted', 'Man-Days', 'Hours',
+        ])
+        for row in performance_scoreboard(year, month):
             writer.writerow([
-                row.get('employee__username'),
-                row.get('employee__role'),
-                row.get('total_man_days'),
-                row.get('total_hours'),
-                row.get('job_count'),
+                row['rank'],
+                row['name'],
+                row['role_label'],
+                row['score'],
+                row['completion_pct'] if row['completion_pct'] is not None else '',
+                row['attendance_pct'] if row['attendance_pct'] is not None else '',
+                row['completed_jobs'],
+                row['activities_count'],
+                row['wcr_submitted'],
+                row['man_days'],
+                row['hours_worked'],
             ])
     log_activity(request.user, ACT_REPORT_GENERATED, related_document=f'CSV {report_type} {year}-{month}')
     return response

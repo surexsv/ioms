@@ -1,5 +1,7 @@
 """Activity types and departments — extensible for future KPI/incentive modules."""
 
+from decimal import Decimal
+
 DEPT_OPERATIONS = 'OPERATIONS'
 DEPT_PROJECTS = 'PROJECTS'
 DEPT_ACCOUNTS = 'ACCOUNTS'
@@ -110,3 +112,20 @@ COMPLETION_STATUS_CHOICES = (
     (COMPLETION_PARTIAL, 'Partially Completed'),
     (COMPLETION_PENDING, 'Pending'),
 )
+
+# Monthly performance score (0–100). Same parts for every role.
+# People with no field jobs are scored on back-office activities for the
+# completion and delivered-work parts, so managers are not left at zero.
+SCORE_WEIGHT_COMPLETION = Decimal('0.40')
+SCORE_WEIGHT_DELIVERED = Decimal('0.25')
+SCORE_WEIGHT_ATTENDANCE = Decimal('0.20')
+SCORE_WEIGHT_REPORTS = Decimal('0.10')
+SCORE_WEIGHT_MAN_DAYS = Decimal('0.05')
+
+# Caps that earn full marks on that part of the score.
+SCORE_FULL_JOBS = Decimal('8')
+SCORE_FULL_ACTIVITIES = Decimal('12')
+SCORE_FULL_REPORTS = Decimal('4')
+SCORE_FULL_MAN_DAYS = Decimal('20')
+# Office activities count as half a completed job when the person also finished field jobs.
+SCORE_ACTIVITY_JOB_WEIGHT = Decimal('0.5')

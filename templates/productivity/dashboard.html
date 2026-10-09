@@ -44,6 +44,55 @@
     <div class="ioms-kpi"><div class="value">{% if kpis.top_technician %}{{ kpis.top_technician.employee__first_name|default:kpis.top_technician.employee__username }}{% else %}—{% endif %}</div><div class="label">Top Technician</div></div>
 </div>
 
+<div class="card ioms-dashboard-section">
+    <h3>Performance Scoreboard — {{ month }}/{{ year }}</h3>
+    <p style="color:#6c757d;margin-top:0;">
+        One score out of 100 for every active employee, including managers.
+        Finishing work is 40%, work delivered is 25%, attendance is 20%, reports submitted are 10%, and man-days are 5%.
+        People with no field jobs this month are scored on back-office activities for the first two parts.
+        People who are not required to mark attendance are scored on the other parts only.
+    </p>
+    <h4 style="margin:0 0 8px;">Top 10 scores</h4>
+    <div class="ioms-chart-wrap" style="height:280px;margin-bottom:16px;"><canvas id="scoreboardChart"></canvas></div>
+    {{ scoreboard_chart|json_script:"scoreboard-data" }}
+    <div class="ioms-table-wrap">
+        <table class="ioms-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Employee</th>
+                    <th>Role</th>
+                    <th>Score</th>
+                    <th>Completion</th>
+                    <th>Attendance</th>
+                    <th>Jobs done</th>
+                    <th>Activities</th>
+                    <th>Reports</th>
+                    <th>Man-days</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in kpis.scoreboard %}
+                <tr>
+                    <td>{{ row.rank }}</td>
+                    <td>{{ row.name }}</td>
+                    <td>{{ row.role_label }}</td>
+                    <td><strong>{{ row.score }}</strong></td>
+                    <td>{% if row.completion_pct != None %}{{ row.completion_pct }}%{% else %}—{% endif %}</td>
+                    <td>{% if row.attendance_pct != None %}{{ row.attendance_pct }}%{% else %}—{% endif %}</td>
+                    <td>{{ row.completed_jobs }}</td>
+                    <td>{{ row.activities_count }}</td>
+                    <td>{{ row.wcr_submitted }}</td>
+                    <td>{{ row.man_days }}</td>
+                    <td><a href="{% url 'employee_productivity' row.employee_id %}?year={{ year }}&month={{ month }}">Details</a></td>
+                </tr>
+                {% empty %}<tr><td colspan="11">No active employees for this period.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <div class="ioms-charts-row ioms-charts-row-3" style="margin-top:20px;">
     <div class="ioms-chart-card">
         <h3>Monthly Productivity Trend</h3>
@@ -110,6 +159,15 @@ const engData = [{% for r in kpis.engineer_ranking %}{{ r.total_man_days|default
 const techLabels = [{% for r in kpis.technician_ranking %}'{{ r.employee__first_name|default:r.employee__username }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
 const techData = [{% for r in kpis.technician_ranking %}{{ r.total_man_days|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
 
+const scoreboardRows = JSON.parse(document.getElementById('scoreboard-data').textContent);
+new Chart(document.getElementById('scoreboardChart'), {
+    type: 'bar',
+    data: {
+        labels: scoreboardRows.map(function (row) { return row.name; }),
+        datasets: [{ label: 'Score', data: scoreboardRows.map(function (row) { return row.score; }), backgroundColor: '#0F2D52' }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { min: 0, max: 100 } } }
+});
 new Chart(document.getElementById('prodTrendChart'), {
     type: 'line',
     data: { labels: trendLabels, datasets: [{ label: 'Man-Days', data: trendManDays, borderColor: '#0d6efd', fill: false }] },

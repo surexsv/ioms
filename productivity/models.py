@@ -108,7 +108,7 @@ class EmployeeProductivitySnapshot(models.Model):
     completion_percent = models.DecimalField(
         max_digits=5, decimal_places=2, null=True, blank=True,
     )
-    # Future incentive fields
+    # Written by the monthly performance scoreboard (0–100 and rank, 1 = highest).
     incentive_score = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
     )
