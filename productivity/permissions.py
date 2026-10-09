@@ -104,6 +104,15 @@ def can_view_activity_log(user):
     return _legacy_role(user) == ROLE_DIRECTOR
 
 
+def can_enter_director_mark(user):
+    """Only a director (or a superuser) may enter the manual 10% mark."""
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    return _legacy_role(user) == ROLE_DIRECTOR
+
+
 def can_export_reports(user):
     return can_view_full_productivity(user) or _legacy_role(user) in (ROLE_ACCOUNTS, ROLE_ACCOUNTS_EXECUTIVE)
 

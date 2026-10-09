@@ -24,11 +24,11 @@
         <div class="kpi"><strong>Jobs Completed:</strong> {{ kpis.jobs_completed }}</div>
     </div>
     <h2>Performance Scoreboard</h2>
-    <p>Score out of 100 for every active employee, including managers. Rank 1 is the highest score.</p>
+    <p>Score out of 100 for every active employee, including managers. 10% is the director's mark. Rank 1 is the highest score.</p>
     <table>
         <thead>
             <tr>
-                <th>Rank</th><th>Employee</th><th>Role</th><th>Score</th>
+                <th>Rank</th><th>Employee</th><th>Role</th><th>Score</th><th>Director's mark</th>
                 <th>Completion %</th><th>Attendance %</th><th>Jobs</th><th>Activities</th><th>Reports</th><th>Man-Days</th>
             </tr>
         </thead>
@@ -39,6 +39,7 @@
                 <td>{{ row.name }}</td>
                 <td>{{ row.role_label }}</td>
                 <td>{{ row.score }}</td>
+                <td>{% if row.director_mark != None %}{{ row.director_mark }}{% else %}—{% endif %}{% if row.director_mark_note %} ({{ row.director_mark_note }}){% endif %}</td>
                 <td>{% if row.completion_pct != None %}{{ row.completion_pct }}{% else %}—{% endif %}</td>
                 <td>{% if row.attendance_pct != None %}{{ row.attendance_pct }}{% else %}—{% endif %}</td>
                 <td>{{ row.completed_jobs }}</td>

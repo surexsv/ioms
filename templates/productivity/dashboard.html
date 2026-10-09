@@ -48,13 +48,21 @@
     <h3>Performance Scoreboard — {{ month }}/{{ year }}</h3>
     <p style="color:#6c757d;margin-top:0;">
         One score out of 100 for every active employee, including managers.
-        Finishing work is 40%, work delivered is 25%, attendance is 20%, reports submitted are 10%, and man-days are 5%.
-        People with no field jobs this month are scored on back-office activities for the first two parts.
-        People who are not required to mark attendance are scored on the other parts only.
+        90% comes from the month's work and 10% is the director's mark, entered by hand from 0 to 100.
+        Until a mark is entered, that 10% stays at zero.
+        Of the work portion: finishing work is 40%, work delivered is 25%, attendance is 20%, reports submitted are 10%, and man-days are 5%.
+        People with no field jobs this month are scored on back-office activities for the first two work parts.
+        People who are not required to mark attendance are scored on the other work parts only.
     </p>
     <h4 style="margin:0 0 8px;">Top 10 scores</h4>
     <div class="ioms-chart-wrap" style="height:280px;margin-bottom:16px;"><canvas id="scoreboardChart"></canvas></div>
     {{ scoreboard_chart|json_script:"scoreboard-data" }}
+    {% if can_enter_director_mark %}
+    <form method="post" action="{% url 'productivity_director_marks' %}">
+        {% csrf_token %}
+        <input type="hidden" name="year" value="{{ year }}">
+        <input type="hidden" name="month" value="{{ month }}">
+    {% endif %}
     <div class="ioms-table-wrap">
         <table class="ioms-table">
             <thead>
@@ -63,6 +71,7 @@
                     <th>Employee</th>
                     <th>Role</th>
                     <th>Score</th>
+                    <th>Director's mark</th>
                     <th>Completion</th>
                     <th>Attendance</th>
                     <th>Jobs done</th>
@@ -79,6 +88,15 @@
                     <td>{{ row.name }}</td>
                     <td>{{ row.role_label }}</td>
                     <td><strong>{{ row.score }}</strong></td>
+                    <td>
+                        {% if can_enter_director_mark %}
+                        <input type="number" name="mark-{{ row.employee_id }}" min="0" max="100" step="0.01" value="{{ row.director_mark|default_if_none:'' }}" class="form-control" style="width:88px;" aria-label="Director mark for {{ row.name }}">
+                        <input type="text" name="note-{{ row.employee_id }}" maxlength="255" value="{{ row.director_mark_note }}" class="form-control" style="width:140px;margin-top:4px;" placeholder="Note" aria-label="Note for {{ row.name }}">
+                        {% else %}
+                        {% if row.director_mark != None %}{{ row.director_mark }}{% else %}—{% endif %}
+                        {% if row.director_mark_note %}<div style="color:#6c757d;font-size:12px;">{{ row.director_mark_note }}</div>{% endif %}
+                        {% endif %}
+                    </td>
                     <td>{% if row.completion_pct != None %}{{ row.completion_pct }}%{% else %}—{% endif %}</td>
                     <td>{% if row.attendance_pct != None %}{{ row.attendance_pct }}%{% else %}—{% endif %}</td>
                     <td>{{ row.completed_jobs }}</td>
@@ -87,10 +105,14 @@
                     <td>{{ row.man_days }}</td>
                     <td><a href="{% url 'employee_productivity' row.employee_id %}?year={{ year }}&month={{ month }}">Details</a></td>
                 </tr>
-                {% empty %}<tr><td colspan="11">No active employees for this period.</td></tr>{% endfor %}
+                {% empty %}<tr><td colspan="12">No active employees for this period.</td></tr>{% endfor %}
             </tbody>
         </table>
     </div>
+    {% if can_enter_director_mark %}
+        <button type="submit" class="btn btn-primary btn-sm" style="margin-top:12px;">Save director marks</button>
+    </form>
+    {% endif %}
 </div>
 
 <div class="ioms-charts-row ioms-charts-row-3" style="margin-top:20px;">

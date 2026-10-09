@@ -27,6 +27,7 @@
     <div class="ioms-kpi"><div class="value">{{ my_productivity.man_days|default:0 }}</div><div class="label">Man-Days</div></div>
     <div class="ioms-kpi"><div class="value text-primary">{% if my_productivity.attendance_pct %}{{ my_productivity.attendance_pct }}%{% else %}—{% endif %}</div><div class="label">Attendance %</div></div>
     <div class="ioms-kpi"><div class="value">{{ my_productivity.score|default:"—" }}</div><div class="label">Performance Score{% if my_productivity.rank %} · Rank {{ my_productivity.rank }}{% endif %}</div></div>
+    <div class="ioms-kpi"><div class="value">{% if my_productivity.director_mark != None %}{{ my_productivity.director_mark }}{% else %}—{% endif %}</div><div class="label">Director's mark</div></div>
 </div>
 
 <div class="ioms-charts-row" style="margin-bottom:20px;">

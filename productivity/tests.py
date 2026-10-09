@@ -17,12 +17,25 @@ from attendance.models import Attendance
 from productivity.calculator import compute_performance_score
 from productivity.constants import ACT_ENQUIRY_PROCESSED, DEPT_OPERATIONS
 from productivity.models import EmployeeActivityLog, EmployeeProductivitySnapshot, WCRTeamParticipant
-from productivity.services import performance_scoreboard
+from productivity.services import performance_scoreboard, save_director_marks
 from wcr.models import WorkCompletionReport
 
 
 class PerformanceScoreTests(TestCase):
-    def test_full_field_month_scores_100(self):
+    def test_full_field_month_with_director_mark_scores_100(self):
+        score = compute_performance_score(
+            jobs_attended=8,
+            completed_jobs=8,
+            activities_count=0,
+            attendance_pct=100,
+            attendance_required=True,
+            wcr_submitted=4,
+            man_days=20,
+            director_mark=100,
+        )
+        self.assertEqual(score, Decimal('100.00'))
+
+    def test_full_field_month_without_director_mark_scores_90(self):
         score = compute_performance_score(
             jobs_attended=8,
             completed_jobs=8,
@@ -32,7 +45,11 @@ class PerformanceScoreTests(TestCase):
             wcr_submitted=4,
             man_days=20,
         )
-        self.assertEqual(score, Decimal('100.00'))
+        self.assertEqual(score, Decimal('90.00'))
+
+    def test_director_mark_is_ten_percent_of_the_score(self):
+        score = compute_performance_score(director_mark=50)
+        self.assertEqual(score, Decimal('5.00'))
 
     def test_partial_month_scores_below_a_full_month(self):
         full = compute_performance_score(
@@ -60,7 +77,7 @@ class PerformanceScoreTests(TestCase):
             wcr_submitted=0,
             man_days=0,
         )
-        self.assertEqual(score, Decimal('85.00'))
+        self.assertEqual(score, Decimal('76.50'))
 
     def test_attendance_not_required_is_left_out_of_the_score(self):
         score = compute_performance_score(
@@ -68,7 +85,7 @@ class PerformanceScoreTests(TestCase):
             attendance_pct=None,
             attendance_required=False,
         )
-        self.assertEqual(score, Decimal('81.25'))
+        self.assertEqual(score, Decimal('73.13'))
 
 
 class ScoreboardTests(TestCase):
@@ -171,3 +188,89 @@ class ScoreboardTests(TestCase):
         self.assertContains(response, 'Pat Manager')
         self.assertContains(response, 'Project Manager')
         self.assertContains(response, 'Ann Accounts')
+        self.assertContains(response, 'Save director marks')
+        self.assertContains(response, "Director's mark")
+
+    def test_director_can_enter_a_mark_for_anyone(self):
+        self._log_activities(self.manager, 12)
+        Attendance.objects.create(
+            employee=self.manager,
+            attendance_date=self.today,
+            status='PRESENT',
+        )
+        before = performance_scoreboard(self.today.year, self.today.month)
+        before_score = next(row['score'] for row in before if row['employee_id'] == self.manager.pk)
+
+        self.client.force_login(self.director)
+        response = self.client.post(reverse('productivity_director_marks'), {
+            'year': self.today.year,
+            'month': self.today.month,
+            f'mark-{self.manager.pk}': '80',
+            f'note-{self.manager.pk}': 'Strong coordination',
+            f'mark-{self.engineer.pk}': '100',
+            f'note-{self.engineer.pk}': '',
+        })
+        self.assertEqual(response.status_code, 302)
+
+        snap = EmployeeProductivitySnapshot.objects.get(
+            employee=self.manager,
+            period_year=self.today.year,
+            period_month=self.today.month,
+        )
+        self.assertEqual(snap.director_mark, Decimal('80.00'))
+        self.assertEqual(snap.director_mark_note, 'Strong coordination')
+        self.assertEqual(snap.director_marked_by, self.director)
+        self.assertEqual(snap.incentive_score, before_score + Decimal('8.00'))
+
+        again = performance_scoreboard(self.today.year, self.today.month)
+        kept = next(row for row in again if row['employee_id'] == self.manager.pk)
+        self.assertEqual(kept['director_mark'], Decimal('80.00'))
+        self.assertEqual(kept['score'], before_score + Decimal('8.00'))
+
+        engineer_snap = EmployeeProductivitySnapshot.objects.get(
+            employee=self.engineer,
+            period_year=self.today.year,
+            period_month=self.today.month,
+        )
+        self.assertEqual(engineer_snap.director_mark, Decimal('100.00'))
+
+    def test_other_roles_cannot_enter_director_marks(self):
+        self.client.force_login(self.manager)
+        response = self.client.post(reverse('productivity_director_marks'), {
+            'year': self.today.year,
+            'month': self.today.month,
+            f'mark-{self.engineer.pk}': '90',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/access-denied', response.url)
+        self.assertFalse(
+            EmployeeProductivitySnapshot.objects.filter(director_mark__isnull=False).exists()
+        )
+
+    def test_mark_outside_range_is_rejected(self):
+        self.client.force_login(self.director)
+        response = self.client.post(reverse('productivity_director_marks'), {
+            'year': self.today.year,
+            'month': self.today.month,
+            f'mark-{self.manager.pk}': '150',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'must be from 0 to 100')
+        self.assertFalse(
+            EmployeeProductivitySnapshot.objects.filter(director_mark__isnull=False).exists()
+        )
+
+    def test_manager_sees_the_mark_but_not_the_editor(self):
+        save_director_marks(
+            self.director,
+            self.today.year,
+            self.today.month,
+            {self.manager.pk: Decimal('80')},
+            {self.manager.pk: 'Steady month'},
+        )
+        self.client.force_login(self.manager)
+        response = self.client.get(reverse('productivity_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '80.00')
+        self.assertContains(response, 'Steady month')
+        self.assertNotContains(response, 'Save director marks')

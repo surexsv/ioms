@@ -24,9 +24,11 @@ from productivity.constants import (
     SCORE_FULL_JOBS,
     SCORE_FULL_MAN_DAYS,
     SCORE_FULL_REPORTS,
+    SCORE_AUTOMATIC_SHARE,
     SCORE_WEIGHT_ATTENDANCE,
     SCORE_WEIGHT_COMPLETION,
     SCORE_WEIGHT_DELIVERED,
+    SCORE_WEIGHT_DIRECTOR,
     SCORE_WEIGHT_MAN_DAYS,
     SCORE_WEIGHT_REPORTS,
 )
@@ -57,16 +59,19 @@ def compute_performance_score(
     attendance_required=True,
     wcr_submitted=0,
     man_days=0,
+    director_mark=None,
 ):
     """
     Monthly score from 0 to 100 for any role.
 
-    Weights: completion 40, delivered work 25, attendance 20, reports 10, man-days 5.
+    90% comes from work: completion 40, delivered work 25, attendance 20,
+    reports 10, man-days 5, scaled to that 90%.
+    10% is the director's mark (0–100). A blank mark counts as zero.
     Field staff are scored on jobs they attended. Someone with no field jobs
     (typical for managers and office staff) is scored on back-office activities
     for the completion and delivered-work parts.
-    People who are not required to mark attendance have that 20% folded into
-    the other parts, so a director is not penalised for a blank attendance sheet.
+    People who are not required to mark attendance have that attendance share
+    folded into the other work parts. The director's 10% stays 10%.
     """
     jobs_attended = int(jobs_attended or 0)
     completed_jobs = int(completed_jobs or 0)
@@ -94,19 +99,32 @@ def compute_performance_score(
 
     report_points = _scale_to_hundred(wcr_submitted, SCORE_FULL_REPORTS)
     man_day_points = _scale_to_hundred(man_days, SCORE_FULL_MAN_DAYS)
+    if director_mark is None:
+        director_points = Decimal('0')
+    else:
+        director_points = Decimal(director_mark)
+        if director_points < 0:
+            director_points = Decimal('0')
+        if director_points > 100:
+            director_points = Decimal('100')
+        director_points = _quantize(director_points)
 
-    weights = {
+    automatic = {
         'completion': SCORE_WEIGHT_COMPLETION,
         'delivered': SCORE_WEIGHT_DELIVERED,
         'attendance': SCORE_WEIGHT_ATTENDANCE if attendance_required else Decimal('0'),
         'reports': SCORE_WEIGHT_REPORTS,
         'man_days': SCORE_WEIGHT_MAN_DAYS,
     }
-    weight_total = sum(weights.values(), Decimal('0'))
-    if weight_total <= 0:
-        return Decimal('0.00')
-    if weight_total != Decimal('1'):
-        weights = {key: value / weight_total for key, value in weights.items()}
+    automatic_total = sum(automatic.values(), Decimal('0'))
+    if automatic_total <= 0:
+        weights = {key: Decimal('0') for key in automatic}
+    else:
+        weights = {
+            key: value / automatic_total * SCORE_AUTOMATIC_SHARE
+            for key, value in automatic.items()
+        }
+    weights['director'] = SCORE_WEIGHT_DIRECTOR
 
     parts = {
         'completion': completion_points,
@@ -114,6 +132,7 @@ def compute_performance_score(
         'attendance': attendance_points,
         'reports': report_points,
         'man_days': man_day_points,
+        'director': director_points,
     }
     score = sum((parts[key] * weights[key] for key in parts), Decimal('0'))
     if score > 100:

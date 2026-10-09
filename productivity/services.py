@@ -92,6 +92,9 @@ def _month_metrics(employees, year, month):
             'wcr_submitted': 0,
             'activities_count': 0,
             'attendance_pct': None,
+            'director_mark': None,
+            'director_mark_note': '',
+            'director_marked_by': '',
         }
         for employee in employees
     }
@@ -160,6 +163,20 @@ def _month_metrics(employees, year, month):
     for row in attendance:
         if row['total']:
             metrics[row['employee_id']]['attendance_pct'] = round(row['present'] / row['total'] * 100, 1)
+
+    snapshots = EmployeeProductivitySnapshot.objects.filter(
+        employee_id__in=employee_ids,
+        period_year=year,
+        period_month=month,
+    ).select_related('director_marked_by')
+    for snap in snapshots:
+        bucket = metrics.get(snap.employee_id)
+        if bucket is None:
+            continue
+        bucket['director_mark'] = snap.director_mark
+        bucket['director_mark_note'] = snap.director_mark_note
+        if snap.director_marked_by_id:
+            bucket['director_marked_by'] = snap.director_marked_by.full_name_display
     return metrics
 
 
@@ -178,6 +195,7 @@ def _score_row(employee, metrics):
         attendance_required=employee.attendance_required,
         wcr_submitted=metrics['wcr_submitted'],
         man_days=metrics['man_days'],
+        director_mark=metrics['director_mark'],
     )
     return {
         'employee': employee,
@@ -196,6 +214,9 @@ def _score_row(employee, metrics):
         'activities_count': metrics['activities_count'],
         'man_days': metrics['man_days'],
         'hours_worked': metrics['hours_worked'],
+        'director_mark': metrics['director_mark'],
+        'director_mark_note': metrics['director_mark_note'],
+        'director_marked_by': metrics['director_marked_by'],
     }
 
 
@@ -250,6 +271,43 @@ def performance_scoreboard(year=None, month=None, persist=True):
     return rows
 
 
+def save_director_marks(actor, year, month, marks, notes=None):
+    """
+    Store director marks for a month, then rebuild scores and ranks.
+
+    marks: {employee_id: Decimal or None}. None clears the mark.
+    notes: {employee_id: str}
+    Only active employees are updated. Existing work totals are left in place
+    until the scoreboard rebuild writes them again.
+    """
+    year, month = _month_bounds(year, month)
+    notes = notes or {}
+    employees = {
+        employee.pk: employee
+        for employee in User.objects.filter(
+            pk__in=list(marks.keys()),
+            is_active=True,
+            is_active_employee=True,
+        )
+    }
+    now = timezone.now()
+    for employee_id, employee in employees.items():
+        mark = marks.get(employee_id)
+        note = (notes.get(employee_id) or '').strip()[:255]
+        EmployeeProductivitySnapshot.objects.update_or_create(
+            employee=employee,
+            period_year=year,
+            period_month=month,
+            defaults={
+                'director_mark': mark,
+                'director_mark_note': note if mark is not None else '',
+                'director_marked_by': actor if mark is not None else None,
+                'director_marked_at': now if mark is not None else None,
+            },
+        )
+    return performance_scoreboard(year, month)
+
+
 def employee_productivity_detail(employee, year=None, month=None):
     year, month = _month_bounds(year, month)
     board = performance_scoreboard(year, month)
@@ -272,6 +330,9 @@ def employee_productivity_detail(employee, year=None, month=None):
         'pending_jobs': row['pending_jobs'],
         'score': row['score'],
         'rank': row['rank'],
+        'director_mark': row['director_mark'],
+        'director_mark_note': row['director_mark_note'],
+        'director_marked_by': row['director_marked_by'],
     }
 
 

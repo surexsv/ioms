@@ -17,7 +17,35 @@
     <div class="ioms-kpi"><div class="value">{{ detail.completion_pct|default:"—" }}{% if detail.completion_pct %}%{% endif %}</div><div class="label">Completion %</div></div>
     <div class="ioms-kpi"><div class="value">{{ detail.attendance_pct|default:"—" }}{% if detail.attendance_pct %}%{% endif %}</div><div class="label">Attendance %</div></div>
     <div class="ioms-kpi"><div class="value">{{ detail.activities_count }}</div><div class="label">Back-Office Activities</div></div>
+    <div class="ioms-kpi"><div class="value">{% if detail.director_mark != None %}{{ detail.director_mark }}{% else %}—{% endif %}</div><div class="label">Director's mark (10%)</div></div>
 </div>
+
+{% if can_enter_director_mark %}
+<form method="post" action="{% url 'productivity_director_marks' %}" class="card" style="padding:16px;margin-bottom:16px;">
+    {% csrf_token %}
+    <input type="hidden" name="year" value="{{ year }}">
+    <input type="hidden" name="month" value="{{ month }}">
+    <input type="hidden" name="next" value="{{ detail.employee.pk }}">
+    <h3 style="margin-top:0;">Director's mark</h3>
+    <p style="color:#6c757d;">Enter 0 to 100. This is 10% of the monthly score. Leave the mark blank to clear it.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
+        <div class="form-group" style="margin:0;">
+            <label>Mark</label>
+            <input type="number" name="mark-{{ detail.employee.pk }}" min="0" max="100" step="0.01" value="{{ detail.director_mark|default_if_none:'' }}" class="form-control" style="width:100px;">
+        </div>
+        <div class="form-group" style="margin:0;flex:1;min-width:200px;">
+            <label>Note</label>
+            <input type="text" name="note-{{ detail.employee.pk }}" maxlength="255" value="{{ detail.director_mark_note }}" class="form-control" placeholder="Optional">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Save mark</button>
+    </div>
+    {% if detail.director_marked_by %}
+    <p style="color:#6c757d;margin:8px 0 0;">Entered by {{ detail.director_marked_by }}</p>
+    {% endif %}
+</form>
+{% elif detail.director_mark_note %}
+<p style="color:#6c757d;">Director's note: {{ detail.director_mark_note }}{% if detail.director_marked_by %} — {{ detail.director_marked_by }}{% endif %}</p>
+{% endif %}
 
 <div class="card ioms-dashboard-section">
     <h3>Recent Activity Log</h3>

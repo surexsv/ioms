@@ -114,8 +114,12 @@ COMPLETION_STATUS_CHOICES = (
 )
 
 # Monthly performance score (0–100). Same parts for every role.
+# 90% is calculated from work. 10% is the director's mark, entered by hand.
+# The work weights below are the shares of that 90%.
 # People with no field jobs are scored on back-office activities for the
 # completion and delivered-work parts, so managers are not left at zero.
+SCORE_AUTOMATIC_SHARE = Decimal('0.90')
+SCORE_WEIGHT_DIRECTOR = Decimal('0.10')
 SCORE_WEIGHT_COMPLETION = Decimal('0.40')
 SCORE_WEIGHT_DELIVERED = Decimal('0.25')
 SCORE_WEIGHT_ATTENDANCE = Decimal('0.20')
