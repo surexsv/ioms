@@ -20,7 +20,6 @@ from productivity.permissions import (
     can_view_field_activity_log,
     can_view_full_productivity,
     can_view_gps_dashboard,
-    can_view_management_productivity,
     can_view_productivity,
     can_view_team_productivity,
     productivity_scope_users,
@@ -55,7 +54,7 @@ def _parse_period(request):
 
 @module_required(MODULE_PRODUCTIVITY)
 def productivity_dashboard(request):
-    if not can_view_management_productivity(request.user):
+    if not can_view_productivity(request.user):
         return access_denied_response(request, module_key='productivity')
     year, month = _parse_period(request)
     kpis = productivity_dashboard_kpis(year, month)

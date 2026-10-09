@@ -7,6 +7,7 @@
         <p style="margin:6px 0 0;color:var(--ioms-text-muted);">Welcome, {{ user.get_full_name|default:user.username }}</p>
     </div>
     <div>
+        <a href="{% url 'productivity_dashboard' %}" class="btn btn-sm btn-primary">Scoreboard</a>
         <a href="{% url 'schedule_list' %}" class="btn btn-sm btn-secondary">My Schedules</a>
         <a href="{% url 'wcr_list' %}" class="btn btn-sm btn-secondary">My WCR</a>
         {% if can_create_pm or is_field_staff %}

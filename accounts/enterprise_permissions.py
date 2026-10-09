@@ -311,6 +311,7 @@ NAV_MENU_CATALOG = [
     ('Operations', 'project_expenses', 'Project Expenses', 'peams_dashboard', 'bi-cash-stack', 'project_expenses', ''),
     ('Operations', 'boq', 'BOQ', 'boq_list', 'bi-list-check', 'boq', ''),
     ('Operations', 'wcr', 'WCR', 'wcr_list', 'bi-file-earmark-text', 'wcr', ''),
+    ('Operations', 'reports', 'Scoreboard', 'productivity_dashboard', 'bi-graph-up-arrow', 'productivity', ''),
     ('Customers', 'clients', 'Clients', 'client_list', 'bi-people', 'clients', ''),
     ('Finance', 'quotation', 'Quotations', 'quotation_list', 'bi-file-earmark-ruled', 'quotations', ''),
     ('Finance', 'billing', 'Billing', 'invoice_list', 'bi-receipt', 'billing', ''),
@@ -325,7 +326,6 @@ NAV_MENU_CATALOG = [
     ('System', 'attendance', 'My Attendance', 'my_attendance', 'bi-person-check', 'attendance', ''),
     ('System', 'attendance', 'Attendance Management', 'attendance_dashboard', 'bi-calendar-check', 'attendance_mgmt', ''),
     ('System', 'attendance', 'Team Attendance', 'attendance_team', 'bi-people', 'attendance_team', ''),
-    ('System', 'reports', 'Productivity', 'productivity_dashboard', 'bi-graph-up-arrow', 'productivity', ''),
     ('System', 'gps_tracking', 'GPS Tracking', 'gps_dashboard', 'bi-geo-alt', 'gps', ''),
     ('System', 'daily_meeting', 'Daily Meetings', 'dom_dashboard', 'bi-people-fill', 'daily_meetings', ''),
     ('System', 'hr', 'Requests', 'erms_dashboard', 'bi-inbox', 'employee_requests', ''),
@@ -369,8 +369,8 @@ def _nav_item_visible(user, permission, nav_key):
             or can_access_via_enterprise(user, 'user_management')
         )
     if nav_key == 'productivity':
-        from productivity.permissions import can_view_management_productivity
-        return can_view_management_productivity(user)
+        from productivity.permissions import can_view_productivity
+        return can_view_productivity(user)
     if nav_key == 'employee_requests':
         from employee_requests.permissions import can_access_erms
         return can_access_erms(user)

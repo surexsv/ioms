@@ -5,7 +5,10 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from accounts.enterprise_models import Branch, Department, Designation, Employee
+from accounts.enterprise_permissions import build_navigation_menu
 from accounts.models import User
+from accounts.permissions import allowed_dashboard_url_name
 from accounts.roles import (
     ROLE_ACCOUNTS,
     ROLE_DIRECTOR,
@@ -273,4 +276,26 @@ class ScoreboardTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '80.00')
         self.assertContains(response, 'Steady month')
+        self.assertNotContains(response, 'Save director marks')
+
+    def test_technician_sees_scoreboard_in_the_menu_and_can_open_it(self):
+        department = Department.objects.create(code='FIELD-SB', name='Field')
+        designation = Designation.objects.create(code='TECH-SB', name='Technician')
+        branch = Branch.objects.create(code='SB-HO', name='Scoreboard Office')
+        Employee.objects.create(
+            user=self.tech,
+            employee_code='TECH-1',
+            department=department,
+            designation=designation,
+            branch=branch,
+        )
+        menu = build_navigation_menu(self.tech, allowed_dashboard_url_name(self.tech))
+        labels = {item['label'] for section in menu for item in section['items']}
+        self.assertIn('Scoreboard', labels)
+
+        self.client.force_login(self.tech)
+        response = self.client.get(reverse('productivity_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Performance Scoreboard')
+        self.assertContains(response, 'Pat Manager')
         self.assertNotContains(response, 'Save director marks')
