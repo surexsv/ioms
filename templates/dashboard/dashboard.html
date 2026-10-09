@@ -4,6 +4,8 @@
 {% block content %}
 {% if dashboard_title %}<h2 class="ioms-section-title">{{ dashboard_title }}</h2>{% endif %}
 
+{% include 'dashboard/_scoreboard_card.html' %}
+
 {% include 'attendance/_dashboard_widget.html' %}
 
 {% include 'case_intelligence/_case_monitoring.html' %}
@@ -67,7 +69,7 @@
 {% if show_operations and prod_trend %}
 <h3 class="ioms-section-title" style="margin-top:8px;">Field Productivity</h3>
 <p class="ioms-action-row">
-    {% if show_nav_productivity %}<a href="{% url 'productivity_dashboard' %}" class="btn btn-sm btn-primary">Productivity Dashboard</a>{% endif %}
+    <a href="{% url 'productivity_dashboard' %}" class="btn btn-sm btn-primary">Scoreboard</a>
 </p>
 <div class="ioms-charts-row ioms-charts-row-3">
     <div class="ioms-chart-card">
@@ -86,6 +88,7 @@
 {% endif %}
 
 <p class="ioms-action-row">
+    <a href="{% url 'productivity_dashboard' %}" class="btn btn-sm btn-primary">Scoreboard</a>
     {% if show_nav_preventive_maintenance %}<a href="{% url 'pm_dashboard' %}" class="btn btn-sm btn-primary">Preventive Maintenance</a>{% endif %}
     {% if show_nav_quotations %}<a href="{% url 'quotation_list' %}" class="btn btn-sm btn-primary">Quotations</a>{% endif %}
     {% if show_nav_billing %}<a href="{% url 'invoice_list' %}" class="btn btn-sm btn-primary">Billing</a>{% endif %}

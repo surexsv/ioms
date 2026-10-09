@@ -7,6 +7,7 @@
         <p style="margin:6px 0 0;color:var(--ioms-text-muted);">Welcome, {{ user.get_full_name|default:user.username }}</p>
     </div>
     <div>
+        <a href="{% url 'productivity_dashboard' %}" class="btn btn-sm btn-primary">Scoreboard</a>
         <a href="{% url 'schedule_list' %}" class="btn btn-sm btn-secondary">My Schedules</a>
         <a href="{% url 'wcr_list' %}" class="btn btn-sm btn-secondary">My WCR</a>
         {% if can_create_pm or is_field_staff %}
@@ -17,6 +18,7 @@
         {% endif %}
     </div>
 </div>
+{% include 'dashboard/_scoreboard_card.html' %}
 {% include 'preventive_maintenance/_pm_monitoring.html' %}
 
 <div class="ioms-kpi-grid">
@@ -26,6 +28,8 @@
     <div class="ioms-kpi"><div class="value">{{ my_productivity.hours_worked|default:0 }}</div><div class="label">Hours Worked</div></div>
     <div class="ioms-kpi"><div class="value">{{ my_productivity.man_days|default:0 }}</div><div class="label">Man-Days</div></div>
     <div class="ioms-kpi"><div class="value text-primary">{% if my_productivity.attendance_pct %}{{ my_productivity.attendance_pct }}%{% else %}—{% endif %}</div><div class="label">Attendance %</div></div>
+    <div class="ioms-kpi"><div class="value">{{ my_productivity.score|default:"—" }}</div><div class="label">Performance Score{% if my_productivity.rank %} · Rank {{ my_productivity.rank }}{% endif %}</div></div>
+    <div class="ioms-kpi"><div class="value">{% if my_productivity.director_mark != None %}{{ my_productivity.director_mark }}{% else %}—{% endif %}</div><div class="label">Director's mark</div></div>
 </div>
 
 <div class="ioms-charts-row" style="margin-bottom:20px;">

@@ -108,11 +108,24 @@ class EmployeeProductivitySnapshot(models.Model):
     completion_percent = models.DecimalField(
         max_digits=5, decimal_places=2, null=True, blank=True,
     )
-    # Future incentive fields
+    # Written by the monthly performance scoreboard (0–100 and rank, 1 = highest).
     incentive_score = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
     )
     ranking_position = models.PositiveSmallIntegerField(null=True, blank=True)
+    director_mark = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text='Director mark from 0 to 100. Counts as 10% of the monthly score.',
+    )
+    director_mark_note = models.CharField(max_length=255, blank=True)
+    director_marked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='director_marks_entered',
+    )
+    director_marked_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

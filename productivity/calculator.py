@@ -19,12 +19,125 @@ from productivity.constants import (
     PARTICIPANT_SUPERVISOR,
     PARTICIPANT_SUPPORTING_ENGINEER,
     PARTICIPANT_TECHNICIAN,
+    SCORE_ACTIVITY_JOB_WEIGHT,
+    SCORE_FULL_ACTIVITIES,
+    SCORE_FULL_JOBS,
+    SCORE_FULL_MAN_DAYS,
+    SCORE_FULL_REPORTS,
+    SCORE_AUTOMATIC_SHARE,
+    SCORE_WEIGHT_ATTENDANCE,
+    SCORE_WEIGHT_COMPLETION,
+    SCORE_WEIGHT_DELIVERED,
+    SCORE_WEIGHT_DIRECTOR,
+    SCORE_WEIGHT_MAN_DAYS,
+    SCORE_WEIGHT_REPORTS,
 )
 from productivity.models import EmployeeProductivitySnapshot, WCRTeamParticipant
 
 
 def _quantize(value):
     return Decimal(value).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+
+def _scale_to_hundred(value, full_marks):
+    """Map a raw count onto 0–100. full_marks is a perfect score on that part."""
+    amount = Decimal(value or 0)
+    if amount <= 0:
+        return Decimal('0')
+    points = amount / Decimal(full_marks) * Decimal('100')
+    if points > 100:
+        points = Decimal('100')
+    return _quantize(points)
+
+
+def compute_performance_score(
+    *,
+    jobs_attended=0,
+    completed_jobs=0,
+    activities_count=0,
+    attendance_pct=None,
+    attendance_required=True,
+    wcr_submitted=0,
+    man_days=0,
+    director_mark=None,
+):
+    """
+    Monthly score from 0 to 100 for any role.
+
+    90% comes from work: completion 40, delivered work 25, attendance 20,
+    reports 10, man-days 5, scaled to that 90%.
+    10% is the director's mark (0–100). A blank mark counts as zero.
+    Field staff are scored on jobs they attended. Someone with no field jobs
+    (typical for managers and office staff) is scored on back-office activities
+    for the completion and delivered-work parts.
+    People who are not required to mark attendance have that attendance share
+    folded into the other work parts. The director's 10% stays 10%.
+    """
+    jobs_attended = int(jobs_attended or 0)
+    completed_jobs = int(completed_jobs or 0)
+    activities_count = int(activities_count or 0)
+    wcr_submitted = int(wcr_submitted or 0)
+
+    if jobs_attended:
+        completion_points = _quantize(Decimal(completed_jobs) / Decimal(jobs_attended) * Decimal('100'))
+        delivered_units = Decimal(completed_jobs) + (Decimal(activities_count) * SCORE_ACTIVITY_JOB_WEIGHT)
+        delivered_points = _scale_to_hundred(delivered_units, SCORE_FULL_JOBS)
+    else:
+        activity_points = _scale_to_hundred(activities_count, SCORE_FULL_ACTIVITIES)
+        completion_points = activity_points
+        delivered_points = activity_points
+
+    if attendance_pct is None:
+        attendance_points = Decimal('0')
+    else:
+        attendance_points = Decimal(attendance_pct)
+        if attendance_points < 0:
+            attendance_points = Decimal('0')
+        if attendance_points > 100:
+            attendance_points = Decimal('100')
+        attendance_points = _quantize(attendance_points)
+
+    report_points = _scale_to_hundred(wcr_submitted, SCORE_FULL_REPORTS)
+    man_day_points = _scale_to_hundred(man_days, SCORE_FULL_MAN_DAYS)
+    if director_mark is None:
+        director_points = Decimal('0')
+    else:
+        director_points = Decimal(director_mark)
+        if director_points < 0:
+            director_points = Decimal('0')
+        if director_points > 100:
+            director_points = Decimal('100')
+        director_points = _quantize(director_points)
+
+    automatic = {
+        'completion': SCORE_WEIGHT_COMPLETION,
+        'delivered': SCORE_WEIGHT_DELIVERED,
+        'attendance': SCORE_WEIGHT_ATTENDANCE if attendance_required else Decimal('0'),
+        'reports': SCORE_WEIGHT_REPORTS,
+        'man_days': SCORE_WEIGHT_MAN_DAYS,
+    }
+    automatic_total = sum(automatic.values(), Decimal('0'))
+    if automatic_total <= 0:
+        weights = {key: Decimal('0') for key in automatic}
+    else:
+        weights = {
+            key: value / automatic_total * SCORE_AUTOMATIC_SHARE
+            for key, value in automatic.items()
+        }
+    weights['director'] = SCORE_WEIGHT_DIRECTOR
+
+    parts = {
+        'completion': completion_points,
+        'delivered': delivered_points,
+        'attendance': attendance_points,
+        'reports': report_points,
+        'man_days': man_day_points,
+        'director': director_points,
+    }
+    score = sum((parts[key] * weights[key] for key in parts), Decimal('0'))
+    if score > 100:
+        score = Decimal('100')
+    return _quantize(score)
 
 
 def compute_hours_from_times(start_dt, end_dt):
