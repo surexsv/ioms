@@ -313,7 +313,7 @@ class RoleFeaturePermissionTests(TestCase):
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
         self.assertNotIn('tile.openstreetmap.org', content)
-        self.assertIn('basemaps.cartocdn.com', content)
+        self.assertNotIn('basemaps.cartocdn.com', content)
         self.assertIn('arcgisonline.com', content)
 
     def test_technician_with_empty_employee_profile_still_opens_orders(self):
