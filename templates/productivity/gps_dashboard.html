@@ -92,25 +92,14 @@
 <script>
 const mapPoints = {{ map_points_json|safe }};
 const map = L.map('gpsMap').setView([10.0, 76.3], 7);
-// OSM.org public tiles return HTTP 403 ("Access blocked") for app usage.
-// Carto (OSM data) is the primary basemap; Esri is a fallback if Carto fails.
-const cartoTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 20
-});
+// OSM.org tiles return HTTP 403 for app usage. CARTO raster tiles render
+// an "API KEY REQUIRED" watermark unless a key is supplied, so the street
+// map uses Esri's public World Street Map tiles.
 const esriTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
     attribution: 'Tiles &copy; Esri',
     maxZoom: 19
 });
-let usedFallback = false;
-cartoTiles.on('tileerror', function () {
-    if (usedFallback) return;
-    usedFallback = true;
-    map.removeLayer(cartoTiles);
-    esriTiles.addTo(map);
-});
-cartoTiles.addTo(map);
+esriTiles.addTo(map);
 if (mapPoints.length) {
     const bounds = [];
     mapPoints.forEach(function (p) {
