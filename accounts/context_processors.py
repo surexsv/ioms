@@ -32,7 +32,7 @@ from employee_requests.permissions import can_access_erms, can_approve_requests
 from daily_meetings.permissions import can_access_daily_meetings
 from productivity.permissions import (
     can_view_gps_dashboard,
-    can_view_management_productivity,
+    can_view_productivity,
 )
 
 
@@ -173,7 +173,7 @@ def oms_navigation(request):
         'show_nav_document_numbers': 'document_numbers' in nav_keys,
         'show_nav_company_settings': 'company_settings' in nav_keys or can_view_company_settings(user),
         'show_nav_user_approvals': 'user_approvals' in nav_keys or can_manage_user_approvals(user),
-        'show_nav_productivity': 'productivity' in nav_keys or can_view_management_productivity(user),
+        'show_nav_productivity': 'productivity' in nav_keys or can_view_productivity(user),
         'show_nav_gps': 'gps' in nav_keys or can_view_gps_dashboard(user),
         'show_nav_schedules': 'schedules' in nav_keys or can_access(user, MODULE_SCHEDULING),
         'show_nav_case_intelligence': (

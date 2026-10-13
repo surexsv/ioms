@@ -24,18 +24,24 @@ def _legacy_role(user):
     return user_role(user)
 
 
+_SCOREBOARD_ROLES = (
+    ROLE_DIRECTOR, ROLE_OPERATIONS, ROLE_PROJECT_MANAGER,
+    ROLE_SUPERVISOR, ROLE_ACCOUNTS, ROLE_ACCOUNTS_EXECUTIVE,
+    ROLE_BACK_OFFICE, ROLE_ENGINEER, ROLE_TECHNICIAN,
+)
+
+
 def can_view_productivity(user):
+    """Every active role can open the scoreboard, including field staff with a profile."""
     if not user or not user.is_authenticated:
         return False
     if user.is_superuser:
         return True
+    if _legacy_role(user) in _SCOREBOARD_ROLES:
+        return True
     if has_employee_profile(user):
         return has_enterprise_permission(user, 'reports')
-    return _legacy_role(user) in (
-        ROLE_DIRECTOR, ROLE_OPERATIONS, ROLE_PROJECT_MANAGER,
-        ROLE_SUPERVISOR, ROLE_ACCOUNTS, ROLE_ACCOUNTS_EXECUTIVE,
-        ROLE_BACK_OFFICE, ROLE_ENGINEER, ROLE_TECHNICIAN,
-    )
+    return False
 
 
 def can_view_full_productivity(user):
@@ -101,6 +107,15 @@ def can_view_activity_log(user):
         return True
     if has_employee_profile(user):
         return has_enterprise_permission(user, 'gps_tracking')
+    return _legacy_role(user) == ROLE_DIRECTOR
+
+
+def can_enter_director_mark(user):
+    """Only a director (or a superuser) may enter the manual 10% mark."""
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
     return _legacy_role(user) == ROLE_DIRECTOR
 
 
