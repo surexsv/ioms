@@ -17,6 +17,7 @@ from accounts.roles import ROLE_SUPERVISOR, ROLE_TECHNICIAN, ROLE_ENGINEER
 from orders.models import Order
 from scheduling.models import WorkSchedule
 from .services import (
+    attach_scoreboard,
     build_dashboard_context,
     build_project_manager_context,
     merge_attendance_widget,
@@ -189,6 +190,7 @@ def _build_field_team_context(user):
 def field_team_dashboard(request):
     """Unified dashboard for Engineers and Technicians."""
     context = _build_field_team_context(request.user)
+    attach_scoreboard(context)
     merge_pm_widget(context, request.user)
     return render(request, 'dashboard/field_team_dashboard.html', context)
 
@@ -202,6 +204,7 @@ def engineer_dashboard(request):
 def project_manager_dashboard(request):
     flags = _widget_context(request.user)
     context = build_project_manager_context(request.user)
+    attach_scoreboard(context)
     context.update(flags)
     context['dashboard_title'] = 'Project Manager Dashboard'
     merge_attendance_widget(context, request.user)
@@ -269,7 +272,7 @@ def supervisor_dashboard(request):
     if team_schedules.count():
         completion_rate = round(completed_schedules / team_schedules.count() * 100, 1)
 
-    context = {
+    context = attach_scoreboard({
         'active_team_count': team_members.count(),
         'assigned_projects': team_schedules.values('reference_number').distinct().count(),
         'open_schedules': open_schedules,
@@ -286,7 +289,7 @@ def supervisor_dashboard(request):
         'overdue_orders': overdue.order_by('scheduled_end_date')[:10],
         'recent_site_updates': recent_updates,
         'can_add_site_update': True,
-    }
+    })
     merge_attendance_widget(context, user)
     merge_erms_widget(context, user)
     merge_pm_widget(context, user)

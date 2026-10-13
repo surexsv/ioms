@@ -1,0 +1,22 @@
+<div class="card ioms-dashboard-section" id="performance-scoreboard">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h3 style="margin:0;">Performance Scoreboard</h3>
+        <a href="{% url 'productivity_dashboard' %}" class="btn btn-sm btn-primary">Open Scoreboard</a>
+    </div>
+    <div class="ioms-table-wrap" style="margin-top:12px;">
+        <table class="ioms-table">
+            <thead><tr><th>Rank</th><th>Employee</th><th>Role</th><th>Score</th><th>Director's mark</th></tr></thead>
+            <tbody>
+                {% for row in prod_scoreboard %}
+                <tr>
+                    <td>{{ row.rank }}</td>
+                    <td>{{ row.name }}</td>
+                    <td>{{ row.role_label }}</td>
+                    <td><strong>{{ row.score }}</strong></td>
+                    <td>{% if row.director_mark != None %}{{ row.director_mark }}{% else %}—{% endif %}</td>
+                </tr>
+                {% empty %}<tr><td colspan="5">No active employees on the scoreboard yet.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

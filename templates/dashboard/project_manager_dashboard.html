@@ -3,6 +3,8 @@
 {% block content %}
 <h2 class="ioms-section-title">{{ dashboard_title }}</h2>
 
+{% include 'dashboard/_scoreboard_card.html' %}
+
 {% include 'attendance/_dashboard_widget.html' %}
 {% include 'employee_requests/_erms_monitoring.html' %}
 {% include 'preventive_maintenance/_pm_monitoring.html' %}

@@ -178,7 +178,7 @@ class Command(BaseCommand):
 
         report = {
             'title': 'IOMS Role-Permission Matrix',
-            'version': '1.4.1',
+            'version': '1.4.2',
             'roles': [{'code': c, 'name': n} for c, n, _ in ROLES],
             'dashboards': dashboards,
             'menus': menus,

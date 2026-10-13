@@ -303,6 +303,7 @@ _DASHBOARD_MODULES = (
 NAV_MENU_CATALOG = [
     # section_label, permission, label, url_name, icon, nav_key, query_string
     ('', 'dashboard', 'Dashboard', '__dashboard__', 'bi-speedometer2', 'dashboard', ''),
+    ('Operations', 'reports', 'Scoreboard', 'productivity_dashboard', 'bi-graph-up-arrow', 'productivity', ''),
     ('Operations', 'orders', 'Orders', 'order_list', 'bi-clipboard-check', 'orders', ''),
     ('Operations', 'preventive_maintenance', 'Preventive Maintenance', 'pm_dashboard', 'bi-tools', 'preventive_maintenance', ''),
     ('Operations', 'scheduling', 'Scheduling', 'schedule_list', 'bi-calendar-event', 'schedules', ''),
@@ -325,7 +326,6 @@ NAV_MENU_CATALOG = [
     ('System', 'attendance', 'My Attendance', 'my_attendance', 'bi-person-check', 'attendance', ''),
     ('System', 'attendance', 'Attendance Management', 'attendance_dashboard', 'bi-calendar-check', 'attendance_mgmt', ''),
     ('System', 'attendance', 'Team Attendance', 'attendance_team', 'bi-people', 'attendance_team', ''),
-    ('System', 'reports', 'Productivity', 'productivity_dashboard', 'bi-graph-up-arrow', 'productivity', ''),
     ('System', 'gps_tracking', 'GPS Tracking', 'gps_dashboard', 'bi-geo-alt', 'gps', ''),
     ('System', 'daily_meeting', 'Daily Meetings', 'dom_dashboard', 'bi-people-fill', 'daily_meetings', ''),
     ('System', 'hr', 'Requests', 'erms_dashboard', 'bi-inbox', 'employee_requests', ''),
@@ -369,8 +369,8 @@ def _nav_item_visible(user, permission, nav_key):
             or can_access_via_enterprise(user, 'user_management')
         )
     if nav_key == 'productivity':
-        from productivity.permissions import can_view_management_productivity
-        return can_view_management_productivity(user)
+        from productivity.permissions import can_view_productivity
+        return can_view_productivity(user)
     if nav_key == 'employee_requests':
         from employee_requests.permissions import can_access_erms
         return can_access_erms(user)
@@ -448,7 +448,34 @@ def build_navigation_menu(user, dashboard_url_name='director_dashboard'):
     if section_items:
         sections.append({'label': current_section, 'items': section_items})
 
-    return _ensure_pm_nav_item(sections, user)
+    return _ensure_scoreboard_nav_item(_ensure_pm_nav_item(sections, user), user)
+
+
+def _ensure_scoreboard_nav_item(sections, user):
+    """Keep Scoreboard as the first Operations link for every role that can open it."""
+    from productivity.permissions import can_view_productivity
+
+    if not can_view_productivity(user):
+        return sections
+    for section in sections:
+        if any(item.get('nav_key') == 'productivity' for item in section.get('items', [])):
+            return sections
+
+    item = {
+        'label': 'Scoreboard',
+        'url_name': 'productivity_dashboard',
+        'icon': 'bi-graph-up-arrow',
+        'nav_key': 'productivity',
+        'query': '',
+        'badge': None,
+    }
+    for section in sections:
+        if section.get('label') == 'Operations':
+            section['items'].insert(0, item)
+            return sections
+    insert_at = 1 if sections and not sections[0].get('label') else 0
+    sections.insert(insert_at, {'label': 'Operations', 'items': [item]})
+    return sections
 
 
 def _ensure_pm_nav_item(sections, user):

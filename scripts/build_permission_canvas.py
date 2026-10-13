@@ -93,7 +93,7 @@ export default function RolePermissionMatrix() {{
     <Stack gap={{20}} style={{{{ padding: 24, fontFamily: theme.font.sans }}}}>
       <Stack gap={{6}}>
         <H1>IOMS Role-Permission Matrix</H1>
-        <Text tone="muted">Version 1.4.1 · 10 roles · 15 menus · 71 permission actions</Text>
+        <Text tone="muted">Version 1.4.2 · 10 roles · 15 menus · 71 permission actions</Text>
       </Stack>
 
       <Grid columns={{5}} gap={{12}}>
