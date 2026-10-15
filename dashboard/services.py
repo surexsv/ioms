@@ -536,6 +536,30 @@ def build_project_manager_context(user):
     }
 
 
+def scoreboard_rows(user, limit=10):
+    """Team board for managers, or the viewer's own row for everyone else."""
+    try:
+        from productivity.permissions import can_monitor_scoreboard
+        from productivity.services import performance_scoreboard, visible_scoreboard
+        rows = visible_scoreboard(user, performance_scoreboard())
+        if can_monitor_scoreboard(user):
+            return rows[:limit]
+        return rows
+    except Exception:
+        return []
+
+
+def attach_scoreboard(context, user, limit=10):
+    """Put the viewer's scoreboard on a dashboard."""
+    from productivity.permissions import can_monitor_scoreboard
+    personal = not can_monitor_scoreboard(user)
+    context['show_scoreboard'] = True
+    context['scoreboard_personal'] = personal
+    context['scoreboard_title'] = 'My Performance Score' if personal else 'Performance Scoreboard'
+    context['prod_scoreboard'] = scoreboard_rows(user, limit)
+    return context
+
+
 def merge_attendance_widget(context, user):
     from dashboard.attendance_widget import personal_attendance_context
     context.update(personal_attendance_context(user))
