@@ -32,6 +32,7 @@
     <button type="submit" class="btn btn-primary btn-sm">Apply</button>
 </form>
 
+{% if can_monitor_scoreboard %}
 <div class="ioms-kpi-grid">
     <div class="ioms-kpi"><div class="value">{{ kpis.active_engineers }}</div><div class="label">Active Engineers</div></div>
     <div class="ioms-kpi"><div class="value">{{ kpis.active_technicians }}</div><div class="label">Active Technicians</div></div>
@@ -43,20 +44,27 @@
     <div class="ioms-kpi"><div class="value">{% if kpis.top_engineer %}{{ kpis.top_engineer.employee__first_name|default:kpis.top_engineer.employee__username }}{% else %}—{% endif %}</div><div class="label">Top Engineer</div></div>
     <div class="ioms-kpi"><div class="value">{% if kpis.top_technician %}{{ kpis.top_technician.employee__first_name|default:kpis.top_technician.employee__username }}{% else %}—{% endif %}</div><div class="label">Top Technician</div></div>
 </div>
+{% endif %}
 
 <div class="card ioms-dashboard-section">
-    <h3>Performance Scoreboard — {{ month }}/{{ year }}</h3>
+    <h3>{% if can_monitor_scoreboard %}Performance Scoreboard{% else %}My Performance Score{% endif %} — {{ month }}/{{ year }}</h3>
     <p style="color:#6c757d;margin-top:0;">
-        One score out of 100 for every active employee, including managers.
+        {% if can_monitor_scoreboard %}
+        Team scores out of 100. Directors are not on this board.
+        {% else %}
+        Your score for this month, out of 100.
+        {% endif %}
         90% comes from the month's work and 10% is the director's mark, entered by hand from 0 to 100.
         Until a mark is entered, that 10% stays at zero.
         Of the work portion: finishing work is 40%, work delivered is 25%, attendance is 20%, reports submitted are 10%, and man-days are 5%.
         People with no field jobs this month are scored on back-office activities for the first two work parts.
         People who are not required to mark attendance are scored on the other work parts only.
     </p>
+    {% if can_monitor_scoreboard %}
     <h4 style="margin:0 0 8px;">Top 10 scores</h4>
     <div class="ioms-chart-wrap" style="height:280px;margin-bottom:16px;"><canvas id="scoreboardChart"></canvas></div>
     {{ scoreboard_chart|json_script:"scoreboard-data" }}
+    {% endif %}
     {% if can_enter_director_mark %}
     <form method="post" action="{% url 'productivity_director_marks' %}">
         {% csrf_token %}
@@ -115,6 +123,7 @@
     {% endif %}
 </div>
 
+{% if can_monitor_scoreboard %}
 <div class="ioms-charts-row ioms-charts-row-3" style="margin-top:20px;">
     <div class="ioms-chart-card">
         <h3>Monthly Productivity Trend</h3>
@@ -169,6 +178,7 @@
         </table>
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -176,34 +186,47 @@
 <script>
 const trendLabels = [{% for p in trend %}'{{ p.month }}/{{ p.year }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
 const trendManDays = [{% for p in trend %}{{ p.man_days|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+{% if can_monitor_scoreboard %}
 const engLabels = [{% for r in kpis.engineer_ranking %}'{{ r.employee__first_name|default:r.employee__username }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
 const engData = [{% for r in kpis.engineer_ranking %}{{ r.total_man_days|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
 const techLabels = [{% for r in kpis.technician_ranking %}'{{ r.employee__first_name|default:r.employee__username }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
 const techData = [{% for r in kpis.technician_ranking %}{{ r.total_man_days|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+{% else %}
+const engLabels = [];
+const engData = [];
+const techLabels = [];
+const techData = [];
+{% endif %}
 
-const scoreboardRows = JSON.parse(document.getElementById('scoreboard-data').textContent);
-new Chart(document.getElementById('scoreboardChart'), {
-    type: 'bar',
-    data: {
-        labels: scoreboardRows.map(function (row) { return row.name; }),
-        datasets: [{ label: 'Score', data: scoreboardRows.map(function (row) { return row.score; }), backgroundColor: '#0F2D52' }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { min: 0, max: 100 } } }
-});
-new Chart(document.getElementById('prodTrendChart'), {
-    type: 'line',
-    data: { labels: trendLabels, datasets: [{ label: 'Man-Days', data: trendManDays, borderColor: '#0d6efd', fill: false }] },
-    options: { responsive: true, maintainAspectRatio: false }
-});
-new Chart(document.getElementById('engRankChart'), {
-    type: 'bar',
-    data: { labels: engLabels, datasets: [{ label: 'Man-Days', data: engData, backgroundColor: '#198754' }] },
-    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
-});
-new Chart(document.getElementById('techRankChart'), {
-    type: 'bar',
-    data: { labels: techLabels, datasets: [{ label: 'Man-Days', data: techData, backgroundColor: '#fd7e14' }] },
-    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
-});
+const scoreboardData = document.getElementById('scoreboard-data');
+if (scoreboardData) {
+    const scoreboardRows = JSON.parse(scoreboardData.textContent);
+    new Chart(document.getElementById('scoreboardChart'), {
+        type: 'bar',
+        data: {
+            labels: scoreboardRows.map(function (row) { return row.name; }),
+            datasets: [{ label: 'Score', data: scoreboardRows.map(function (row) { return row.score; }), backgroundColor: '#0F2D52' }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { min: 0, max: 100 } } }
+    });
+}
+const prodTrend = document.getElementById('prodTrendChart');
+if (prodTrend) {
+    new Chart(prodTrend, {
+        type: 'line',
+        data: { labels: trendLabels, datasets: [{ label: 'Man-Days', data: trendManDays, borderColor: '#0d6efd', fill: false }] },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+    new Chart(document.getElementById('engRankChart'), {
+        type: 'bar',
+        data: { labels: engLabels, datasets: [{ label: 'Man-Days', data: engData, backgroundColor: '#198754' }] },
+        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
+    });
+    new Chart(document.getElementById('techRankChart'), {
+        type: 'bar',
+        data: { labels: techLabels, datasets: [{ label: 'Man-Days', data: techData, backgroundColor: '#fd7e14' }] },
+        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
+    });
+}
 </script>
 {% endblock %}

@@ -155,7 +155,7 @@ class ScoreboardTests(TestCase):
         board = performance_scoreboard(self.today.year, self.today.month)
         ids = {row['employee_id'] for row in board}
         self.assertIn(self.manager.pk, ids)
-        self.assertIn(self.director.pk, ids)
+        self.assertNotIn(self.director.pk, ids)
         self.assertIn(self.accounts.pk, ids)
         self.assertIn(self.tech.pk, ids)
         self.assertIn(self.engineer.pk, ids)
@@ -166,11 +166,8 @@ class ScoreboardTests(TestCase):
         self.assertEqual(board[0]['rank'], 1)
 
         manager_row = next(row for row in board if row['employee_id'] == self.manager.pk)
-        director_row = next(row for row in board if row['employee_id'] == self.director.pk)
         self.assertGreater(manager_row['score'], 0)
-        self.assertGreater(director_row['score'], 0)
         self.assertEqual(manager_row['role_label'], 'Project Manager')
-        self.assertEqual(director_row['role_label'], 'Director')
 
         zero_rows = [row for row in board if row['score'] == Decimal('0.00')]
         self.assertGreaterEqual(len(zero_rows), 2)
@@ -193,6 +190,9 @@ class ScoreboardTests(TestCase):
         self.assertContains(response, 'Pat Manager')
         self.assertContains(response, 'Project Manager')
         self.assertContains(response, 'Ann Accounts')
+        self.assertContains(response, 'Tech One')
+        table = response.content.decode().split('Performance Scoreboard', 1)[1]
+        self.assertNotIn('Dee Director', table)
         self.assertContains(response, 'Save director marks')
         self.assertContains(response, "Director's mark")
 
@@ -298,9 +298,20 @@ class ScoreboardTests(TestCase):
         self.client.force_login(self.tech)
         response = self.client.get(reverse('productivity_dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Performance Scoreboard')
-        self.assertContains(response, 'Pat Manager')
+        self.assertContains(response, 'My Performance Score')
+        self.assertContains(response, 'Tech One')
+        self.assertNotContains(response, 'Pat Manager')
+        self.assertNotContains(response, 'Ann Accounts')
+        self.assertNotContains(response, 'Eng One')
+        self.assertNotContains(response, 'Dee Director')
         self.assertNotContains(response, 'Save director marks')
+        self.assertNotContains(response, 'Engineer Ranking')
+
+        own = self.client.get(reverse('employee_productivity', args=[self.tech.pk]))
+        self.assertEqual(own.status_code, 200)
+        blocked = self.client.get(reverse('employee_productivity', args=[self.manager.pk]))
+        self.assertEqual(blocked.status_code, 302)
+        self.assertIn('/access-denied', blocked.url)
 
     def test_director_dashboard_shows_the_scoreboard(self):
         self._log_activities(self.manager, 4)
@@ -312,6 +323,8 @@ class ScoreboardTests(TestCase):
         self.assertIn('Open Scoreboard', html)
         self.assertIn('>Scoreboard<', html)
         self.assertIn('Pat Manager', html)
+        card = html.split('id="performance-scoreboard"', 1)[1].split('Case Monitoring', 1)[0]
+        self.assertNotIn('Dee Director', card)
         self.assertLess(html.index('id="performance-scoreboard"'), html.index('Case Monitoring'))
         menu = build_navigation_menu(self.director, allowed_dashboard_url_name(self.director))
         operations = next(section for section in menu if section['label'] == 'Operations')
@@ -335,9 +348,21 @@ class ScoreboardTests(TestCase):
             self.assertEqual(response.status_code, 200, url_name)
             html = response.content.decode()
             self.assertIn('id="performance-scoreboard"', html, url_name)
-            self.assertIn('Performance Scoreboard', html, url_name)
+            self.assertTrue(
+                'My Performance Score' in html or 'Performance Scoreboard' in html,
+                url_name,
+            )
             self.assertLess(
                 html.index('id="performance-scoreboard"'),
                 html.index('ioms-kpi-grid'),
                 url_name,
             )
+            card = html.split('id="performance-scoreboard"', 1)[1]
+            if user.role in (ROLE_ENGINEER, ROLE_TECHNICIAN, ROLE_ACCOUNTS):
+                self.assertIn('My Performance Score', card, url_name)
+                self.assertNotIn('Pat Manager', card, url_name)
+                self.assertNotIn('Dee Director', card, url_name)
+            else:
+                self.assertIn('Performance Scoreboard', card, url_name)
+                self.assertIn('Tech One', card, url_name)
+                self.assertNotIn('Dee Director', card, url_name)

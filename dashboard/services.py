@@ -451,7 +451,6 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
 
 
     context.update(_order_workflow_stats())
-    attach_scoreboard(context)
     return context
 
 
@@ -537,19 +536,27 @@ def build_project_manager_context(user):
     }
 
 
-def scoreboard_rows(limit=10):
-    """This month's performance board, shortened for dashboard cards."""
+def scoreboard_rows(user, limit=10):
+    """Team board for managers, or the viewer's own row for everyone else."""
     try:
-        from productivity.services import performance_scoreboard
-        return list(performance_scoreboard()[:limit])
+        from productivity.permissions import can_monitor_scoreboard
+        from productivity.services import performance_scoreboard, visible_scoreboard
+        rows = visible_scoreboard(user, performance_scoreboard())
+        if can_monitor_scoreboard(user):
+            return rows[:limit]
+        return rows
     except Exception:
         return []
 
 
-def attach_scoreboard(context, limit=10):
-    """Put the scoreboard on a dashboard even when operations widgets are hidden."""
+def attach_scoreboard(context, user, limit=10):
+    """Put the viewer's scoreboard on a dashboard."""
+    from productivity.permissions import can_monitor_scoreboard
+    personal = not can_monitor_scoreboard(user)
     context['show_scoreboard'] = True
-    context['prod_scoreboard'] = scoreboard_rows(limit)
+    context['scoreboard_personal'] = personal
+    context['scoreboard_title'] = 'My Performance Score' if personal else 'Performance Scoreboard'
+    context['prod_scoreboard'] = scoreboard_rows(user, limit)
     return context
 
 

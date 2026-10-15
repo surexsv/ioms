@@ -6,7 +6,7 @@ from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
 from accounts.models import User
-from accounts.roles import ROLE_ENGINEER, ROLE_TECHNICIAN, user_role
+from accounts.roles import ROLE_DIRECTOR, ROLE_ENGINEER, ROLE_TECHNICIAN, user_role
 from attendance.models import Attendance
 from orders.models import Order
 from productivity.calculator import compute_performance_score, field_productivity_ranking
@@ -256,13 +256,16 @@ def _persist_scoreboard(rows, year, month):
 
 def performance_scoreboard(year=None, month=None, persist=True):
     """
-    One monthly board for every active employee, including managers.
+    Monthly board for active employees other than directors.
 
-    Rank 1 is the highest score. Equal scores share a rank.
+    Directors are left off the board. Rank 1 is the highest score.
+    Equal scores share a rank.
     """
     year, month = _month_bounds(year, month)
     employees = list(
-        User.objects.filter(is_active=True, is_active_employee=True).order_by('pk')
+        User.objects.filter(is_active=True, is_active_employee=True)
+        .exclude(role=ROLE_DIRECTOR)
+        .order_by('pk')
     )
     metrics = _month_metrics(employees, year, month)
     rows = _assign_ranks([_score_row(employee, metrics[employee.pk]) for employee in employees])
@@ -288,7 +291,7 @@ def save_director_marks(actor, year, month, marks, notes=None):
             pk__in=list(marks.keys()),
             is_active=True,
             is_active_employee=True,
-        )
+        ).exclude(role=ROLE_DIRECTOR)
     }
     now = timezone.now()
     for employee_id, employee in employees.items():
@@ -306,6 +309,15 @@ def save_director_marks(actor, year, month, marks, notes=None):
             },
         )
     return performance_scoreboard(year, month)
+
+
+def visible_scoreboard(user, rows):
+    """Managers see the team. Other people see only their own row."""
+    from productivity.permissions import can_monitor_scoreboard
+    if can_monitor_scoreboard(user):
+        return list(rows)
+    user_id = getattr(user, 'pk', None)
+    return [row for row in rows if row['employee_id'] == user_id]
 
 
 def employee_productivity_detail(employee, year=None, month=None):

@@ -10,12 +10,14 @@ from django.views.decorators.http import require_GET, require_POST
 
 from accounts.decorators import access_denied_response, module_required
 from accounts.models import User
+from accounts.roles import ROLE_DIRECTOR, user_role
 from productivity.activity_logger import log_activity
 from productivity.constants import ACT_REPORT_GENERATED
 from accounts.permissions import MODULE_PRODUCTIVITY
 from productivity.permissions import (
     can_enter_director_mark,
     can_export_reports,
+    can_monitor_scoreboard,
     can_view_activity_log,
     can_view_field_activity_log,
     can_view_full_productivity,
@@ -32,6 +34,7 @@ from productivity.services import (
     personal_monthly_trend,
     productivity_dashboard_kpis,
     save_director_marks,
+    visible_scoreboard,
 )
 from productivity.gps_dashboard import (
     field_activity_report,
@@ -58,6 +61,7 @@ def productivity_dashboard(request):
         return access_denied_response(request, module_key='productivity')
     year, month = _parse_period(request)
     kpis = productivity_dashboard_kpis(year, month)
+    kpis['scoreboard'] = visible_scoreboard(request.user, kpis['scoreboard'])
     trend = monthly_trend(year)
     scope_users = productivity_scope_users(request.user)
     scoreboard_chart = [
@@ -70,6 +74,7 @@ def productivity_dashboard(request):
         'year': year,
         'month': month,
         'scoreboard_chart': scoreboard_chart,
+        'can_monitor_scoreboard': can_monitor_scoreboard(request.user),
         'can_full': can_view_full_productivity(request.user),
         'can_team': can_view_team_productivity(request.user),
         'can_activity_log': can_view_activity_log(request.user),
@@ -143,8 +148,9 @@ def employee_productivity(request, pk):
     if not can_view_productivity(request.user):
         return access_denied_response(request, module_key='productivity')
     employee = get_object_or_404(User, pk=pk)
-    allowed = productivity_scope_users(request.user).filter(pk=pk).exists()
-    if not allowed and not request.user.is_superuser:
+    if user_role(employee) == ROLE_DIRECTOR:
+        return access_denied_response(request, module_key='productivity')
+    if not can_monitor_scoreboard(request.user) and employee.pk != request.user.pk:
         return access_denied_response(request, module_key='productivity')
     year, month = _parse_period(request)
     detail = employee_productivity_detail(employee, year, month)
@@ -204,7 +210,7 @@ def export_csv(request):
             'Completion %', 'Attendance %',
             'Jobs Completed', 'Activities', 'Reports Submitted', 'Man-Days', 'Hours',
         ])
-        for row in performance_scoreboard(year, month):
+        for row in visible_scoreboard(request.user, performance_scoreboard(year, month)):
             writer.writerow([
                 row['rank'],
                 row['name'],
@@ -232,6 +238,7 @@ def export_pdf(request):
         return access_denied_response(request, module_key='productivity')
     year, month = _parse_period(request)
     kpis = productivity_dashboard_kpis(year, month)
+    kpis['scoreboard'] = visible_scoreboard(request.user, kpis['scoreboard'])
     log_activity(request.user, ACT_REPORT_GENERATED, related_document=f'PDF {year}-{month}')
     return render(request, 'productivity/report_print.html', {
         'kpis': kpis,
