@@ -592,3 +592,14 @@ def merge_pm_widget(context, user):
     return context
 
 
+def merge_task_widget(context, user):
+    """Show team task counts on the existing role dashboards."""
+    from task_manager.permissions import can_use_task_manager
+    if not can_use_task_manager(user):
+        return context
+    from task_manager.services import dashboard_stats, record_due_reminders, tasks_for_user
+    record_due_reminders()
+    context['task_summary'] = dashboard_stats(tasks_for_user(user))
+    return context
+
+

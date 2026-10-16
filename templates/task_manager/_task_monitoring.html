@@ -1,0 +1,22 @@
+{% if task_summary %}
+<div class="card" style="margin-bottom:20px;border-left:4px solid #0F2D52;">
+    <div class="case-monitoring-header">
+        <div>
+            <h3 style="margin:0;">Task Manager</h3>
+            <p class="case-dashboard-subtitle">Team tasks: schedule, forward when someone is stuck, hold with remarks, remind, and close.</p>
+        </div>
+        <div class="case-dashboard-actions">
+            <a href="{% url 'task_create' %}" class="btn btn-primary btn-sm">New Task</a>
+            <a href="{% url 'task_dashboard' %}" class="btn btn-secondary btn-sm">Open Task Manager</a>
+            <a href="{% url 'task_list' %}?mine=1" class="btn btn-secondary btn-sm">My Tasks</a>
+        </div>
+    </div>
+    <div class="ioms-kpi-grid" style="margin-top:12px;">
+        <div class="ioms-kpi"><div class="value">{{ task_summary.open }}</div><div class="label">Open</div></div>
+        <div class="ioms-kpi"><div class="value">{{ task_summary.in_progress }}</div><div class="label">In Progress</div></div>
+        <div class="ioms-kpi"><div class="value text-warning">{{ task_summary.on_hold }}</div><div class="label">On Hold</div></div>
+        <div class="ioms-kpi"><div class="value text-danger">{{ task_summary.overdue }}</div><div class="label">Overdue</div></div>
+        <div class="ioms-kpi"><div class="value">{{ task_summary.reminded_today }}</div><div class="label">Reminded Today</div></div>
+    </div>
+</div>
+{% endif %}

@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Task Manager — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Task Manager</h1>
+    <div>
+        <a href="{% url 'task_create' %}" class="btn btn-primary">New Task</a>
+        <a href="{% url 'task_list' %}" class="btn btn-secondary">All Tasks</a>
+        <a href="{% url 'task_list' %}?mine=1" class="btn btn-secondary">My Tasks</a>
+        <a href="{% url 'task_history' %}" class="btn btn-secondary">History</a>
+    </div>
+</div>
+<p style="color:#555;margin-bottom:16px;">
+    Create a task, schedule it, forward it when someone is stuck, hold it with remarks, and close it when the work is done.
+    Reminders are recorded automatically after the number of days set on each task.
+</p>
+
+<div class="ioms-kpi-grid">
+    <a class="ioms-kpi ioms-kpi-link" href="{% url 'task_list' %}?status=OPEN">
+        <div class="value">{{ stats.open }}</div>
+        <div class="label">Open</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link" href="{% url 'task_list' %}?status=SCHEDULED">
+        <div class="value">{{ stats.scheduled }}</div>
+        <div class="label">Scheduled</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link" href="{% url 'task_list' %}?status=IN_PROGRESS">
+        <div class="value">{{ stats.in_progress }}</div>
+        <div class="label">In Progress</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link ioms-kpi-warn" href="{% url 'task_list' %}?bucket=hold">
+        <div class="value text-warning">{{ stats.on_hold }}</div>
+        <div class="label">On Hold</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link ioms-kpi-danger" href="{% url 'task_list' %}?bucket=overdue">
+        <div class="value text-danger">{{ stats.overdue }}</div>
+        <div class="label">Overdue</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link ioms-kpi-warn" href="{% url 'task_list' %}?bucket=long">
+        <div class="value text-warning">{{ stats.long_pending }}</div>
+        <div class="label">Pending Too Long</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link" href="{% url 'task_list' %}?bucket=reminded">
+        <div class="value">{{ stats.reminded_today }}</div>
+        <div class="label">Reminded Today</div>
+    </a>
+    <a class="ioms-kpi ioms-kpi-link" href="{% url 'task_list' %}?status=CLOSED">
+        <div class="value">{{ stats.closed }}</div>
+        <div class="label">Closed</div>
+    </a>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Needs attention</h3>
+    <table>
+        <tr>
+            <th>Task</th>
+            <th>Assignee</th>
+            <th>Status</th>
+            <th>Due</th>
+            <th>Latest remarks</th>
+        </tr>
+        {% for item in attention %}
+        <tr>
+            <td><a href="{% url 'task_detail' item.pk %}">{{ item.task_number }}</a> — {{ item.title }}</td>
+            <td>{{ item.assignee.get_full_name|default:item.assignee.username }}</td>
+            <td>{% include 'task_manager/_status_badge.html' with task=item %}</td>
+            <td>
+                {% if item.is_overdue %}
+                <span class="text-danger">{{ item.due_on|date:"d-m-Y" }} OVERDUE</span>
+                {% else %}
+                {{ item.due_on|date:"d-m-Y"|default:"—" }}
+                {% endif %}
+            </td>
+            <td>{{ item.latest_remarks|default:"—"|truncatechars:80 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">Nothing needs attention right now.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Recent tasks</h3>
+    <table>
+        <tr>
+            <th>Task</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Assignee</th>
+            <th>Scheduled</th>
+        </tr>
+        {% for item in recent %}
+        <tr>
+            <td><a href="{% url 'task_detail' item.pk %}">{{ item.task_number }}</a> — {{ item.title }}</td>
+            <td>{{ item.get_priority_display }}</td>
+            <td>{% include 'task_manager/_status_badge.html' with task=item %}</td>
+            <td>{{ item.assignee.get_full_name|default:item.assignee.username }}</td>
+            <td>{{ item.scheduled_on|date:"d-m-Y"|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No tasks yet. Create the first one for the team.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

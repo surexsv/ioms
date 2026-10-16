@@ -74,6 +74,8 @@ def _active_nav(request):
         return 'project_expenses'
     if path.startswith('/preventive-maintenance'):
         return 'preventive_maintenance'
+    if path.startswith('/tasks'):
+        return 'task_manager'
     if path.startswith('/case-intelligence/reports'):
         return 'reports'
     if path.startswith('/case-intelligence'):

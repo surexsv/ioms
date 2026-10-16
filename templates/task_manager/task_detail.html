@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}{{ task.task_number }} — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ task.task_number }}</h1>
+    <div>
+        <a href="{% url 'task_list' %}" class="btn btn-secondary">All Tasks</a>
+        <a href="{% url 'task_history' %}?q={{ task.task_number }}" class="btn btn-secondary">History</a>
+        <a href="{% url 'task_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="detail-grid">
+        <div class="detail-item"><label>Task</label><p>{{ task.title }}</p></div>
+        <div class="detail-item"><label>Status</label><p>{% include 'task_manager/_status_badge.html' %}</p></div>
+        <div class="detail-item"><label>Priority</label><p>{{ task.get_priority_display }}</p></div>
+        <div class="detail-item"><label>Assignee</label><p>{{ task.assignee.get_full_name|default:task.assignee.username }}</p></div>
+        <div class="detail-item"><label>Created by</label><p>{{ task.created_by.get_full_name|default:task.created_by.username }} · {{ task.created_at|date:"d M Y H:i" }}</p></div>
+        <div class="detail-item"><label>Scheduled</label><p>{{ task.scheduled_on|date:"d-m-Y"|default:"—" }}</p></div>
+        <div class="detail-item"><label>Due</label><p>{% if task.is_overdue %}<span class="text-danger">{{ task.due_on|date:"d-m-Y" }} OVERDUE</span>{% else %}{{ task.due_on|date:"d-m-Y"|default:"—" }}{% endif %}</p></div>
+        <div class="detail-item"><label>Remind after</label><p>{{ task.remind_after_days }} day(s){% if task.next_reminder_on %} · next {{ task.next_reminder_on|date:"d-m-Y" }}{% endif %}</p></div>
+        <div class="detail-item"><label>Open for</label><p>{{ task.days_open }} day(s)</p></div>
+        {% if task.related_order %}
+        <div class="detail-item"><label>Order</label><p><a href="{% url 'order_detail' task.related_order_id %}">{{ task.related_order.order_no }}</a></p></div>
+        {% endif %}
+    </div>
+    <div class="detail-item" style="margin-top:16px;"><label>Description</label><p>{{ task.description|linebreaksbr }}</p></div>
+    {% if task.hold_remarks %}<div class="detail-item"><label>Hold remarks</label><p>{{ task.hold_remarks|linebreaksbr }}</p></div>{% endif %}
+    {% if task.close_remarks %}<div class="detail-item"><label>Closing remarks</label><p>{{ task.close_remarks|linebreaksbr }}</p></div>{% endif %}
+    {% if task.is_long_pending %}
+    <p class="badge badge-pending">This task has been pending for {{ task.days_open }} days. Hold it with remarks if the work is stuck.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">History</h3>
+    <table>
+        <tr>
+            <th>When</th>
+            <th>Action</th>
+            <th>By</th>
+            <th>Details</th>
+        </tr>
+        {% for event in history %}
+        <tr>
+            <td>{{ event.created_at|date:"d M Y H:i" }}</td>
+            <td>{{ event.get_action_display }}</td>
+            <td>{% if event.actor %}{{ event.actor.get_full_name|default:event.actor.username }}{% else %}System{% endif %}</td>
+            <td>
+                {{ event.remarks|linebreaksbr }}
+                {% if event.from_assignee or event.to_assignee %}
+                <div>
+                    {% if event.from_assignee %}{{ event.from_assignee.get_full_name|default:event.from_assignee.username }}{% else %}—{% endif %}
+                    →
+                    {% if event.to_assignee %}{{ event.to_assignee.get_full_name|default:event.to_assignee.username }}{% else %}—{% endif %}
+                </div>
+                {% endif %}
+                {% if event.from_status or event.to_status %}
+                <div><small>{{ event.from_status }} → {{ event.to_status }}</small></div>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">No history yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+{% if can_act %}
+<div class="card">
+    <h3 style="margin-top:0;">Schedule</h3>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="schedule">
+        {{ schedule_form.non_field_errors }}
+        <div class="form-row">
+            <div class="form-group">{{ schedule_form.scheduled_on.label_tag }}{{ schedule_form.scheduled_on }}{{ schedule_form.scheduled_on.errors }}</div>
+            <div class="form-group">{{ schedule_form.due_on.label_tag }}{{ schedule_form.due_on }}{{ schedule_form.due_on.errors }}</div>
+            <div class="form-group">{{ schedule_form.remind_after_days.label_tag }}{{ schedule_form.remind_after_days }}{{ schedule_form.remind_after_days.errors }}</div>
+        </div>
+        <div class="form-group">{{ schedule_form.remarks.label_tag }}{{ schedule_form.remarks }}{{ schedule_form.remarks.errors }}</div>
+        <button type="submit" class="btn btn-primary">Save schedule</button>
+    </form>
+    {% if task.status == 'OPEN' or task.status == 'SCHEDULED' %}
+    <form method="post" style="margin-top:12px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="start">
+        <button type="submit" class="btn btn-secondary">Start work</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Forward to someone else</h3>
+    <p style="color:#555;">Use this when the current person is stuck and another person should take the task.</p>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="remap">
+        <div class="form-group">{{ remap_form.assignee.label_tag }}{{ remap_form.assignee }}{{ remap_form.assignee.errors }}</div>
+        <div class="form-group">{{ remap_form.remarks.label_tag }}{{ remap_form.remarks }}{{ remap_form.remarks.errors }}</div>
+        <button type="submit" class="btn btn-primary">Forward task</button>
+    </form>
+</div>
+
+{% if task.status != 'ON_HOLD' %}
+<div class="card">
+    <h3 style="margin-top:0;">Hold</h3>
+    <p style="color:#555;">Park a task that has been pending too long. Remarks are required, and a reminder is set for later.</p>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="hold">
+        <div class="form-group">{{ hold_form.remarks.label_tag }}{{ hold_form.remarks }}<small style="color:#6c757d;">{{ hold_form.remarks.help_text }}</small>{{ hold_form.remarks.errors }}</div>
+        <div class="form-group">{{ hold_form.remind_after_days.label_tag }}{{ hold_form.remind_after_days }}<small style="color:#6c757d;">{{ hold_form.remind_after_days.help_text }}</small>{{ hold_form.remind_after_days.errors }}</div>
+        <button type="submit" class="btn btn-warning">Put on hold</button>
+    </form>
+</div>
+{% else %}
+<div class="card">
+    <h3 style="margin-top:0;">Resume</h3>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="resume">
+        <div class="form-group">{{ resume_form.remarks.label_tag }}{{ resume_form.remarks }}{{ resume_form.remarks.errors }}</div>
+        <button type="submit" class="btn btn-primary">Resume task</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="card">
+    <h3 style="margin-top:0;">Add an update</h3>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="note">
+        <div class="form-group">{{ note_form.remarks.label_tag }}{{ note_form.remarks }}{{ note_form.remarks.errors }}</div>
+        <button type="submit" class="btn btn-secondary">Save update</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Close task</h3>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="close">
+        <div class="form-group">{{ close_form.remarks.label_tag }}{{ close_form.remarks }}{{ close_form.remarks.errors }}</div>
+        <button type="submit" class="btn btn-success">Close task</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}
