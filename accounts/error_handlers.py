@@ -1,9 +1,11 @@
+import traceback
+
 from django.shortcuts import render
 from django.urls import reverse
 
 from .access_control import denial_context_for_request, REASON_UNAUTHORIZED
 from .permissions import allowed_dashboard_url_name
-from .security_log import log_access_denied, log_system_error
+from .security_log import log_access_denied
 
 
 def _error_context(request, title, message, status_code):
@@ -49,6 +51,9 @@ def page_not_found_view(request, exception=None):
 
 
 def server_error_view(request):
+    # handler500 does not receive the exception. It is still on sys.exc_info()
+    # while Django is turning it into this page.
+    traceback.print_exc()
     ctx = _error_context(
         request,
         'Something Went Wrong',
@@ -60,7 +65,6 @@ def server_error_view(request):
 
 
 def user_friendly_error_view(request, exc):
-    log_system_error(request, exc)
     ctx = _error_context(
         request,
         'Something Went Wrong',
