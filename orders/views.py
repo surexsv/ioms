@@ -205,6 +205,9 @@ def order_detail(request, pk):
                     client=order.client,
                     content_object=order,
                 )
+            if new_status == 'CLOSED':
+                from orders.notifications import notify_order_closed
+                notify_order_closed(order, request.user)
             messages.success(request, f'Status updated to {STATUS_LABELS.get(new_status, new_status)}.')
         else:
             messages.error(request, 'Invalid status transition.')

@@ -175,11 +175,18 @@ class Invoice(AuthorizedSignatoryMixin, models.Model):
             return
         if self.approval_status != STATUS_APPROVED:
             return
+        previous = self.order.status
         if self.payment_status == 'RECEIVED':
-            self.order.status = 'CLOSED'
+            new_status = 'CLOSED'
         else:
-            self.order.status = 'BILLED'
+            new_status = 'BILLED'
+        if previous == new_status:
+            return
+        self.order.status = new_status
         self.order.save(update_fields=['status'])
+        if new_status == 'CLOSED':
+            from orders.notifications import notify_order_closed
+            notify_order_closed(self.order, self.approved_by)
 
     def save(self, *args, **kwargs):
         if self.order_id and not self.client_id:

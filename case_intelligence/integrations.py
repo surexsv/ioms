@@ -97,6 +97,8 @@ def order_created(user, order, remarks=''):
         description='Order Created', new_status=order.status,
         client=order.client, content_object=order, remarks=remarks,
     )
+    from orders.notifications import notify_order_created
+    notify_order_created(order, user)
 
 
 def order_converted_from_enquiry(user, order, enquiry, remarks=''):
