@@ -1,5 +1,6 @@
 import traceback
 
+from django.conf import settings
 from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.management.base import BaseCommand
@@ -25,11 +26,22 @@ class Command(BaseCommand):
     help = 'Render each active user\'s home dashboard and print any traceback.'
 
     def handle(self, *args, **options):
+        db = settings.DATABASES['default']
+        self.stdout.write(f'SETTINGS {settings.SETTINGS_MODULE}')
+        self.stdout.write(f'DATABASE {db["ENGINE"]} {db.get("NAME")}')
+        if 'sqlite' in db['ENGINE']:
+            self.stdout.write(self.style.ERROR(
+                'SQLITE: this is the local file, not the live Postgres database. '
+                'export DJANGO_SETTINGS_MODULE=config.settings.production and run again.'
+            ))
+
         tables = set(connection.introspection.table_names())
         for name in ('task_manager_teamtask', 'task_manager_taskhistory'):
             self.stdout.write(f'TABLE {name} {"yes" if name in tables else "MISSING"}')
 
+        total_users = User.objects.count()
         users = list(User.objects.filter(is_active=True).order_by('id'))
+        self.stdout.write(f'USERS {total_users}')
         self.stdout.write(f'ACTIVE_USERS {len(users)}')
         if not users:
             self.stdout.write('NO_USERS')
