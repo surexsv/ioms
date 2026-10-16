@@ -147,9 +147,13 @@ def build_dashboard_context(show_financial=True, show_quotations=True, show_oper
 
         for entry in monthly_revenue:
 
+            if not entry['month']:
+
+                continue
+
             months.append(entry['month'].strftime("%b %Y"))
 
-            revenues.append(float(entry['total']))
+            revenues.append(float(entry['total'] or 0))
 
         context.update({
 
@@ -593,13 +597,25 @@ def merge_pm_widget(context, user):
 
 
 def merge_task_widget(context, user):
-    """Show team task counts on the existing role dashboards."""
+    """Show team task counts on the existing role dashboards.
+
+    A task-table error must not take down the rest of the dashboard.
+    The sidebar already ignores that failure; this widget did not.
+    """
+    import logging
+
     from task_manager.permissions import can_use_task_manager
-    if not can_use_task_manager(user):
-        return context
-    from task_manager.services import dashboard_stats, record_due_reminders, tasks_for_user
-    record_due_reminders()
-    context['task_summary'] = dashboard_stats(tasks_for_user(user))
+    try:
+        if not can_use_task_manager(user):
+            return context
+        from task_manager.services import dashboard_stats, record_due_reminders, tasks_for_user
+        record_due_reminders()
+        context['task_summary'] = dashboard_stats(tasks_for_user(user))
+    except Exception:
+        logging.getLogger('ioms.security').exception(
+            'Task widget failed for user %s',
+            getattr(user, 'pk', None),
+        )
     return context
 
 

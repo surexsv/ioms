@@ -14,7 +14,7 @@ from .permissions import (
     MODULE_DASHBOARD_DIRECTOR,
     MODULE_VIEW_ATTENDANCE_AUDIT_DATA,
 )
-from .security_log import log_access_denied
+from .security_log import log_access_denied, log_system_error
 
 
 class OMSAccessMiddleware:
@@ -156,9 +156,17 @@ class OMSUserFriendlyErrorMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        return self.get_response(request)
+
+    def process_exception(self, request, exception):
+        # Django converts view errors to the generic 500 page before an outer
+        # try/except can see them. Log here so gunicorn's journal has the traceback.
+        log_system_error(request, exception)
+        user = getattr(request, 'user', None)
+        if settings.DEBUG and getattr(user, 'is_superuser', False):
+            return None
         try:
-            return self.get_response(request)
-        except Exception as exc:
-            if settings.DEBUG and getattr(request.user, 'is_superuser', False):
-                raise
-            return user_friendly_error_view(request, exc)
+            return user_friendly_error_view(request, exception)
+        except Exception:
+            log_system_error(request, exception)
+            return None

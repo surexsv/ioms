@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.core.management import call_command
 from django.test import TestCase
@@ -168,6 +169,17 @@ class TaskManagerTests(TestCase):
         self.assertEqual(home.status_code, 200)
         self.assertContains(home, 'Task Manager')
         self.assertContains(home, reverse('task_dashboard'))
+
+    def test_field_dashboard_survives_task_widget_failure(self):
+        self.client.login(username='tech1', password='test-pass')
+        with patch(
+            'task_manager.services.dashboard_stats',
+            side_effect=RuntimeError('task tables unavailable'),
+        ):
+            home = self.client.get(reverse('field_team_dashboard'))
+        self.assertEqual(home.status_code, 200)
+        self.assertNotContains(home, 'Reminded Today')
+        self.assertContains(home, 'Task Manager')
 
     def test_reminder_command_skips_closed_tasks(self):
         task = create_task(
