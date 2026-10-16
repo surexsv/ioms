@@ -122,6 +122,14 @@ def enterprise_module_grants_access(user, module_key):
             if is_field_staff(getattr(user, 'role', None)):
                 return True
 
+    # Team tasks are shared by everyone who already works in IOMS.
+    if module_key == 'task_manager':
+        if has_enterprise_permission(user, 'task_manager'):
+            return True
+        for related in ('orders', 'scheduling', 'daily_meeting', 'hr', 'dashboard'):
+            if has_enterprise_permission(user, related):
+                return True
+
     if codename:
         return False
 
@@ -275,6 +283,7 @@ ENTERPRISE_NAV_TO_MODULE = {
     'fleet': 'fleet',
     'project_expenses': 'project_expenses',
     'preventive_maintenance': 'preventive_maintenance',
+    'task_manager': 'task_manager',
     'boq': 'boq',
     'wcr': 'wcr',
     'clients': 'clients',
@@ -306,6 +315,7 @@ NAV_MENU_CATALOG = [
     ('Operations', 'orders', 'Orders', 'order_list', 'bi-clipboard-check', 'orders', ''),
     ('Operations', 'preventive_maintenance', 'Preventive Maintenance', 'pm_dashboard', 'bi-tools', 'preventive_maintenance', ''),
     ('Operations', 'scheduling', 'Scheduling', 'schedule_list', 'bi-calendar-event', 'schedules', ''),
+    ('Operations', 'task_manager', 'Task Manager', 'task_dashboard', 'bi-list-task', 'task_manager', ''),
     ('Operations', 'special_projects', 'Special Projects', 'special_project_list', 'bi-kanban', 'special_projects', ''),
     ('Operations', 'fleet', 'Fleet & Fuel', 'fleet_dashboard', 'bi-fuel-pump', 'fleet', ''),
     ('Operations', 'project_expenses', 'Project Expenses', 'peams_dashboard', 'bi-cash-stack', 'project_expenses', ''),
@@ -436,6 +446,16 @@ def build_navigation_menu(user, dashboard_url_name='director_dashboard'):
                 count = PortalNotification.objects.filter(user=user, is_read=False).count()
                 if count:
                     item['badge'] = count
+
+        if nav_key == 'task_manager':
+            try:
+                from django.db.utils import DatabaseError
+                from task_manager.services import open_task_count_for_user
+                count = open_task_count_for_user(user)
+                if count:
+                    item['badge'] = count
+            except DatabaseError:
+                pass
 
         if section_label != current_section:
             if section_items:

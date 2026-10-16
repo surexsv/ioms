@@ -1,0 +1,6 @@
+{% if task.status == 'OPEN' %}<span class="badge badge-new">Open</span>
+{% elif task.status == 'SCHEDULED' %}<span class="badge badge-scheduled">Scheduled</span>
+{% elif task.status == 'IN_PROGRESS' %}<span class="badge badge-progress">In progress</span>
+{% elif task.status == 'ON_HOLD' %}<span class="badge badge-pending">On hold</span>
+{% elif task.status == 'CLOSED' %}<span class="badge badge-closed">Closed</span>
+{% else %}<span class="badge">{{ task.get_status_display }}</span>{% endif %}

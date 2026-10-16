@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Tasks — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Tasks</h1>
+    <div>
+        <a href="{% url 'task_create' %}" class="btn btn-primary">New Task</a>
+        <a href="{% url 'task_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+        <a href="{% url 'task_history' %}" class="btn btn-secondary">History</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="get" class="form-row">
+        <div class="form-group">
+            <label for="q">Search</label>
+            <input id="q" type="search" name="q" value="{{ filters.q }}" placeholder="Number, title, remarks">
+        </div>
+        <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="">All</option>
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="priority">Priority</label>
+            <select id="priority" name="priority">
+                <option value="">All</option>
+                {% for value, label in priority_choices %}
+                <option value="{{ value }}" {% if filters.priority == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="bucket">View</label>
+            <select id="bucket" name="bucket">
+                <option value="">All open views</option>
+                <option value="overdue" {% if filters.bucket == 'overdue' %}selected{% endif %}>Overdue</option>
+                <option value="hold" {% if filters.bucket == 'hold' %}selected{% endif %}>On hold</option>
+                <option value="long" {% if filters.bucket == 'long' %}selected{% endif %}>Pending too long</option>
+                <option value="reminded" {% if filters.bucket == 'reminded' %}selected{% endif %}>Reminded today</option>
+            </select>
+        </div>
+        {% if can_view_all %}
+        <div class="form-group">
+            <label for="mine">Scope</label>
+            <select id="mine" name="mine">
+                <option value="">Team</option>
+                <option value="1" {% if filters.mine == '1' %}selected{% endif %}>Mine</option>
+            </select>
+        </div>
+        {% endif %}
+        <div class="form-group" style="align-self:end;">
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <table>
+        <tr>
+            <th>Task</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Assignee</th>
+            <th>Scheduled</th>
+            <th>Due</th>
+            <th>Reminder</th>
+        </tr>
+        {% for item in tasks %}
+        <tr>
+            <td>
+                <a href="{% url 'task_detail' item.pk %}">{{ item.task_number }}</a>
+                <div>{{ item.title }}</div>
+                {% if item.is_long_pending %}<div><span class="badge badge-pending">Pending {{ item.days_open }} days</span></div>{% endif %}
+            </td>
+            <td>{{ item.get_priority_display }}</td>
+            <td>{% include 'task_manager/_status_badge.html' with task=item %}</td>
+            <td>{{ item.assignee.get_full_name|default:item.assignee.username }}</td>
+            <td>{{ item.scheduled_on|date:"d-m-Y"|default:"—" }}</td>
+            <td>
+                {% if item.is_overdue %}
+                <span class="text-danger">{{ item.due_on|date:"d-m-Y" }}</span>
+                {% else %}
+                {{ item.due_on|date:"d-m-Y"|default:"—" }}
+                {% endif %}
+            </td>
+            <td>{{ item.next_reminder_on|date:"d-m-Y"|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">No tasks match this view.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

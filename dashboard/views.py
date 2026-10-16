@@ -22,6 +22,7 @@ from .services import (
     merge_attendance_widget,
     merge_erms_widget,
     merge_pm_widget,
+    merge_task_widget,
 )
 
 
@@ -64,6 +65,7 @@ def director_dashboard(request):
     merge_attendance_widget(context, request.user)
     merge_erms_widget(context, request.user)
     merge_pm_widget(context, request.user)
+    merge_task_widget(context, request.user)
     return render(request, 'dashboard/dashboard.html', context)
 
 
@@ -102,6 +104,7 @@ def operations_dashboard(request):
     merge_attendance_widget(context, request.user)
     merge_erms_widget(context, request.user)
     merge_pm_widget(context, request.user)
+    merge_task_widget(context, request.user)
     return render(request, 'dashboard/dashboard.html', context)
 
 
@@ -117,6 +120,7 @@ def accounts_dashboard(request):
     context['dashboard_title'] = 'Accounts Dashboard'
     merge_attendance_widget(context, request.user)
     merge_erms_widget(context, request.user)
+    merge_task_widget(context, request.user)
     return render(request, 'dashboard/dashboard.html', context)
 
 
@@ -190,6 +194,7 @@ def field_team_dashboard(request):
     """Unified dashboard for Engineers and Technicians."""
     context = _build_field_team_context(request.user)
     merge_pm_widget(context, request.user)
+    merge_task_widget(context, request.user)
     return render(request, 'dashboard/field_team_dashboard.html', context)
 
 
@@ -207,6 +212,7 @@ def project_manager_dashboard(request):
     merge_attendance_widget(context, request.user)
     merge_erms_widget(context, request.user)
     merge_pm_widget(context, request.user)
+    merge_task_widget(context, request.user)
     return render(request, 'dashboard/project_manager_dashboard.html', context)
 
 
@@ -290,4 +296,5 @@ def supervisor_dashboard(request):
     merge_attendance_widget(context, user)
     merge_erms_widget(context, user)
     merge_pm_widget(context, user)
+    merge_task_widget(context, user)
     return render(request, 'dashboard/supervisor_dashboard.html', context)

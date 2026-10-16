@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'fleet',
     'project_expenses.apps.ProjectExpensesConfig',
     'preventive_maintenance.apps.PreventiveMaintenanceConfig',
+    'task_manager.apps.TaskManagerConfig',
 ]
 
 MIDDLEWARE = [

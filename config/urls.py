@@ -33,6 +33,7 @@ urlpatterns = [
     path('fleet/', include('fleet.urls')),
     path('project-expenses/', include('project_expenses.urls')),
     path('preventive-maintenance/', include('preventive_maintenance.urls')),
+    path('tasks/', include('task_manager.urls')),
 ]
 
 if settings.DEBUG:
