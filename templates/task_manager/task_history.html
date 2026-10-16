@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Task History — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Task History</h1>
+    <div>
+        <a href="{% url 'task_dashboard' %}" class="btn btn-secondary">Dashboard</a>
+        <a href="{% url 'task_list' %}" class="btn btn-secondary">Tasks</a>
+    </div>
+</div>
+<p style="color:#555;margin-bottom:16px;">
+    Every create, schedule, forward, hold, reminder, and close is kept here so the team can look back later.
+</p>
+<div class="card">
+    <form method="get" class="form-row">
+        <div class="form-group">
+            <label for="q">Search</label>
+            <input id="q" type="search" name="q" value="{{ filters.q }}" placeholder="Task number, title, remarks">
+        </div>
+        <div class="form-group">
+            <label for="action">Action</label>
+            <select id="action" name="action">
+                <option value="">All</option>
+                {% for value, label in action_choices %}
+                <option value="{{ value }}" {% if filters.action == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="align-self:end;">
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </div>
+    </form>
+</div>
+<div class="card">
+    <table>
+        <tr>
+            <th>When</th>
+            <th>Task</th>
+            <th>Action</th>
+            <th>By</th>
+            <th>Remarks</th>
+        </tr>
+        {% for event in events %}
+        <tr>
+            <td>{{ event.created_at|date:"d M Y H:i" }}</td>
+            <td><a href="{% url 'task_detail' event.task_id %}">{{ event.task.task_number }}</a><div>{{ event.task.title }}</div></td>
+            <td>{{ event.get_action_display }}</td>
+            <td>{% if event.actor %}{{ event.actor.get_full_name|default:event.actor.username }}{% else %}System{% endif %}</td>
+            <td>
+                {{ event.remarks|default:"—"|linebreaksbr }}
+                {% if event.to_assignee %}
+                <div><small>To {{ event.to_assignee.get_full_name|default:event.to_assignee.username }}</small></div>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No history yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}New Task — {{ ioms_product_name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>New Task</h1>
+    <a href="{% url 'task_dashboard' %}" class="btn btn-secondary">Back</a>
+</div>
+<div class="card" style="max-width:820px;">
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <ul class="messages"><li class="error">{{ form.non_field_errors }}</li></ul>
+        {% endif %}
+        <div class="form-group">
+            {{ form.title.label_tag }}{{ form.title }}
+            {{ form.title.errors }}
+        </div>
+        <div class="form-group">
+            {{ form.description.label_tag }}{{ form.description }}
+            {{ form.description.errors }}
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                {{ form.priority.label_tag }}{{ form.priority }}
+                {{ form.priority.errors }}
+            </div>
+            <div class="form-group">
+                {{ form.assignee.label_tag }}{{ form.assignee }}
+                {{ form.assignee.errors }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                {{ form.scheduled_on.label_tag }}{{ form.scheduled_on }}
+                {{ form.scheduled_on.errors }}
+            </div>
+            <div class="form-group">
+                {{ form.due_on.label_tag }}{{ form.due_on }}
+                {{ form.due_on.errors }}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                {{ form.remind_after_days.label_tag }}{{ form.remind_after_days }}
+                <small style="color:#6c757d;">{{ form.remind_after_days.help_text }}</small>
+                {{ form.remind_after_days.errors }}
+            </div>
+            <div class="form-group">
+                {{ form.related_order_no.label_tag }}{{ form.related_order_no }}
+                <small style="color:#6c757d;">{{ form.related_order_no.help_text }}</small>
+                {{ form.related_order_no.errors }}
+            </div>
+        </div>
+        <div class="form-group">
+            {{ form.remarks.label_tag }}{{ form.remarks }}
+            {{ form.remarks.errors }}
+        </div>
+        <button type="submit" class="btn btn-primary">Create task</button>
+    </form>
+</div>
+{% endblock %}
