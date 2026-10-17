@@ -16,6 +16,7 @@ from accounts.permissions import (
 from scheduling.permissions import can_manage_scheduling
 from accounts.roles import (
     user_role,
+    ROLE_ACCOUNTS,
     ROLE_DIRECTOR,
     ROLE_OPERATIONS,
     ROLE_PROJECT_MANAGER,
@@ -76,7 +77,7 @@ def _can_access_order(user, order):
     if not can_access(user, MODULE_ORDERS):
         return False
     role = user_role(user)
-    if role in (ROLE_DIRECTOR, ROLE_OPERATIONS):
+    if role in (ROLE_DIRECTOR, ROLE_OPERATIONS, ROLE_ACCOUNTS):
         return True
     if role == ROLE_PROJECT_MANAGER:
         if order.assigned_project_manager_id == user.id:
