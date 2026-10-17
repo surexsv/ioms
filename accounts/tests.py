@@ -272,7 +272,7 @@ class RoleFeaturePermissionTests(TestCase):
     def test_sidebar_matches_role_permissions(self):
         expected_nav = {
             ROLE_DIRECTOR: {'Dashboard', 'Orders', 'Scheduling', 'Clients', 'Quotations', 'WCR', 'BOQ', 'GPS Tracking', 'Scoreboard'},
-            ROLE_ACCOUNTS: {'Dashboard', 'Billing', 'Manual Invoice Import', 'BOQ', 'Clients', 'Scoreboard'},
+            ROLE_ACCOUNTS: {'Dashboard', 'Billing', 'Manual Invoice Import', 'BOQ', 'Clients', 'Orders', 'Scoreboard'},
             ROLE_ENGINEER: {'Dashboard', 'Orders', 'Scheduling', 'WCR', 'Scoreboard'},
             ROLE_TECHNICIAN: {'Dashboard', 'Orders', 'Scheduling', 'WCR', 'Scoreboard'},
             ROLE_BACK_OFFICE: {'Dashboard'},
@@ -339,3 +339,49 @@ class RoleFeaturePermissionTests(TestCase):
         self.assertFalse(_denied(orders), msg=orders.url if _denied(orders) else '')
         self.assertFalse(_denied(dashboard), msg=dashboard.url if _denied(dashboard) else '')
         self.assertTrue(_denied(billing))
+        create = self.client.get(reverse('create_order'))
+        self.assertTrue(_denied(create))
+
+    def test_orders_grant_does_not_let_a_technician_create_an_order(self):
+        from accounts.enterprise_models import (
+            Branch,
+            Department,
+            Designation,
+            Employee,
+            EmployeePermissionGrant,
+            ModulePermission,
+        )
+        from accounts.enterprise_permissions import invalidate_enterprise_permission_cache
+
+        tech = self.users[ROLE_TECHNICIAN]
+        dept, _ = Department.objects.get_or_create(code='OPS', defaults={'name': 'Operations'})
+        designation, _ = Designation.objects.get_or_create(code='TECHNICIAN', defaults={'name': 'Technician'})
+        branch, _ = Branch.objects.get_or_create(code='HO', defaults={'name': 'Head Office'})
+        employee = Employee.objects.create(
+            user=tech,
+            employee_code='TECH-ORD',
+            department=dept,
+            designation=designation,
+            branch=branch,
+        )
+        permission, _ = ModulePermission.objects.get_or_create(
+            codename='orders',
+            defaults={'name': 'Orders', 'category': 'operations'},
+        )
+        EmployeePermissionGrant.objects.create(employee=employee, permission=permission)
+        invalidate_enterprise_permission_cache(tech.pk)
+        self.assertTrue(can_view_orders(tech))
+        self.assertFalse(can_create_orders(tech))
+        self.client.force_login(tech)
+        self.assertFalse(_denied(self.client.get(reverse('order_list'))))
+        self.assertTrue(_denied(self.client.get(reverse('create_order'))))
+
+    def test_accounts_can_open_orders_but_not_create_one(self):
+        accounts = self.users[ROLE_ACCOUNTS]
+        self.assertTrue(can_view_orders(accounts))
+        self.assertFalse(can_create_orders(accounts))
+        self.client.force_login(accounts)
+        orders = self.client.get(reverse('order_list'))
+        self.assertEqual(orders.status_code, 200)
+        self.assertNotContains(orders, 'Create Order')
+        self.assertTrue(_denied(self.client.get(reverse('create_order'))))

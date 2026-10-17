@@ -83,6 +83,11 @@ def legacy_module_grants_access(user, module_key):
 
 def enterprise_module_grants_access(user, module_key):
     """Map legacy MODULE_* keys to enterprise permission codenames."""
+    # The Orders grant lets someone open orders. It does not let them create one.
+    # Create stays with the role matrix: Director, Operations, Project Manager, Supervisor.
+    if module_key == 'orders_create':
+        return False
+
     if module_key.startswith('dashboard_'):
         if has_enterprise_permission(user, 'dashboard'):
             return True
