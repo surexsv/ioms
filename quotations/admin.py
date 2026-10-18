@@ -109,7 +109,7 @@ class PurchaseMarginSettingsAdmin(admin.ModelAdmin):
 
 @admin.register(PurchaseRate)
 class PurchaseRateAdmin(admin.ModelAdmin):
-    list_display = ('item_code', 'item_name', 'purchase_rate', 'margin_percent', 'is_active')
+    list_display = ('item_code', 'item_name', 'purchase_rate', 'margin_percent', 'status', 'is_active')
     search_fields = ('item_code', 'item_name', 'brand')
 
 

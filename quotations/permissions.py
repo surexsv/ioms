@@ -62,3 +62,8 @@ def can_edit_purchase_margin(user):
     if user.is_superuser:
         return True
     return user_role(user) == ROLE_DIRECTOR
+
+
+def can_prepare_rate_card(user):
+    """Rate card preparation and approval is for Director and superusers."""
+    return can_edit_purchase_margin(user)

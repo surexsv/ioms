@@ -82,6 +82,24 @@ class OMSAccessMiddleware:
             if normalized not in self.APPROVAL_EXEMPT_PATHS and not path.startswith('/profile-resubmit'):
                 return redirect('account_status')
 
+        if path.startswith('/quotations/rate-card'):
+            from quotations.permissions import can_prepare_rate_card
+            if not can_prepare_rate_card(request.user):
+                log_access_denied(
+                    request,
+                    reason='role',
+                    module_key='rate_card',
+                    attempted_url=request.get_full_path(),
+                )
+                store_denial_context(
+                    request,
+                    reason='role',
+                    module_key='rate_card',
+                    attempted_url=request.get_full_path(),
+                )
+                return redirect('access_denied')
+            return self.get_response(request)
+
         if path.startswith('/quotations/purchase-rates'):
             from quotations.permissions import can_view_purchase_rates
             if not can_view_purchase_rates(request.user):

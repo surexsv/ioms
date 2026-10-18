@@ -6,32 +6,22 @@ from django.shortcuts import get_object_or_404, redirect, render
 from accounts.access_control import REASON_ROLE
 from accounts.decorators import access_denied_response
 
-from .models import PurchaseMarginSettings, PurchaseRate, PurchaseRateLog, _money
-from .permissions import can_edit_purchase_margin, can_view_purchase_rates
+from .models import PurchaseMarginSettings, PurchaseRate, PurchaseRateLog
+from .permissions import can_prepare_rate_card, can_view_purchase_rates
 from .purchase_extract import DocumentReadError, rows_from_upload
-from .purchase_rates import (
-    apply_purchase_rate,
-    default_margin_percent,
-    save_default_margin,
-    seed_purchase_rates_from_material_master,
-    update_margin,
-)
+from .purchase_rates import apply_purchase_rate, save_default_margin, save_rate_card
 
 
-def _guard(request):
+def _guard_entry(request):
     if not can_view_purchase_rates(request.user):
         return access_denied_response(request, reason=REASON_ROLE)
     return None
 
 
-def _preview_supply(rows):
-    margin = default_margin_percent()
-    for row in rows:
-        rate = row.get('purchase_rate') or 0
-        row['margin_percent'] = margin
-        row['margin_amount'] = _money(rate * margin / 100)
-        row['supply_rate'] = _money(rate + row['margin_amount'])
-    return rows
+def _guard_rate_card(request):
+    if not can_prepare_rate_card(request.user):
+        return access_denied_response(request, reason=REASON_ROLE)
+    return None
 
 
 def _summarize(results):
@@ -55,14 +45,23 @@ def _summarize(results):
     return ', '.join(parts) or 'No rows saved.'
 
 
+def _filtered_rates(request):
+    query = (request.GET.get('q') or '').strip()
+    rates = PurchaseRate.objects.all()
+    if query:
+        rates = rates.filter(
+            Q(item_code__icontains=query) | Q(item_name__icontains=query) | Q(brand__icontains=query)
+        )
+    return rates, query
+
+
 @login_required
 def purchase_rate_list(request):
-    denied = _guard(request)
+    denied = _guard_entry(request)
     if denied:
         return denied
 
     captured_rows = []
-    can_edit_margin = can_edit_purchase_margin(request.user)
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'add':
@@ -74,9 +73,8 @@ def purchase_rate_list(request):
                 unit=request.POST.get('unit') or 'Nos',
                 gst_percent=request.POST.get('gst_percent') or '18',
                 purchase_rate=request.POST.get('purchase_rate'),
-                margin_percent=request.POST.get('margin_percent'),
                 remarks=request.POST.get('remarks'),
-                is_active=request.POST.get('is_active') == 'on',
+                is_active=True,
                 source=PurchaseRate.SOURCE_MANUAL,
             )
             if result['outcome'] in (PurchaseRateLog.OUTCOME_CREATED, PurchaseRateLog.OUTCOME_REPLACED):
@@ -89,10 +87,10 @@ def purchase_rate_list(request):
         if action == 'upload':
             upload = request.FILES.get('document')
             if not upload:
-                messages.error(request, 'Choose a PDF, photo, or spreadsheet.')
+                messages.error(request, 'Choose a PDF or a scanned bill.')
             else:
                 try:
-                    captured_rows = _preview_supply(rows_from_upload(upload))
+                    captured_rows = rows_from_upload(upload)
                     request.session['purchase_rate_capture_name'] = upload.name
                     messages.info(request, f'Read {len(captured_rows)} row(s) from {upload.name}. Check them, then save.')
                 except DocumentReadError as exc:
@@ -125,9 +123,25 @@ def purchase_rate_list(request):
                 ))
             messages.success(request, _summarize(results))
             return redirect('purchase_rate_list')
-        elif action == 'save_margin':
-            if not can_edit_margin:
-                return access_denied_response(request, reason=REASON_ROLE)
+
+    rates, query = _filtered_rates(request)
+    return render(request, 'quotations/purchase_rate_list.html', {
+        'rates': rates[:500],
+        'logs': PurchaseRateLog.objects.select_related('created_by')[:40],
+        'captured_rows': captured_rows,
+        'query': query,
+    })
+
+
+@login_required
+def rate_card_list(request):
+    denied = _guard_rate_card(request)
+    if denied:
+        return denied
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'save_margin':
             result = save_default_margin(
                 request.POST.get('default_margin_percent'),
                 request.user,
@@ -138,44 +152,45 @@ def purchase_rate_list(request):
             elif result['updated']:
                 messages.success(
                     request,
-                    f"Profit margin is {result['margin']}%. Updated {result['updated']} material rate(s).",
+                    f"Profit margin is {result['margin']}%. {result['updated']} rate card row(s) now need approval.",
                 )
             else:
                 messages.success(request, f"Default profit margin is now {result['margin']}%.")
-            return redirect('purchase_rate_list')
-        elif action == 'update_margin':
-            if not can_edit_margin:
-                return access_denied_response(request, reason=REASON_ROLE)
+            return redirect('rate_card_list')
+        if action in ('save_row', 'approve_row'):
             row = get_object_or_404(PurchaseRate, pk=request.POST.get('row_id'))
-            result = update_margin(row, request.POST.get('margin_percent'), request.user)
+            result = save_rate_card(
+                row,
+                request.user,
+                purchase_rate=request.POST.get('purchase_rate'),
+                margin_percent=request.POST.get('margin_percent'),
+                gst_percent=request.POST.get('gst_percent'),
+                brand=request.POST.get('brand', ''),
+                unit=request.POST.get('unit') or 'Nos',
+                remarks=request.POST.get('remarks', ''),
+                is_active=request.POST.get('is_active') == 'on',
+                approve=action == 'approve_row',
+            )
             if result['outcome'] == PurchaseRateLog.OUTCOME_SKIPPED:
-                messages.error(request, result['detail'])
+                messages.error(request, f"{row.item_code}: {result['detail']}")
+            elif action == 'approve_row':
+                messages.success(request, f"{row.item_code}: {result['detail']}")
             else:
                 messages.success(request, f"{row.item_code}: {result['detail']}")
-            return redirect('purchase_rate_list')
-        elif action == 'seed_material_master':
-            if not can_edit_margin:
-                return access_denied_response(request, reason=REASON_ROLE)
-            result = seed_purchase_rates_from_material_master(request.user)
-            messages.success(
-                request,
-                f"Created {result['created']} purchase rate(s) at {result['margin']}% margin. "
-                f"Skipped {result['skipped']} item(s) that already have a purchase rate.",
-            )
-            return redirect('purchase_rate_list')
+            return redirect('rate_card_list')
+        if action == 'approve_all':
+            approved = 0
+            for row in PurchaseRate.objects.filter(status=PurchaseRate.STATUS_PENDING):
+                save_rate_card(row, request.user, approve=True)
+                approved += 1
+            messages.success(request, f'Approved {approved} rate card row(s) into Material Master.')
+            return redirect('rate_card_list')
 
-    query = (request.GET.get('q') or '').strip()
-    rates = PurchaseRate.objects.select_related('material')
-    if query:
-        rates = rates.filter(
-            Q(item_code__icontains=query) | Q(item_name__icontains=query) | Q(brand__icontains=query)
-        )
-    settings_row = PurchaseMarginSettings.get_solo()
-    return render(request, 'quotations/purchase_rate_list.html', {
+    rates, query = _filtered_rates(request)
+    pending_count = PurchaseRate.objects.filter(status=PurchaseRate.STATUS_PENDING).count()
+    return render(request, 'quotations/rate_card_list.html', {
         'rates': rates[:500],
-        'logs': PurchaseRateLog.objects.select_related('created_by')[:40],
-        'margin_settings': settings_row,
-        'can_edit_margin': can_edit_margin,
-        'captured_rows': captured_rows,
+        'margin_settings': PurchaseMarginSettings.get_solo(),
+        'pending_count': pending_count,
         'query': query,
     })

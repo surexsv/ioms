@@ -330,6 +330,7 @@ NAV_MENU_CATALOG = [
     ('Customers', 'clients', 'Clients', 'client_list', 'bi-people', 'clients', ''),
     ('Finance', 'quotation', 'Quotations', 'quotation_list', 'bi-file-earmark-ruled', 'quotations', ''),
     ('Finance', 'purchase_rates', 'Purchase Rates', 'purchase_rate_list', 'bi-tags', 'purchase_rates', ''),
+    ('Finance', 'rate_card', 'Rate Card', 'rate_card_list', 'bi-card-list', 'rate_card', ''),
     ('Finance', 'billing', 'Billing', 'invoice_list', 'bi-receipt', 'billing', ''),
     ('Finance', 'billing', 'Manual Invoice Import', 'invoice_import_upload', 'bi-upload', 'invoice_import', ''),
     ('Finance', 'billing', 'Invoice Import History', 'invoice_import_history', 'bi-clock-history', 'invoice_import_history', ''),
@@ -399,6 +400,9 @@ def _nav_item_visible(user, permission, nav_key):
     if nav_key == 'purchase_rates':
         from quotations.permissions import can_view_purchase_rates
         return can_view_purchase_rates(user)
+    if nav_key == 'rate_card':
+        from quotations.permissions import can_prepare_rate_card
+        return can_prepare_rate_card(user)
 
     return _can_access_nav_permission(user, permission)
 

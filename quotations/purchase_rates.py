@@ -3,6 +3,7 @@
 from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
+from django.utils import timezone
 
 from .models import (
     MaterialRateCard,
@@ -135,7 +136,7 @@ def apply_purchase_rate(
     source=PurchaseRate.SOURCE_MANUAL,
     source_filename='',
 ):
-    """Save a purchase rate and update Material Master when the new price is higher."""
+    """Capture a purchase rate for Rate Card approval. Material Master is not changed here."""
     name = ' '.join(str(item_name or '').split())
     code = normalize_code(item_code) or code_for_item_name(name)
     rate = parse_decimal(purchase_rate)
@@ -202,11 +203,13 @@ def apply_purchase_rate(
     row.source = source
     row.source_filename = (source_filename or '')[:255]
     row.updated_by = user if getattr(user, 'is_authenticated', False) else None
+    row.status = PurchaseRate.STATUS_PENDING
+    row.approved_by = None
+    row.approved_at = None
     row.save()
-    sync_material_master(row, user)
 
     outcome = PurchaseRateLog.OUTCOME_CREATED if created else PurchaseRateLog.OUTCOME_REPLACED
-    detail = f'Supply rate {row.supply_rate} written to Material Master.'
+    detail = 'Captured for Rate Card approval. Material Master updates after approval.'
     _log(
         user,
         {
@@ -224,16 +227,76 @@ def apply_purchase_rate(
     return {'outcome': outcome, 'detail': detail, 'item_code': row.item_code, 'purchase_rate': row}
 
 
+def _mark_pending(row, user):
+    row.status = PurchaseRate.STATUS_PENDING
+    row.approved_by = None
+    row.approved_at = None
+    row.updated_by = user if getattr(user, 'is_authenticated', False) else None
+
+
 @transaction.atomic
-def update_margin(row, margin_percent, user):
-    margin = parse_decimal(margin_percent)
-    if margin is None or margin < 0 or margin > 300:
+def save_rate_card(
+    row,
+    user,
+    *,
+    purchase_rate=None,
+    margin_percent=None,
+    gst_percent=None,
+    brand=None,
+    unit=None,
+    remarks=None,
+    is_active=None,
+    approve=False,
+):
+    """Director edits the rate card. Material Master changes only when approve=True."""
+    rate = parse_decimal(purchase_rate) if purchase_rate not in (None, '') else None
+    margin = parse_decimal(margin_percent) if margin_percent not in (None, '') else None
+    gst = parse_decimal(gst_percent) if gst_percent not in (None, '') else None
+    if rate is not None and rate <= 0:
+        return {'outcome': PurchaseRateLog.OUTCOME_SKIPPED, 'detail': 'Purchase rate must be greater than zero.'}
+    if margin is not None and (margin < 0 or margin > 300):
         return {'outcome': PurchaseRateLog.OUTCOME_SKIPPED, 'detail': 'Enter a margin from 0 to 300.'}
-    row.margin_percent = margin
-    row.updated_by = user
-    row.save(update_fields=['margin_percent', 'updated_by', 'updated_at'])
-    sync_material_master(row, user)
-    detail = f'Margin set to {margin}%. Supply rate {row.supply_rate} written to Material Master.'
+    if gst is not None and (gst < 0 or gst > 100):
+        return {'outcome': PurchaseRateLog.OUTCOME_SKIPPED, 'detail': 'Enter a GST percent from 0 to 100.'}
+
+    changed = False
+    if rate is not None and _money(rate) != row.purchase_rate:
+        row.purchase_rate = _money(rate)
+        changed = True
+    if margin is not None and margin != row.margin_percent:
+        row.margin_percent = margin
+        changed = True
+    if gst is not None and gst != row.gst_percent:
+        row.gst_percent = gst
+        changed = True
+    if brand is not None and brand[:100] != row.brand:
+        row.brand = brand[:100]
+        changed = True
+    if unit is not None and (unit or 'Nos')[:20] != row.unit:
+        row.unit = (unit or 'Nos')[:20]
+        changed = True
+    if remarks is not None and remarks[:300] != row.remarks:
+        row.remarks = remarks[:300]
+        changed = True
+    if is_active is not None and bool(is_active) != row.is_active:
+        row.is_active = bool(is_active)
+        changed = True
+
+    if approve:
+        row.updated_by = user if getattr(user, 'is_authenticated', False) else None
+        row.status = PurchaseRate.STATUS_APPROVED
+        row.approved_by = row.updated_by
+        row.approved_at = timezone.now()
+        row.save()
+        sync_material_master(row, user)
+        detail = f'Approved. Supply rate {row.supply_rate} written to Material Master.'
+        outcome = PurchaseRateLog.OUTCOME_APPROVED
+    else:
+        if changed:
+            _mark_pending(row, user)
+        row.save()
+        detail = 'Rate card saved. Approve it to update Material Master.'
+        outcome = PurchaseRateLog.OUTCOME_REPLACED
     _log(
         user,
         {
@@ -243,11 +306,11 @@ def update_margin(row, margin_percent, user):
             'supply_rate': row.supply_rate,
             'margin_percent': row.margin_percent,
         },
-        PurchaseRateLog.OUTCOME_REPLACED,
+        outcome,
         detail,
         row.source,
     )
-    return {'outcome': PurchaseRateLog.OUTCOME_REPLACED, 'detail': detail, 'purchase_rate': row}
+    return {'outcome': outcome, 'detail': detail, 'purchase_rate': row}
 
 
 @transaction.atomic
@@ -262,36 +325,6 @@ def save_default_margin(margin_percent, user, apply_to_all=False):
     updated = 0
     if apply_to_all:
         for row in PurchaseRate.objects.all():
-            update_margin(row, margin, user)
+            save_rate_card(row, user, margin_percent=margin, approve=False)
             updated += 1
     return {'updated': updated, 'margin': margin}
-
-
-@transaction.atomic
-def seed_purchase_rates_from_material_master(user):
-    """Treat current Material Master rates as purchase rates and add the default margin."""
-    margin = default_margin_percent()
-    created = 0
-    skipped = 0
-    for card in MaterialRateCard.objects.all():
-        if find_purchase_rate(card.item_code):
-            skipped += 1
-            continue
-        result = apply_purchase_rate(
-            user=user,
-            item_code=card.item_code,
-            item_name=card.item_name,
-            brand=card.brand,
-            unit=card.unit,
-            gst_percent=card.gst_percent,
-            purchase_rate=card.rate,
-            margin_percent=margin,
-            remarks='Copied from Material Master',
-            is_active=card.is_active,
-            source=PurchaseRate.SOURCE_MATERIAL_MASTER,
-        )
-        if result['outcome'] == PurchaseRateLog.OUTCOME_CREATED:
-            created += 1
-        else:
-            skipped += 1
-    return {'created': created, 'skipped': skipped, 'margin': margin}
