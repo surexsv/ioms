@@ -279,7 +279,7 @@ class RoleFeaturePermissionTests(TestCase):
             ROLE_DIRECTOR: {'Dashboard', 'Orders', 'Scheduling', 'Clients', 'Quotations', 'WCR', 'BOQ', 'GPS Tracking', 'Scoreboard'},
             ROLE_ACCOUNTS: {
                 'Dashboard', 'Billing', 'Manual Invoice Import', 'BOQ', 'Clients',
-                'Orders', 'Quotations', 'Scoreboard',
+                'Orders', 'Quotations', 'WCR', 'Scoreboard',
             },
             ROLE_ENGINEER: {'Dashboard', 'Orders', 'Scheduling', 'WCR', 'Scoreboard'},
             ROLE_TECHNICIAN: {'Dashboard', 'Orders', 'Scheduling', 'WCR', 'Scoreboard'},
@@ -416,3 +416,18 @@ class RoleFeaturePermissionTests(TestCase):
         supervisor_list = self.client.get(reverse('quotation_list'))
         self.assertEqual(supervisor_list.status_code, 200)
         self.assertNotContains(supervisor_list, 'New Quotation')
+
+    def test_accounts_can_open_wcr_but_not_approve(self):
+        accounts = self.users[ROLE_ACCOUNTS]
+        self.assertTrue(can_view_wcr(accounts))
+        self.assertFalse(can_access(accounts, MODULE_WCR_APPROVE))
+        menu = build_navigation_menu(accounts, allowed_dashboard_url_name(accounts))
+        visible = {item['label'] for section in menu for item in section['items']}
+        self.assertIn('WCR', visible)
+
+        self.client.force_login(accounts)
+        listing = self.client.get(reverse('wcr_list'))
+        self.assertEqual(listing.status_code, 200)
+        self.assertContains(listing, 'Work Completion Reports')
+        self.assertContains(listing, 'Submit WCR')
+        self.assertTrue(_denied(self.client.get(reverse('approve_wcr', kwargs={'pk': 1}))))
