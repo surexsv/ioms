@@ -292,11 +292,11 @@ class RoleFeaturePermissionTests(TestCase):
         }
         forbidden_nav = {
             ROLE_DIRECTOR: {'Billing', 'Manual Invoice Import'},
-            ROLE_ENGINEER: {'Billing', 'Manual Invoice Import', 'Clients', 'Quotations', 'Purchase Rates', 'Rate Card'},
-            ROLE_TECHNICIAN: {'Billing', 'Manual Invoice Import', 'Create Order', 'Purchase Rates', 'Rate Card'},
-            ROLE_ACCOUNTS_EXECUTIVE: {'Billing', 'Manual Invoice Import', 'Orders', 'Purchase Rates', 'Rate Card'},
-            ROLE_BACK_OFFICE: {'Billing', 'Manual Invoice Import', 'Orders', 'Purchase Rates', 'Rate Card'},
-            ROLE_ACCOUNTS: {'Rate Card'},
+            ROLE_ENGINEER: {'Billing', 'Manual Invoice Import', 'Clients', 'Quotations', 'Purchase Rates', 'Rate Card', 'GPS Tracking'},
+            ROLE_TECHNICIAN: {'Billing', 'Manual Invoice Import', 'Create Order', 'Purchase Rates', 'Rate Card', 'GPS Tracking'},
+            ROLE_ACCOUNTS_EXECUTIVE: {'Billing', 'Manual Invoice Import', 'Orders', 'Purchase Rates', 'Rate Card', 'GPS Tracking'},
+            ROLE_BACK_OFFICE: {'Billing', 'Manual Invoice Import', 'Orders', 'Purchase Rates', 'Rate Card', 'GPS Tracking'},
+            ROLE_ACCOUNTS: {'Rate Card', 'GPS Tracking'},
         }
         for role, labels in expected_nav.items():
             menu = build_navigation_menu(self.users[role], allowed_dashboard_url_name(self.users[role]))
@@ -436,3 +436,54 @@ class RoleFeaturePermissionTests(TestCase):
         self.assertContains(listing, 'Work Completion Reports')
         self.assertContains(listing, 'Submit WCR')
         self.assertTrue(_denied(self.client.get(reverse('approve_wcr', kwargs={'pk': 1}))))
+
+    def test_gps_tracking_stays_with_director_and_superuser(self):
+        from accounts.enterprise_models import (
+            Branch,
+            Department,
+            Designation,
+            Employee,
+            EmployeePermissionGrant,
+            ModulePermission,
+        )
+        from accounts.enterprise_permissions import invalidate_enterprise_permission_cache
+
+        director = self.users[ROLE_DIRECTOR]
+        self.assertTrue(can_view_gps_dashboard(director))
+        self.assertTrue(can_view_gps_dashboard(self.superuser))
+        for role, user in self.users.items():
+            if role == ROLE_DIRECTOR:
+                continue
+            self.assertFalse(can_view_gps_dashboard(user), msg=role)
+
+        tech = self.users[ROLE_TECHNICIAN]
+        dept, _ = Department.objects.get_or_create(code='OPS', defaults={'name': 'Operations'})
+        designation, _ = Designation.objects.get_or_create(code='TECHNICIAN', defaults={'name': 'Technician'})
+        branch, _ = Branch.objects.get_or_create(code='HO', defaults={'name': 'Head Office'})
+        employee = Employee.objects.create(
+            user=tech,
+            employee_code='TECH-GPS',
+            department=dept,
+            designation=designation,
+            branch=branch,
+        )
+        permission, _ = ModulePermission.objects.get_or_create(
+            codename='gps_tracking',
+            defaults={'name': 'GPS Tracking', 'category': 'operations'},
+        )
+        EmployeePermissionGrant.objects.create(employee=employee, permission=permission)
+        invalidate_enterprise_permission_cache(tech.pk)
+
+        self.assertFalse(can_view_gps_dashboard(tech))
+        menu = build_navigation_menu(tech, allowed_dashboard_url_name(tech))
+        visible = {item['label'] for section in menu for item in section['items']}
+        self.assertNotIn('GPS Tracking', visible)
+
+        self.client.force_login(tech)
+        self.assertTrue(_denied(self.client.get(reverse('gps_dashboard'))))
+        self.assertTrue(_denied(self.client.get(reverse('field_activity_list'))))
+
+        self.client.force_login(director)
+        self.assertFalse(_denied(self.client.get(reverse('gps_dashboard'))))
+        self.client.force_login(self.superuser)
+        self.assertFalse(_denied(self.client.get(reverse('gps_dashboard'))))

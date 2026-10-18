@@ -18,8 +18,8 @@
         <div class="detail-item"><label>Status</label><p><strong>{{ record.get_status_display }}</strong></p></div>
         <div class="detail-item"><label>Late Status</label><p>{% if record.status == 'LATE' %}Late Arrival{% else %}—{% endif %}</p></div>
         <div class="detail-item"><label>Working Hours</label><p>{{ record.working_hours|default:"—" }}</p></div>
-        <div class="detail-item"><label>Check-In</label><p>{{ record.check_in_time|default:"—" }}{% if record.check_in_at %} ({{ record.check_in_at|date:"d-M-Y H:i" }}){% endif %}</p></div>
-        <div class="detail-item"><label>Check-Out</label><p>{{ record.check_out_time|default:"—" }}{% if record.check_out_at %} ({{ record.check_out_at|date:"d-M-Y H:i" }}){% endif %}</p></div>
+        <div class="detail-item"><label>Check-In</label><p>{{ record.check_in_time|default:"—" }}{% if record.check_in_at %} ({{ record.check_in_at|date:"d-M-Y H:i" }}){% endif %}{% if record.check_in_work_mode %} — {{ record.get_check_in_work_mode_display }}{% endif %}</p></div>
+        <div class="detail-item"><label>Check-Out</label><p>{{ record.check_out_time|default:"—" }}{% if record.check_out_at %} ({{ record.check_out_at|date:"d-M-Y H:i" }}){% endif %}{% if record.check_out_work_mode %} — {{ record.get_check_out_work_mode_display }}{% endif %}</p></div>
     </div>
 </div>
 

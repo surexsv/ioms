@@ -26,10 +26,10 @@
     <div class="action-btns" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
         <a href="{% url 'my_attendance' %}" class="btn btn-primary btn-sm">View Attendance</a>
         {% if attendance_widget.can_check_in %}
-        <a href="{% url 'attendance_check_in' %}" class="btn btn-success btn-sm"><i class="bi bi-camera"></i> Check In</a>
+        <a href="{% url 'attendance_check_in' %}" class="btn btn-success btn-sm"><i class="bi bi-box-arrow-in-right"></i> Check In</a>
         {% endif %}
         {% if attendance_widget.can_check_out %}
-        <a href="{% url 'attendance_check_out' %}" class="btn btn-warning btn-sm"><i class="bi bi-camera"></i> Check Out</a>
+        <a href="{% url 'attendance_check_out' %}" class="btn btn-warning btn-sm"><i class="bi bi-box-arrow-right"></i> Check Out</a>
         {% endif %}
         {% if is_management_attendance %}
         <a href="{% url 'attendance_dashboard' %}" class="btn btn-secondary btn-sm">Attendance Management</a>

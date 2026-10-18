@@ -1,5 +1,6 @@
 /**
- * IOMS Attendance — mandatory GPS + webcam/mobile camera capture.
+ * IOMS Attendance — field check-in needs GPS and a photo.
+ * Office check-in from a PC does not.
  */
 (function (global) {
     'use strict';
@@ -58,7 +59,7 @@
     }
 
     function capturePhoto(videoEl, canvasEl, fileInput, previewEl) {
-        if (!videoEl.videoWidth) return false;
+        if (!videoEl.videoWidth) return Promise.resolve(false);
         canvasEl.width = videoEl.videoWidth;
         canvasEl.height = videoEl.videoHeight;
         canvasEl.getContext('2d').drawImage(videoEl, 0, 0);
@@ -78,6 +79,11 @@
         });
     }
 
+    function selectedMode(form) {
+        var checked = form.querySelector('input[name="work_mode"]:checked');
+        return checked ? checked.value : '';
+    }
+
     function initAttendanceForm(formId) {
         var form = document.getElementById(formId);
         if (!form) return;
@@ -87,39 +93,70 @@
         var fileInput = document.getElementById('id_photo');
         var preview = document.getElementById('attPreview');
         var gpsStatus = document.getElementById('gpsStatus');
+        var cameraStatus = document.getElementById('cameraStatus');
         var captureBtn = document.getElementById('capturePhotoBtn');
+        var fieldPanel = document.getElementById('fieldCapture');
+        var officeNote = document.getElementById('officeNote');
+        var gpsRequested = false;
 
-        captureGps(function (lat, lng, err) {
-            if (gpsStatus) {
-                if (lat && lng) gpsStatus.textContent = 'GPS ready: ' + lat + ', ' + lng;
-                else gpsStatus.textContent = 'GPS required: ' + (err || 'unavailable');
+        function applyMode(mode) {
+            var isField = mode === 'FIELD';
+            if (fieldPanel) fieldPanel.classList.toggle('is-hidden', !isField);
+            if (officeNote) officeNote.classList.toggle('is-hidden', mode !== 'OFFICE');
+            if (!isField) {
+                stopCamera();
+                return;
             }
-        });
+            if (!gpsRequested) {
+                gpsRequested = true;
+                if (gpsStatus) gpsStatus.textContent = 'Acquiring GPS…';
+                captureGps(function (lat, lng, err) {
+                    if (!gpsStatus) return;
+                    if (lat && lng) gpsStatus.textContent = 'GPS ready: ' + lat + ', ' + lng;
+                    else gpsStatus.textContent = 'GPS required: ' + (err || 'unavailable');
+                });
+            }
+            if (video && !stream) startCamera(video, cameraStatus);
+        }
 
-        if (video) startCamera(video, document.getElementById('cameraStatus'));
+        form.querySelectorAll('input[name="work_mode"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                applyMode(selectedMode(form));
+            });
+        });
+        applyMode(selectedMode(form));
 
         if (captureBtn && video && canvas && fileInput) {
             captureBtn.addEventListener('click', function () {
                 capturePhoto(video, canvas, fileInput, preview).then(function (ok) {
-                    if (ok && document.getElementById('cameraStatus')) {
-                        document.getElementById('cameraStatus').textContent = 'Photo captured.';
-                    }
+                    if (ok && cameraStatus) cameraStatus.textContent = 'Photo captured.';
                 });
             });
         }
 
         form.addEventListener('submit', function (e) {
+            var mode = selectedMode(form);
+            if (mode !== 'FIELD' && mode !== 'OFFICE') {
+                e.preventDefault();
+                alert('Choose Mobile — field or PC — office before continuing.');
+                return;
+            }
+            if (mode === 'OFFICE') {
+                stopCamera();
+                return;
+            }
             var lat = form.querySelector('input[name="latitude"]');
             var lng = form.querySelector('input[name="longitude"]');
             if (!lat || !lng || !lat.value || !lng.value) {
                 e.preventDefault();
-                alert('GPS location is mandatory. Please allow location access and try again.');
-                captureGps();
+                alert('GPS location is required for field attendance. Allow location access and try again.');
+                gpsRequested = false;
+                applyMode('FIELD');
                 return;
             }
             if (fileInput && !fileInput.files.length) {
                 e.preventDefault();
-                alert('Photo is mandatory. Capture a photo or upload from camera.');
+                alert('A photo is required for field attendance. Capture a photo or upload one from the camera.');
                 return;
             }
             stopCamera();

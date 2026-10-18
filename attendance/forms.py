@@ -60,36 +60,44 @@ class AttendanceFilterForm(forms.Form):
         self.fields['employee'].queryset = active_employees().order_by('username')
 
 
-class CheckInForm(forms.Form):
-    latitude = forms.DecimalField(required=True, max_digits=10, decimal_places=7)
-    longitude = forms.DecimalField(required=True, max_digits=10, decimal_places=7)
+class _WorkModeCaptureForm(forms.Form):
+    """Field check-in needs a photo and GPS. Office check-in on a PC does not."""
+
+    work_mode = forms.ChoiceField(
+        choices=Attendance.WORK_MODE_CHOICES,
+        widget=forms.RadioSelect,
+        label='Where are you working?',
+    )
+    latitude = forms.DecimalField(required=False, max_digits=10, decimal_places=7)
+    longitude = forms.DecimalField(required=False, max_digits=10, decimal_places=7)
     location = forms.CharField(max_length=500, required=False, widget=forms.HiddenInput())
-    photo = forms.ImageField(required=True)
+    photo = forms.ImageField(required=False)
     remarks = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
 
-    def clean_photo(self):
-        photo = self.cleaned_data.get('photo')
-        if not photo:
-            raise ValidationError('Photo is required for check-in.')
-        if photo.size > 8 * 1024 * 1024:
-            raise ValidationError('Photo must be under 8 MB.')
-        return photo
+    photo_required_message = 'Photo is required for field attendance.'
+    gps_required_message = 'GPS location is required for field attendance.'
+
+    def clean(self):
+        cleaned = super().clean()
+        photo = cleaned.get('photo')
+        if photo and photo.size > 8 * 1024 * 1024:
+            self.add_error('photo', 'Photo must be under 8 MB.')
+        if cleaned.get('work_mode') == Attendance.WORK_FIELD:
+            if not photo:
+                self.add_error('photo', self.photo_required_message)
+            if cleaned.get('latitude') is None or cleaned.get('longitude') is None:
+                self.add_error('latitude', self.gps_required_message)
+        return cleaned
 
 
-class CheckOutForm(forms.Form):
-    latitude = forms.DecimalField(required=True, max_digits=10, decimal_places=7)
-    longitude = forms.DecimalField(required=True, max_digits=10, decimal_places=7)
-    location = forms.CharField(max_length=500, required=False, widget=forms.HiddenInput())
-    photo = forms.ImageField(required=True)
-    remarks = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
+class CheckInForm(_WorkModeCaptureForm):
+    photo_required_message = 'Photo is required for field check-in.'
+    gps_required_message = 'GPS location is required for field check-in.'
 
-    def clean_photo(self):
-        photo = self.cleaned_data.get('photo')
-        if not photo:
-            raise ValidationError('Photo is required for check-out.')
-        if photo.size > 8 * 1024 * 1024:
-            raise ValidationError('Photo must be under 8 MB.')
-        return photo
+
+class CheckOutForm(_WorkModeCaptureForm):
+    photo_required_message = 'Photo is required for field check-out.'
+    gps_required_message = 'GPS location is required for field check-out.'
 
 
 class ReportMonthForm(forms.Form):
