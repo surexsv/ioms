@@ -85,14 +85,11 @@ def can_view_management_productivity(user):
 
 
 def can_view_gps_dashboard(user):
+    """GPS Tracking is only for a Director or a superuser."""
     if not user or not user.is_authenticated:
         return False
     if user.is_superuser:
         return True
-    if has_employee_profile(user):
-        return has_enterprise_permission(user, 'gps_tracking')
-    if not can_view_productivity(user):
-        return False
     return _legacy_role(user) == ROLE_DIRECTOR
 
 
@@ -101,13 +98,7 @@ def can_view_field_activity_log(user):
 
 
 def can_view_activity_log(user):
-    if not user or not user.is_authenticated:
-        return False
-    if user.is_superuser:
-        return True
-    if has_employee_profile(user):
-        return has_enterprise_permission(user, 'gps_tracking')
-    return _legacy_role(user) == ROLE_DIRECTOR
+    return can_view_gps_dashboard(user)
 
 
 _SCOREBOARD_MONITOR_ROLES = (
@@ -139,11 +130,7 @@ def can_export_reports(user):
 
 def can_view_full_gps(user):
     """Director and Admin — full GPS and movement visibility."""
-    if user.is_superuser:
-        return True
-    if has_employee_profile(user):
-        return has_enterprise_permission(user, 'gps_tracking')
-    return _legacy_role(user) == ROLE_DIRECTOR
+    return can_view_gps_dashboard(user)
 
 
 def productivity_scope_users(user):

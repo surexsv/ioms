@@ -37,10 +37,10 @@
     </div>
     <div class="action-btns" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
         {% if widget.can_check_in %}
-        <a href="{% url 'attendance_check_in' %}" class="btn btn-success"><i class="bi bi-camera"></i> Check In</a>
+        <a href="{% url 'attendance_check_in' %}" class="btn btn-success"><i class="bi bi-box-arrow-in-right"></i> Check In</a>
         {% endif %}
         {% if widget.can_check_out %}
-        <a href="{% url 'attendance_check_out' %}" class="btn btn-warning"><i class="bi bi-camera"></i> Check Out</a>
+        <a href="{% url 'attendance_check_out' %}" class="btn btn-warning"><i class="bi bi-box-arrow-right"></i> Check Out</a>
         {% endif %}
         {% if today_record %}
         <a href="{% url 'attendance_detail' today_record.pk %}" class="btn btn-secondary btn-sm">View Details</a>

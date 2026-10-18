@@ -199,7 +199,13 @@ def photo_verification_report(for_date=None):
             'record': rec,
             'has_in_photo': rec.has_check_in_photo,
             'has_out_photo': rec.has_check_out_photo,
-            'verified': rec.has_check_in_photo and (not rec.check_out_time or rec.has_check_out_photo),
+            'verified': (
+                rec.has_check_in_photo or rec.check_in_work_mode == Attendance.WORK_OFFICE
+            ) and (
+                not rec.check_out_time
+                or rec.has_check_out_photo
+                or rec.check_out_work_mode == Attendance.WORK_OFFICE
+            ),
         })
     return {'date': for_date, 'rows': rows}
 

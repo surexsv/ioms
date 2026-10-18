@@ -186,6 +186,7 @@ def check_in(request):
             record.check_in_time = now.time()
             record.check_in_at = now
             record.status = 'PRESENT'
+            record.check_in_work_mode = form.cleaned_data['work_mode']
             record.location = address
             record.latitude = lat
             record.longitude = lng
@@ -195,20 +196,25 @@ def check_in(request):
             record.check_in_remarks = form.cleaned_data.get('remarks', '')
             record.save()
 
-            AttendancePhoto.objects.create(
-                attendance=record,
-                employee=request.user,
-                photo_type=AttendancePhoto.TYPE_CHECK_IN,
-                image=form.cleaned_data['photo'],
-                captured_at=now,
-                latitude=lat,
-                longitude=lng,
-            )
+            photo = form.cleaned_data.get('photo')
+            if photo:
+                AttendancePhoto.objects.create(
+                    attendance=record,
+                    employee=request.user,
+                    photo_type=AttendancePhoto.TYPE_CHECK_IN,
+                    image=photo,
+                    captured_at=now,
+                    latitude=lat,
+                    longitude=lng,
+                )
             log_attendance_event(
                 'CHECK_IN', attendance=record, user=request.user, request=request,
                 remarks=address, latitude=lat, longitude=lng,
             )
-            messages.success(request, f'Checked in at {now.strftime("%H:%M")} with photo verification.')
+            if record.check_in_work_mode == Attendance.WORK_OFFICE:
+                messages.success(request, f'Checked in at {now.strftime("%H:%M")} from the office.')
+            else:
+                messages.success(request, f'Checked in at {now.strftime("%H:%M")} with photo verification.')
             return redirect('my_attendance')
     else:
         form = CheckInForm()
@@ -243,6 +249,7 @@ def check_out(request):
 
             record.check_out_time = now.time()
             record.check_out_at = now
+            record.check_out_work_mode = form.cleaned_data['work_mode']
             record.check_out_location = address
             record.check_out_latitude = lat
             record.check_out_longitude = lng
@@ -252,15 +259,17 @@ def check_out(request):
             record.check_out_remarks = form.cleaned_data.get('remarks', '')
             record.save()
 
-            AttendancePhoto.objects.create(
-                attendance=record,
-                employee=request.user,
-                photo_type=AttendancePhoto.TYPE_CHECK_OUT,
-                image=form.cleaned_data['photo'],
-                captured_at=now,
-                latitude=lat,
-                longitude=lng,
-            )
+            photo = form.cleaned_data.get('photo')
+            if photo:
+                AttendancePhoto.objects.create(
+                    attendance=record,
+                    employee=request.user,
+                    photo_type=AttendancePhoto.TYPE_CHECK_OUT,
+                    image=photo,
+                    captured_at=now,
+                    latitude=lat,
+                    longitude=lng,
+                )
             log_attendance_event(
                 'CHECK_OUT', attendance=record, user=request.user, request=request,
                 remarks=address, latitude=lat, longitude=lng,

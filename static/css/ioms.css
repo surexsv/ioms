@@ -920,9 +920,50 @@ table:not(.ioms-table) tbody tr:hover td {
 .case-empty-msg, .case-hint-card p { margin: 0; color: var(--ioms-text-muted); }
 .case-hint-card { background: #f8f9fa; border: 1px dashed #dee2e6; }
 
-/* Attendance capture (photo + GPS) */
+/* Attendance capture (photo + GPS, or office PC without a photo) */
 .attendance-capture-card { max-width: 900px; }
 .attendance-capture-hint { color: var(--ioms-text-muted); margin-bottom: 16px; }
+.work-mode-fieldset {
+    border: 0;
+    margin: 0 0 16px;
+    padding: 0;
+}
+.work-mode-fieldset legend {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+#id_work_mode {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+#id_work_mode li label {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px 16px;
+    cursor: pointer;
+    background: #fff;
+}
+#id_work_mode input:checked + span,
+#id_work_mode li label:has(input:checked) {
+    font-weight: 600;
+}
+.attendance-office-note {
+    background: #f8f9fa;
+    border: 1px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+.attendance-office-note p { margin: 0; }
+.attendance-capture-grid.is-hidden,
+.attendance-office-note.is-hidden { display: none !important; }
 .attendance-capture-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

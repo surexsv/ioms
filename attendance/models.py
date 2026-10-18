@@ -15,6 +15,12 @@ class Attendance(models.Model):
         ('LEAVE', 'Leave'),
         ('LATE', 'Late Arrival'),
     )
+    WORK_FIELD = 'FIELD'
+    WORK_OFFICE = 'OFFICE'
+    WORK_MODE_CHOICES = (
+        (WORK_FIELD, 'Mobile — field'),
+        (WORK_OFFICE, 'PC — office'),
+    )
 
     employee = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -46,6 +52,19 @@ class Attendance(models.Model):
     notes = models.TextField(blank=True)
     check_in_remarks = models.TextField(blank=True)
     check_out_remarks = models.TextField(blank=True)
+    check_in_work_mode = models.CharField(
+        'Check-in place',
+        max_length=10,
+        choices=WORK_MODE_CHOICES,
+        blank=True,
+        help_text='Field requires a photo and GPS. Office is a PC check-in without a photo.',
+    )
+    check_out_work_mode = models.CharField(
+        'Check-out place',
+        max_length=10,
+        choices=WORK_MODE_CHOICES,
+        blank=True,
+    )
     is_corrected = models.BooleanField(default=False)
     corrected_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

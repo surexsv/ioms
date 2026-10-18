@@ -4,36 +4,55 @@
 {% block content %}
 <div class="card attendance-capture-card">
     <h2><i class="bi bi-box-arrow-right"></i> Check Out</h2>
-    <p>Checked in at <strong>{{ record.check_in_time|time:"H:i" }}</strong>. Photo and GPS are required.</p>
+    <p class="attendance-capture-hint">Checked in at <strong>{{ record.check_in_time|time:"H:i" }}</strong>{% if record.check_in_work_mode %} ({{ record.get_check_in_work_mode_display }}){% endif %}. A photo and GPS are required only if you are checking out from the field.</p>
 
     <form method="post" enctype="multipart/form-data" id="attendanceCheckOutForm">
         {% csrf_token %}
-        <input type="hidden" name="latitude" id="id_latitude" value="">
-        <input type="hidden" name="longitude" id="id_longitude" value="">
-        <input type="hidden" name="location" id="id_location" value="">
+        <input type="hidden" name="latitude" id="id_latitude" value="{{ form.latitude.value|default:'' }}">
+        <input type="hidden" name="longitude" id="id_longitude" value="{{ form.longitude.value|default:'' }}">
+        <input type="hidden" name="location" id="id_location" value="{{ form.location.value|default:'' }}">
 
-        <div class="attendance-capture-grid">
+        <fieldset class="work-mode-fieldset">
+            <legend>Where are you working?</legend>
+            {{ form.work_mode }}
+        </fieldset>
+
+        <div id="fieldCapture" class="attendance-capture-grid{% if form.work_mode.value != 'FIELD' %} is-hidden{% endif %}">
             <div>
                 <h4>Photo Verification</h4>
+                <p class="attendance-capture-hint">Required for mobile users in the field.</p>
                 <video id="attVideo" autoplay playsinline muted class="attendance-video"></video>
                 <canvas id="attCanvas" style="display:none;"></canvas>
                 <img id="attPreview" class="attendance-preview" alt="Captured photo" style="display:none;">
-                <p id="cameraStatus" class="attendance-status">Starting camera…</p>
+                <p id="cameraStatus" class="attendance-status">Camera starts when you choose field.</p>
                 <button type="button" id="capturePhotoBtn" class="btn btn-secondary btn-sm">Capture Photo</button>
                 <div class="form-group" style="margin-top:12px;">
-                    <label>Or upload from mobile camera</label>
-                    <input type="file" name="photo" id="id_photo" accept="image/*" capture="user" required>
+                    <label for="id_photo">Or upload from the mobile camera</label>
+                    <input type="file" name="photo" id="id_photo" accept="image/*" capture="user">
                 </div>
             </div>
             <div>
                 <h4>GPS Location</h4>
-                <p id="gpsStatus" class="attendance-status">Acquiring GPS…</p>
-                <div class="form-group">
-                    <label>Remarks (optional)</label>
-                    {{ form.remarks }}
-                </div>
+                <p id="gpsStatus" class="attendance-status">GPS is required for field check-out.</p>
             </div>
         </div>
+
+        <div id="officeNote" class="attendance-office-note{% if form.work_mode.value != 'OFFICE' %} is-hidden{% endif %}">
+            <p>Office check-out from a PC does not need a photo or GPS.</p>
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.remarks.id_for_label }}">Remarks (optional)</label>
+            {{ form.remarks }}
+        </div>
+
+        {% if form.errors %}
+        <ul class="messages">
+            {% for field, errors in form.errors.items %}
+            {% for error in errors %}<li class="error">{{ error }}</li>{% endfor %}
+            {% endfor %}
+        </ul>
+        {% endif %}
 
         <button type="submit" class="btn btn-warning attendance-submit-btn">Confirm Check Out</button>
         <a href="{% url 'my_attendance' %}" class="btn btn-secondary">Cancel</a>
@@ -41,6 +60,6 @@
 </div>
 {% endblock %}
 {% block extra_js %}
-<script src="{% static 'js/attendance-capture.js' %}?v={{ ioms_version_label }}"></script>
+<script src="{% static 'js/attendance-capture.js' %}?v={{ ioms_version_label }}-office"></script>
 <script>IOMSAttendance.init('attendanceCheckOutForm');</script>
 {% endblock %}

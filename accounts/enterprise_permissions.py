@@ -87,6 +87,9 @@ def enterprise_module_grants_access(user, module_key):
     # Create stays with the role matrix: Director, Operations, Project Manager, Supervisor.
     if module_key == 'orders_create':
         return False
+    # GPS Tracking stays with Director and superuser, not an employee grant.
+    if module_key == 'gps_tracking':
+        return False
 
     if module_key.startswith('dashboard_'):
         if has_enterprise_permission(user, 'dashboard'):
@@ -397,6 +400,9 @@ def _nav_item_visible(user, permission, nav_key):
     if nav_key == 'preventive_maintenance':
         from preventive_maintenance.permissions import can_view_pm
         return can_view_pm(user) or _can_access_nav_permission(user, permission)
+    if nav_key == 'gps':
+        from productivity.permissions import can_view_gps_dashboard
+        return can_view_gps_dashboard(user)
     if nav_key == 'purchase_rates':
         from quotations.permissions import can_view_purchase_rates
         return can_view_purchase_rates(user)
