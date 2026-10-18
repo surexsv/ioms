@@ -68,7 +68,12 @@ from employee_requests.permissions import can_access_erms, can_approve_requests
 from fleet.permissions import can_view_fleet
 from productivity.permissions import can_view_gps_dashboard, can_view_productivity
 from project_expenses.permissions import can_view_peams
-from quotations.permissions import can_manage_rate_cards, can_view_quotations
+from quotations.permissions import (
+    can_approve_quotations,
+    can_edit_quotations,
+    can_manage_rate_cards,
+    can_view_quotations,
+)
 from scheduling.permissions import can_view_scheduling
 from special_projects.permissions import can_view_special_projects
 
@@ -272,7 +277,10 @@ class RoleFeaturePermissionTests(TestCase):
     def test_sidebar_matches_role_permissions(self):
         expected_nav = {
             ROLE_DIRECTOR: {'Dashboard', 'Orders', 'Scheduling', 'Clients', 'Quotations', 'WCR', 'BOQ', 'GPS Tracking', 'Scoreboard'},
-            ROLE_ACCOUNTS: {'Dashboard', 'Billing', 'Manual Invoice Import', 'BOQ', 'Clients', 'Orders', 'Scoreboard'},
+            ROLE_ACCOUNTS: {
+                'Dashboard', 'Billing', 'Manual Invoice Import', 'BOQ', 'Clients',
+                'Orders', 'Quotations', 'Scoreboard',
+            },
             ROLE_ENGINEER: {'Dashboard', 'Orders', 'Scheduling', 'WCR', 'Scoreboard'},
             ROLE_TECHNICIAN: {'Dashboard', 'Orders', 'Scheduling', 'WCR', 'Scoreboard'},
             ROLE_BACK_OFFICE: {'Dashboard'},
@@ -385,3 +393,26 @@ class RoleFeaturePermissionTests(TestCase):
         self.assertEqual(orders.status_code, 200)
         self.assertNotContains(orders, 'Create Order')
         self.assertTrue(_denied(self.client.get(reverse('create_order'))))
+
+    def test_accounts_sees_new_quotation_and_cannot_approve(self):
+        accounts = self.users[ROLE_ACCOUNTS]
+        supervisor = self.users[ROLE_SUPERVISOR]
+        self.assertTrue(can_view_quotations(accounts))
+        self.assertTrue(can_edit_quotations(accounts))
+        self.assertFalse(can_approve_quotations(accounts))
+        self.assertTrue(can_view_quotations(supervisor))
+        self.assertFalse(can_edit_quotations(supervisor))
+
+        self.client.force_login(accounts)
+        listing = self.client.get(reverse('quotation_list'))
+        self.assertEqual(listing.status_code, 200)
+        self.assertContains(listing, 'New Quotation')
+        created = self.client.get(reverse('quotation_create'))
+        self.assertEqual(created.status_code, 200)
+        self.assertContains(created, 'Create Quotation')
+        self.assertTrue(_denied(self.client.get(reverse('quotation_approve', kwargs={'pk': 1}))))
+
+        self.client.force_login(supervisor)
+        supervisor_list = self.client.get(reverse('quotation_list'))
+        self.assertEqual(supervisor_list.status_code, 200)
+        self.assertNotContains(supervisor_list, 'New Quotation')

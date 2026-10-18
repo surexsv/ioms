@@ -483,9 +483,9 @@ def proposal_template_api(request):
 
 
 def _workflow_action(request, pk, new_status, label):
-    if not can_approve_quotations(request.user) and new_status in ('APPROVED', 'UNDER_REVIEW'):
-        return HttpResponseForbidden('Not allowed')
     if new_status == 'UNDER_REVIEW' and not can_edit_quotations(request.user):
+        return HttpResponseForbidden('Not allowed')
+    if new_status in ('APPROVED', 'SENT', 'ACCEPTED', 'REJECTED') and not can_approve_quotations(request.user):
         return HttpResponseForbidden('Not allowed')
 
     quotation = get_object_or_404(Quotation, pk=pk)
@@ -525,8 +525,10 @@ def _workflow_action(request, pk, new_status, label):
     })
 
 
-@role_required('DIRECTOR', 'OPERATIONS')
+@module_required(MODULE_QUOTATIONS)
 def quotation_submit_review(request, pk):
+    if not can_edit_quotations(request.user):
+        return access_denied_response(request, reason=REASON_ROLE)
     return _workflow_action(request, pk, 'UNDER_REVIEW', 'Under Review')
 
 
