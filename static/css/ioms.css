@@ -964,6 +964,19 @@ table:not(.ioms-table) tbody tr:hover td {
 .attendance-office-note p { margin: 0; }
 .attendance-capture-grid.is-hidden,
 .attendance-office-note.is-hidden { display: none !important; }
+
+.ml-voice {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    background: #f8f9fa;
+}
+.ml-voice textarea { width: 100%; }
+.ml-kind { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; }
+.ml-speak.is-listening { background: #dc3545; border-color: #dc3545; }
+.ml-note { margin-top: 14px; padding-top: 12px; border-top: 1px solid #dee2e6; }
+.ml-note p { margin: 4px 0; white-space: pre-wrap; }
 .attendance-capture-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

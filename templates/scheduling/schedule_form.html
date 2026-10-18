@@ -76,7 +76,11 @@
         {% if can_field_edit and not can_edit %}
         <h3 style="margin-top:20px;">Update Work Status</h3>
         <div class="form-group">{{ form.status.label_tag }}{{ form.status }}</div>
-        <div class="form-group">{{ form.field_work_remarks.label_tag }}{{ form.field_work_remarks }}</div>
+        <div class="form-group">
+            {{ form.field_work_remarks.label_tag }}
+            {% if order %}{% include 'voice_assistant/_speak.html' with mode='fill' kind='UPDATE' order_id=order.pk target_selector='#id_field_work_remarks' %}{% endif %}
+            {{ form.field_work_remarks }}
+        </div>
         <button type="submit" class="btn btn-primary">Save Progress</button>
         {% else %}
         <h3 style="margin-top:20px;">Schedule Details</h3>
@@ -119,4 +123,5 @@
 {% block extra_js %}
 {% load static %}
 <script src="{% static 'js/ioms-gps.js' %}"></script>
+<script src="{% static 'js/malayalam-voice.js' %}?v=ml-voice-1"></script>
 {% endblock %}

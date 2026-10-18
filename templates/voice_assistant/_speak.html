@@ -1,0 +1,36 @@
+{% load static %}
+<div class="ml-voice" data-ml-voice
+     data-mode="{{ mode|default:'fill' }}"
+     data-translate-url="{% url 'voice_translate' %}"
+     {% if mode != 'save' %}data-save-url="{% url 'order_voice_note' 0 %}"{% endif %}
+     {% if kind %}data-kind="{{ kind }}"{% endif %}
+     {% if order_id %}data-order-id="{{ order_id }}"{% elif order %}data-order-id="{{ order.pk }}"{% endif %}
+     {% if order_select_id %}data-order-select="{{ order_select_id }}"{% endif %}
+     {% if target_selector %}data-target="{{ target_selector }}"{% endif %}>
+    {% if mode == 'save' %}
+    <h3 style="margin-top:0;">Speak in Malayalam</h3>
+    <p class="attendance-capture-hint">Speak the note. Review the Malayalam and the English, then confirm. The confirmed note is saved on this order.</p>
+    {% endif %}
+    {% if mode == 'save' %}
+    <fieldset class="work-mode-fieldset">
+        <legend>What are you recording?</legend>
+        <label class="ml-kind"><input type="radio" name="kind" value="UPDATE" required> Order Update</label>
+        <label class="ml-kind"><input type="radio" name="kind" value="COMPLETION"> Work Completion</label>
+        <label class="ml-kind"><input type="radio" name="kind" value="CLOSING"> Closing Remarks</label>
+    </fieldset>
+    {% endif %}
+    <button type="button" class="btn btn-primary btn-sm ml-speak"><i class="bi bi-mic"></i> Speak in Malayalam</button>
+    <p class="ml-status attendance-status"></p>
+    <div class="form-group">
+        <label>Malayalam</label>
+        <textarea class="ml-original" rows="3" placeholder="What you said in Malayalam" {% if mode == 'save' %}name="malayalam_text" required{% endif %}></textarea>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm ml-prepare">Prepare English</button>
+    <div class="form-group">
+        <label>Suggested English</label>
+        <textarea class="ml-english" rows="3" placeholder="Clear English for the order record" {% if mode == 'save' %}name="english_text" required{% endif %}></textarea>
+    </div>
+    {% if mode == 'fill' %}
+    <button type="button" class="btn btn-success btn-sm ml-use">Use this English</button>
+    {% endif %}
+</div>
