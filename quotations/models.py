@@ -455,3 +455,128 @@ class QuotationServiceLine(models.Model):
     def save(self, *args, **kwargs):
         self.compute_line()
         super().save(*args, **kwargs)
+
+
+class PurchaseMarginSettings(models.Model):
+    """Default profit margin applied to purchase rates. Directors can change it."""
+
+    default_margin_percent = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('30'))
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='purchase_margin_updates',
+    )
+
+    class Meta:
+        verbose_name = 'Purchase margin settings'
+        verbose_name_plural = 'Purchase margin settings'
+
+    def __str__(self):
+        return f'Purchase margin {self.default_margin_percent}%'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        pass
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1, defaults={'default_margin_percent': Decimal('30')})
+        return obj
+
+
+class PurchaseRate(models.Model):
+    """Latest purchase price for a material. The supply rate is written to Material Master."""
+
+    SOURCE_MANUAL = 'MANUAL'
+    SOURCE_DOCUMENT = 'DOCUMENT'
+    SOURCE_MATERIAL_MASTER = 'MATERIAL_MASTER'
+    SOURCE_CHOICES = (
+        (SOURCE_MANUAL, 'Manual'),
+        (SOURCE_DOCUMENT, 'Document'),
+        (SOURCE_MATERIAL_MASTER, 'Material Master'),
+    )
+
+    item_code = models.CharField(max_length=30, unique=True)
+    item_name = models.CharField(max_length=200)
+    brand = models.CharField(max_length=100, blank=True)
+    unit = models.CharField(max_length=20, default='Nos')
+    gst_percent = models.DecimalField(max_digits=5, decimal_places=2, default=18)
+    purchase_rate = models.DecimalField(max_digits=12, decimal_places=2)
+    margin_percent = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('30'))
+    remarks = models.CharField(max_length=300, blank=True)
+    is_active = models.BooleanField(default=True)
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default=SOURCE_MANUAL)
+    source_filename = models.CharField(max_length=255, blank=True)
+    material = models.ForeignKey(
+        MaterialRateCard,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='purchase_rates',
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='purchase_rates_updated',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['item_code']
+
+    def __str__(self):
+        return f'{self.item_code} — {self.item_name}'
+
+    @property
+    def margin_amount(self):
+        return _money(self.purchase_rate * self.margin_percent / Decimal('100'))
+
+    @property
+    def supply_rate(self):
+        return _money(self.purchase_rate + self.margin_amount)
+
+
+class PurchaseRateLog(models.Model):
+    OUTCOME_CREATED = 'CREATED'
+    OUTCOME_REPLACED = 'REPLACED'
+    OUTCOME_KEPT = 'KEPT'
+    OUTCOME_SKIPPED = 'SKIPPED'
+    OUTCOME_CHOICES = (
+        (OUTCOME_CREATED, 'Created'),
+        (OUTCOME_REPLACED, 'Replaced'),
+        (OUTCOME_KEPT, 'Kept higher rate'),
+        (OUTCOME_SKIPPED, 'Skipped'),
+    )
+
+    item_code = models.CharField(max_length=30, blank=True)
+    item_name = models.CharField(max_length=200, blank=True)
+    purchase_rate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    supply_rate = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    margin_percent = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    outcome = models.CharField(max_length=20, choices=OUTCOME_CHOICES)
+    detail = models.CharField(max_length=300, blank=True)
+    source = models.CharField(max_length=20, blank=True)
+    source_filename = models.CharField(max_length=255, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='purchase_rate_logs',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at', '-id']
+
+    def __str__(self):
+        return f'{self.item_code} {self.outcome}'

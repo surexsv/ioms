@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import purchase_views, views
 
 urlpatterns = [
     path('', views.quotation_list, name='quotation_list'),
@@ -30,6 +30,7 @@ urlpatterns = [
     path('rates/service/add/', views.service_rate_create, name='service_rate_create'),
     path('rates/service/<int:pk>/edit/', views.service_rate_edit, name='service_rate_edit'),
     path('rates/service/<int:pk>/delete/', views.service_rate_delete, name='service_rate_delete'),
+    path('purchase-rates/', purchase_views.purchase_rate_list, name='purchase_rate_list'),
     path('rates/material/', views.material_rate_list, name='material_rate_list'),
     path('rates/material/add/', views.material_rate_create, name='material_rate_create'),
     path('rates/material/<int:pk>/edit/', views.material_rate_edit, name='material_rate_edit'),

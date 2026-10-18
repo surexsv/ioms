@@ -329,6 +329,7 @@ NAV_MENU_CATALOG = [
     ('Operations', 'wcr', 'WCR', 'wcr_list', 'bi-file-earmark-text', 'wcr', ''),
     ('Customers', 'clients', 'Clients', 'client_list', 'bi-people', 'clients', ''),
     ('Finance', 'quotation', 'Quotations', 'quotation_list', 'bi-file-earmark-ruled', 'quotations', ''),
+    ('Finance', 'purchase_rates', 'Purchase Rates', 'purchase_rate_list', 'bi-tags', 'purchase_rates', ''),
     ('Finance', 'billing', 'Billing', 'invoice_list', 'bi-receipt', 'billing', ''),
     ('Finance', 'billing', 'Manual Invoice Import', 'invoice_import_upload', 'bi-upload', 'invoice_import', ''),
     ('Finance', 'billing', 'Invoice Import History', 'invoice_import_history', 'bi-clock-history', 'invoice_import_history', ''),
@@ -395,6 +396,9 @@ def _nav_item_visible(user, permission, nav_key):
     if nav_key == 'preventive_maintenance':
         from preventive_maintenance.permissions import can_view_pm
         return can_view_pm(user) or _can_access_nav_permission(user, permission)
+    if nav_key == 'purchase_rates':
+        from quotations.permissions import can_view_purchase_rates
+        return can_view_purchase_rates(user)
 
     return _can_access_nav_permission(user, permission)
 
