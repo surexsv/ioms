@@ -28,6 +28,7 @@ from .permissions import (
     attendance_nav_url,
 )
 from .enterprise_permissions import build_navigation_menu, dashboard_widget_flags
+from quotations.permissions import can_view_purchase_rates as _can_view_purchase_rates
 from employee_requests.permissions import can_access_erms, can_approve_requests
 from daily_meetings.permissions import can_access_daily_meetings
 from productivity.permissions import (
@@ -46,6 +47,8 @@ def _active_nav(request):
         return 'orders'
     if path.startswith('/clients'):
         return 'clients'
+    if path.startswith('/quotations/purchase-rates'):
+        return 'purchase_rates'
     if path.startswith('/quotations'):
         return 'quotations'
     if path.startswith('/wcr'):
@@ -147,6 +150,7 @@ def oms_navigation(request):
         'show_nav_orders': 'orders' in nav_keys or can_view_orders(user),
         'show_nav_clients': 'clients' in nav_keys or can_view_clients(user),
         'show_nav_quotations': 'quotations' in nav_keys or can_view_quotations(user),
+        'can_view_purchase_rates': _can_view_purchase_rates(user),
         'show_nav_wcr': 'wcr' in nav_keys or can_view_wcr(user),
         'show_nav_boq': 'boq' in nav_keys or can_view_boq(user),
         'show_nav_billing': 'billing' in nav_keys or can_manage_billing(user),

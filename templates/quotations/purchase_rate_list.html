@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% block title %}Purchase Rates — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Purchase Rates</h1>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+    <p style="margin-top:0;">
+        Supply rate = Purchase rate + Margin amount. Margin amount = Purchase rate × Profit margin %.
+        The supply rate is written to Material Master and is the rate used when a quotation is prepared.
+        A new purchase rate replaces the saved rate only when it is higher.
+    </p>
+    <p style="margin-bottom:0;">
+        Default profit margin: <strong>{{ margin_settings.default_margin_percent }}%</strong>
+        {% if can_edit_margin %}
+        <form method="post" style="margin-top:12px;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_margin">
+            <div class="form-row" style="align-items:flex-end;">
+                <div class="form-group" style="margin:0;">
+                    <label>Profit margin %</label>
+                    <input type="number" name="default_margin_percent" min="0" max="300" step="0.01" value="{{ margin_settings.default_margin_percent }}" required>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary">Save default</button>
+                    <button type="submit" class="btn btn-secondary" name="apply_to_all" value="1" onclick="return confirm('Apply this margin to every purchase rate and update Material Master?');">Apply to all purchase rates</button>
+                </div>
+            </div>
+        </form>
+        <form method="post" style="margin-top:12px;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="seed_material_master">
+            <button type="submit" class="btn btn-secondary" onclick="return confirm('Treat each current Material Master rate as the purchase rate, add the margin, and update Material Master. Items that already have a purchase rate are left as they are. Continue?');">Apply margin to Material Master items with no purchase rate</button>
+        </form>
+        {% else %}
+        <span>Only a Director or superuser can change the margin.</span>
+        {% endif %}
+    </p>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+    <h2 style="margin-top:0;">Enter a purchase rate</h2>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add">
+        <div class="form-row" style="align-items:flex-end;">
+            <div class="form-group" style="margin:0;"><label>Code</label><input name="item_code" maxlength="30"></div>
+            <div class="form-group" style="margin:0;"><label>Item</label><input name="item_name" required></div>
+            <div class="form-group" style="margin:0;"><label>Brand</label><input name="brand"></div>
+            <div class="form-group" style="margin:0;"><label>Unit</label><input name="unit" value="Nos"></div>
+            <div class="form-group" style="margin:0;"><label>GST%</label><input name="gst_percent" value="18"></div>
+            <div class="form-group" style="margin:0;"><label>Purchase rate</label><input name="purchase_rate" required></div>
+            <div class="form-group" style="margin:0;">
+                <label>Profit margin %</label>
+                {% if can_edit_margin %}
+                <input name="margin_percent" value="{{ margin_settings.default_margin_percent }}">
+                {% else %}
+                <input value="{{ margin_settings.default_margin_percent }}" disabled>
+                {% endif %}
+            </div>
+            <div class="form-group" style="margin:0;"><label>Remarks</label><input name="remarks"></div>
+            <div class="form-group" style="margin:0;"><label>Active</label><input type="checkbox" name="is_active" checked></div>
+            <div><button type="submit" class="btn btn-primary">Save</button></div>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+    <h2 style="margin-top:0;">Read a price list</h2>
+    <p>Upload a PDF, photo, CSV, or Excel file. The rows appear on this page so you can correct them before saving.</p>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="upload">
+        <input type="file" name="document" accept=".pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff,.csv,.xlsx" required>
+        <button type="submit" class="btn btn-primary">Read file</button>
+    </form>
+    {% if captured_rows %}
+    <form method="post" style="margin-top:16px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_captured">
+        <div class="ioms-table-wrap">
+            <table class="ioms-table">
+                <thead>
+                    <tr>
+                        <th>Save</th><th>Code</th><th>Item</th><th>Brand</th><th>Unit</th>
+                        <th>Purchase rate</th><th>Profit margin %</th><th>Margin amount</th><th>Supply rate</th>
+                        <th>GST%</th><th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in captured_rows %}
+                    <tr>
+                        <td><input type="checkbox" name="captured_include" value="{{ forloop.counter0 }}" checked></td>
+                        <td><input name="captured_code" value="{{ row.item_code }}"></td>
+                        <td><input name="captured_name" value="{{ row.item_name }}" required></td>
+                        <td><input name="captured_brand" value="{{ row.brand }}"></td>
+                        <td><input name="captured_unit" value="{{ row.unit }}"></td>
+                        <td><input name="captured_rate" value="{{ row.purchase_rate }}"></td>
+                        <td>{{ row.margin_percent }}%</td>
+                        <td>₹{{ row.margin_amount }}</td>
+                        <td>₹{{ row.supply_rate }}</td>
+                        <td><input name="captured_gst" value="{{ row.gst_percent }}"></td>
+                        <td><input name="captured_remarks" value="{{ row.remarks }}"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:12px;">Save captured rows</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+    <form method="get" class="form-row" style="align-items:flex-end;">
+        <div class="form-group" style="margin:0;">
+            <label>Search</label>
+            <input name="q" value="{{ query }}">
+        </div>
+        <div><button type="submit" class="btn btn-primary btn-sm">Filter</button></div>
+    </form>
+</div>
+
+<div class="ioms-table-wrap">
+    <table class="ioms-table">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Item</th>
+                <th>Brand</th>
+                <th>Unit</th>
+                <th>Purchase rate</th>
+                <th>Profit margin %</th>
+                <th>Margin amount</th>
+                <th>Supply rate</th>
+                <th>GST%</th>
+                <th>Remarks</th>
+                <th>Active</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rates %}
+            <tr>
+                <td>{{ row.item_code }}</td>
+                <td>{{ row.item_name }}</td>
+                <td>{{ row.brand|default:"—" }}</td>
+                <td>{{ row.unit }}</td>
+                <td>₹{{ row.purchase_rate }}</td>
+                <td>
+                    {% if can_edit_margin %}
+                    <form method="post" class="form-row" style="align-items:center;gap:6px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_margin">
+                        <input type="hidden" name="row_id" value="{{ row.pk }}">
+                        <input name="margin_percent" value="{{ row.margin_percent }}" style="width:80px;">
+                        <button type="submit" class="btn btn-sm btn-secondary">Update</button>
+                    </form>
+                    {% else %}
+                    {{ row.margin_percent }}%
+                    {% endif %}
+                </td>
+                <td>₹{{ row.margin_amount }}</td>
+                <td>₹{{ row.supply_rate }}</td>
+                <td>{{ row.gst_percent }}%</td>
+                <td>{{ row.remarks|default:"—" }}</td>
+                <td>{% if row.is_active %}<span class="badge badge-approved">Yes</span>{% else %}<span class="badge badge-closed">No</span>{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="11">No purchase rates yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if logs %}
+<h2>Recent entries</h2>
+<div class="ioms-table-wrap">
+    <table class="ioms-table">
+        <thead>
+            <tr><th>When</th><th>Code</th><th>Item</th><th>Purchase rate</th><th>Result</th><th>Detail</th><th>By</th></tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.created_at|date:"d M Y H:i" }}</td>
+                <td>{{ log.item_code|default:"—" }}</td>
+                <td>{{ log.item_name|default:"—" }}</td>
+                <td>{% if log.purchase_rate %}₹{{ log.purchase_rate }}{% else %}—{% endif %}</td>
+                <td>{{ log.get_outcome_display }}</td>
+                <td>{{ log.detail }}</td>
+                <td>{{ log.created_by|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

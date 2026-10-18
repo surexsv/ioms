@@ -9,6 +9,9 @@ from .models import (
     Quotation,
     QuotationMaterialLine,
     QuotationServiceLine,
+    PurchaseMarginSettings,
+    PurchaseRate,
+    PurchaseRateLog,
 )
 
 
@@ -94,3 +97,23 @@ class QuotationSettingsAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(PurchaseMarginSettings)
+class PurchaseMarginSettingsAdmin(admin.ModelAdmin):
+    list_display = ('default_margin_percent', 'updated_at', 'updated_by')
+
+    def has_add_permission(self, request):
+        return not PurchaseMarginSettings.objects.exists()
+
+
+@admin.register(PurchaseRate)
+class PurchaseRateAdmin(admin.ModelAdmin):
+    list_display = ('item_code', 'item_name', 'purchase_rate', 'margin_percent', 'is_active')
+    search_fields = ('item_code', 'item_name', 'brand')
+
+
+@admin.register(PurchaseRateLog)
+class PurchaseRateLogAdmin(admin.ModelAdmin):
+    list_display = ('item_code', 'outcome', 'purchase_rate', 'created_at', 'created_by')
+    list_filter = ('outcome', 'source')
