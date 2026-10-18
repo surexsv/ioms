@@ -72,6 +72,7 @@ from quotations.permissions import (
     can_approve_quotations,
     can_edit_quotations,
     can_manage_rate_cards,
+    can_prepare_rate_card,
     can_view_purchase_rates,
     can_view_quotations,
 )
@@ -132,6 +133,7 @@ def _feature_checks():
         ('Quotations', 'quotation_list', can_view_quotations),
         ('Create Quotation', 'quotation_create', can_view_quotations),
         ('Purchase Rates', 'purchase_rate_list', can_view_purchase_rates),
+        ('Rate Card', 'rate_card_list', can_prepare_rate_card),
         ('Quotation Rates', 'service_rate_list', can_manage_rate_cards),
         ('My Attendance', 'my_attendance', lambda u: can_access(u, MODULE_ATTENDANCE_SELF)),
         ('Attendance Check-In', 'attendance_check_in', can_mark_own_attendance),
@@ -278,7 +280,7 @@ class RoleFeaturePermissionTests(TestCase):
 
     def test_sidebar_matches_role_permissions(self):
         expected_nav = {
-            ROLE_DIRECTOR: {'Dashboard', 'Orders', 'Scheduling', 'Clients', 'Quotations', 'Purchase Rates', 'WCR', 'BOQ', 'GPS Tracking', 'Scoreboard'},
+            ROLE_DIRECTOR: {'Dashboard', 'Orders', 'Scheduling', 'Clients', 'Quotations', 'Purchase Rates', 'Rate Card', 'WCR', 'BOQ', 'GPS Tracking', 'Scoreboard'},
             ROLE_ACCOUNTS: {
                 'Dashboard', 'Billing', 'Manual Invoice Import', 'BOQ', 'Clients',
                 'Orders', 'Quotations', 'Purchase Rates', 'WCR', 'Scoreboard',
@@ -290,10 +292,11 @@ class RoleFeaturePermissionTests(TestCase):
         }
         forbidden_nav = {
             ROLE_DIRECTOR: {'Billing', 'Manual Invoice Import'},
-            ROLE_ENGINEER: {'Billing', 'Manual Invoice Import', 'Clients', 'Quotations', 'Purchase Rates'},
-            ROLE_TECHNICIAN: {'Billing', 'Manual Invoice Import', 'Create Order', 'Purchase Rates'},
-            ROLE_ACCOUNTS_EXECUTIVE: {'Billing', 'Manual Invoice Import', 'Orders', 'Purchase Rates'},
-            ROLE_BACK_OFFICE: {'Billing', 'Manual Invoice Import', 'Orders', 'Purchase Rates'},
+            ROLE_ENGINEER: {'Billing', 'Manual Invoice Import', 'Clients', 'Quotations', 'Purchase Rates', 'Rate Card'},
+            ROLE_TECHNICIAN: {'Billing', 'Manual Invoice Import', 'Create Order', 'Purchase Rates', 'Rate Card'},
+            ROLE_ACCOUNTS_EXECUTIVE: {'Billing', 'Manual Invoice Import', 'Orders', 'Purchase Rates', 'Rate Card'},
+            ROLE_BACK_OFFICE: {'Billing', 'Manual Invoice Import', 'Orders', 'Purchase Rates', 'Rate Card'},
+            ROLE_ACCOUNTS: {'Rate Card'},
         }
         for role, labels in expected_nav.items():
             menu = build_navigation_menu(self.users[role], allowed_dashboard_url_name(self.users[role]))

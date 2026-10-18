@@ -45,6 +45,7 @@
     <a href="{% url 'service_rate_list' %}">Service Master</a>
     <a href="{% url 'material_rate_list' %}">Material Master</a>
     {% if can_view_purchase_rates %}<a href="{% url 'purchase_rate_list' %}">Purchase Rates</a>{% endif %}
+    {% if can_prepare_rate_card %}<a href="{% url 'rate_card_list' %}">Rate Card</a>{% endif %}
     <a href="{% url 'rate_audit_list' %}">Rate Audit History</a>
 </div>
 

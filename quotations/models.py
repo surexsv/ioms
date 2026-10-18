@@ -501,6 +501,12 @@ class PurchaseRate(models.Model):
         (SOURCE_DOCUMENT, 'Document'),
         (SOURCE_MATERIAL_MASTER, 'Material Master'),
     )
+    STATUS_PENDING = 'PENDING'
+    STATUS_APPROVED = 'APPROVED'
+    STATUS_CHOICES = (
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_APPROVED, 'Approved'),
+    )
 
     item_code = models.CharField(max_length=30, unique=True)
     item_name = models.CharField(max_length=200)
@@ -513,6 +519,15 @@ class PurchaseRate(models.Model):
     is_active = models.BooleanField(default=True)
     source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default=SOURCE_MANUAL)
     source_filename = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='purchase_rates_approved',
+    )
     material = models.ForeignKey(
         MaterialRateCard,
         on_delete=models.SET_NULL,
@@ -550,11 +565,13 @@ class PurchaseRateLog(models.Model):
     OUTCOME_REPLACED = 'REPLACED'
     OUTCOME_KEPT = 'KEPT'
     OUTCOME_SKIPPED = 'SKIPPED'
+    OUTCOME_APPROVED = 'APPROVED'
     OUTCOME_CHOICES = (
         (OUTCOME_CREATED, 'Created'),
         (OUTCOME_REPLACED, 'Replaced'),
         (OUTCOME_KEPT, 'Kept higher rate'),
         (OUTCOME_SKIPPED, 'Skipped'),
+        (OUTCOME_APPROVED, 'Approved'),
     )
 
     item_code = models.CharField(max_length=30, blank=True)

@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Rate Card — Infomates Operations Management System{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Rate Card</h1>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+    <p style="margin-top:0;">
+        These rows come from Purchase Rates. Supply rate = Purchase rate + Margin amount.
+        Margin amount = Purchase rate × Profit margin %. Change the purchase rate or the margin, then approve.
+        Material Master is updated only when the row is approved. {{ pending_count }} row(s) are waiting.
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_margin">
+        <div class="form-row" style="align-items:flex-end;">
+            <div class="form-group" style="margin:0;">
+                <label>Profit margin %</label>
+                <input type="number" name="default_margin_percent" min="0" max="300" step="0.01" value="{{ margin_settings.default_margin_percent }}" required>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary">Save default</button>
+                <button type="submit" class="btn btn-secondary" name="apply_to_all" value="1" onclick="return confirm('Apply this margin to every rate card row? Each row will need approval again.');">Apply to all rows</button>
+            </div>
+        </div>
+    </form>
+    {% if pending_count %}
+    <form method="post" style="margin-top:12px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="approve_all">
+        <button type="submit" class="btn btn-primary" onclick="return confirm('Approve every pending row and write the supply rates to Material Master?');">Approve all pending</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+    <form method="get" class="form-row" style="align-items:flex-end;">
+        <div class="form-group" style="margin:0;">
+            <label>Search</label>
+            <input name="q" value="{{ query }}">
+        </div>
+        <div><button type="submit" class="btn btn-primary btn-sm">Filter</button></div>
+    </form>
+</div>
+
+<div class="ioms-table-wrap">
+    <table class="ioms-table">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Item</th>
+                <th>Brand</th>
+                <th>Unit</th>
+                <th>Purchase rate</th>
+                <th>Profit margin %</th>
+                <th>Margin amount</th>
+                <th>Supply rate</th>
+                <th>GST%</th>
+                <th>Remarks</th>
+                <th>Active</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rates %}
+            <tr>
+                <td>{{ row.item_code }}</td>
+                <td>{{ row.item_name }}</td>
+                <td><input form="rate-{{ row.pk }}" name="brand" value="{{ row.brand }}" style="width:90px;"></td>
+                <td><input form="rate-{{ row.pk }}" name="unit" value="{{ row.unit }}" style="width:60px;"></td>
+                <td><input form="rate-{{ row.pk }}" name="purchase_rate" value="{{ row.purchase_rate }}" style="width:90px;" required></td>
+                <td><input form="rate-{{ row.pk }}" name="margin_percent" value="{{ row.margin_percent }}" style="width:70px;" required></td>
+                <td>₹{{ row.margin_amount }}</td>
+                <td>₹{{ row.supply_rate }}</td>
+                <td><input form="rate-{{ row.pk }}" name="gst_percent" value="{{ row.gst_percent }}" style="width:60px;"></td>
+                <td><input form="rate-{{ row.pk }}" name="remarks" value="{{ row.remarks }}" style="width:120px;"></td>
+                <td><input form="rate-{{ row.pk }}" type="checkbox" name="is_active" {% if row.is_active %}checked{% endif %}></td>
+                <td>
+                    {% if row.status == 'APPROVED' %}
+                    <span class="badge badge-approved">Approved</span>
+                    {% else %}
+                    <span class="badge badge-pending">Pending</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <form id="rate-{{ row.pk }}" method="post" style="display:flex;gap:6px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="row_id" value="{{ row.pk }}">
+                        <button type="submit" class="btn btn-sm btn-secondary" name="action" value="save_row">Save</button>
+                        <button type="submit" class="btn btn-sm btn-primary" name="action" value="approve_row">Approve</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="13">No purchase rates have been captured yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

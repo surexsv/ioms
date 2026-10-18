@@ -31,6 +31,7 @@ urlpatterns = [
     path('rates/service/<int:pk>/edit/', views.service_rate_edit, name='service_rate_edit'),
     path('rates/service/<int:pk>/delete/', views.service_rate_delete, name='service_rate_delete'),
     path('purchase-rates/', purchase_views.purchase_rate_list, name='purchase_rate_list'),
+    path('rate-card/', purchase_views.rate_card_list, name='rate_card_list'),
     path('rates/material/', views.material_rate_list, name='material_rate_list'),
     path('rates/material/add/', views.material_rate_create, name='material_rate_create'),
     path('rates/material/<int:pk>/edit/', views.material_rate_edit, name='material_rate_edit'),
