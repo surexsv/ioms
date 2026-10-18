@@ -3,7 +3,13 @@ from accounts.permissions import (
     MODULE_QUOTATIONS,
     MODULE_QUOTATION_RATES,
 )
-from accounts.roles import user_role, ROLE_DIRECTOR, ROLE_OPERATIONS, ROLE_PROJECT_MANAGER
+from accounts.roles import (
+    user_role,
+    ROLE_ACCOUNTS,
+    ROLE_DIRECTOR,
+    ROLE_OPERATIONS,
+    ROLE_PROJECT_MANAGER,
+)
 
 
 def can_view_quotations(user):
@@ -12,7 +18,9 @@ def can_view_quotations(user):
 
 def can_edit_quotations(user):
     return can_access(user, MODULE_QUOTATIONS) and (
-        user.is_superuser or user_role(user) in (ROLE_DIRECTOR, ROLE_OPERATIONS, ROLE_PROJECT_MANAGER)
+        user.is_superuser or user_role(user) in (
+            ROLE_DIRECTOR, ROLE_OPERATIONS, ROLE_PROJECT_MANAGER, ROLE_ACCOUNTS,
+        )
     )
 
 
