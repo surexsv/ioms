@@ -252,8 +252,10 @@ def order_detail(request, pk):
         linked_pm = []
         related_visit = []
 
+    voice_notes = order.voice_notes.select_related('created_by')
     return render(request, 'orders/order_detail.html', {
         'order': order,
+        'voice_notes': voice_notes,
         'schedule': schedule,
         'transitions': transitions,
         'wcr': wcr,

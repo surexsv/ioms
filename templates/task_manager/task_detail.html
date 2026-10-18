@@ -132,7 +132,12 @@
     <form method="post">
         {% csrf_token %}
         <input type="hidden" name="action" value="note">
-        <div class="form-group">{{ note_form.remarks.label_tag }}{{ note_form.remarks }}{{ note_form.remarks.errors }}</div>
+        <div class="form-group" id="task-note-remarks">
+            {{ note_form.remarks.label_tag }}
+            {% include 'voice_assistant/_speak.html' with mode='fill' kind='UPDATE' order_id=task.related_order_id target_selector='#task-note-remarks textarea' %}
+            {{ note_form.remarks }}
+            {{ note_form.remarks.errors }}
+        </div>
         <button type="submit" class="btn btn-secondary">Save update</button>
     </form>
 </div>
@@ -142,9 +147,18 @@
     <form method="post">
         {% csrf_token %}
         <input type="hidden" name="action" value="close">
-        <div class="form-group">{{ close_form.remarks.label_tag }}{{ close_form.remarks }}{{ close_form.remarks.errors }}</div>
+        <div class="form-group" id="task-close-remarks">
+            {{ close_form.remarks.label_tag }}
+            {% include 'voice_assistant/_speak.html' with mode='fill' kind='CLOSING' order_id=task.related_order_id target_selector='#task-close-remarks textarea' %}
+            {{ close_form.remarks }}
+            {{ close_form.remarks.errors }}
+        </div>
         <button type="submit" class="btn btn-success">Close task</button>
     </form>
 </div>
 {% endif %}
+{% endblock %}
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'js/malayalam-voice.js' %}?v=ml-voice-1"></script>
 {% endblock %}

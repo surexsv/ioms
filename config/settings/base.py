@@ -5,6 +5,7 @@ Environment-specific values live in development.py / production.py.
 Database ENGINE / NAME / USER / PASSWORD are NOT defined here.
 """
 
+import os
 from pathlib import Path
 
 # config/settings/base.py → parents: settings → config → project root
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     'project_expenses.apps.ProjectExpensesConfig',
     'preventive_maintenance.apps.PreventiveMaintenanceConfig',
     'task_manager.apps.TaskManagerConfig',
+    'voice_assistant.apps.VoiceAssistantConfig',
 ]
 
 MIDDLEWARE = [
@@ -103,6 +105,11 @@ AUTH_USER_MODEL = 'accounts.User'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Optional. When set, Malayalam field notes are rewritten as professional English.
+IOMS_AI_API_KEY = os.environ.get('IOMS_AI_API_KEY', '')
+IOMS_AI_API_URL = os.environ.get('IOMS_AI_API_URL', 'https://api.openai.com/v1/chat/completions')
+IOMS_AI_MODEL = os.environ.get('IOMS_AI_MODEL', 'gpt-4o-mini')
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'director_dashboard'

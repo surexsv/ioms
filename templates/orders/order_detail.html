@@ -83,6 +83,26 @@
     {% endif %}
 </div>
 
+<div class="card">
+    <form method="post" action="{% url 'order_voice_note' order.pk %}">
+        {% csrf_token %}
+        {% include 'voice_assistant/_speak.html' with mode='save' %}
+        <button type="submit" class="btn btn-success">Confirm and save</button>
+    </form>
+    {% if voice_notes %}
+    <h3>Saved notes</h3>
+    {% for note in voice_notes %}
+    <div class="ml-note">
+        <p><strong>{{ note.get_kind_display }}</strong>
+            — {{ note.created_by.get_full_name|default:note.created_by.username }}
+            — {{ note.created_at|date:"d M Y H:i" }}</p>
+        <p><strong>Malayalam:</strong> {{ note.malayalam_text }}</p>
+        <p><strong>English:</strong> {{ note.english_text }}</p>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+
 {% if transitions %}
 <div class="card">
     <h3 style="margin-top:0;">Update Status</h3>
@@ -181,4 +201,5 @@
 {% block extra_js %}
 {% load static %}
 <script src="{% static 'js/ioms-gps.js' %}"></script>
+<script src="{% static 'js/malayalam-voice.js' %}?v=ml-voice-1"></script>
 {% endblock %}

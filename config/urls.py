@@ -15,6 +15,7 @@ urlpatterns = [
     path('dashboard/', include('dashboard.urls')),
     path('enquiries/', include('enquiries.urls')),
     path('estimate-boq/', include('estimate_boq.urls')),
+    path('orders/', include('voice_assistant.urls')),
     path('orders/', include('orders.urls')),
     path('clients/', include('clients.urls')),
     path('wcr/', include('wcr.urls')),
