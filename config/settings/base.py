@@ -94,7 +94,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+# Office clocks follow India Standard Time. Datetimes stay timezone-aware
+# and are stored in UTC; screens and local dates use Asia/Kolkata (UTC+5:30).
+TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 USE_TZ = True
 
